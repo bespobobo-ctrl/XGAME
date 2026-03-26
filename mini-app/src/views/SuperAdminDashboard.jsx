@@ -2,99 +2,139 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
 
-const SuperAdminDashboard = () => {
+const SuperAdminDashboard = ({ activeTab }) => {
     const [clubs, setClubs] = useState([]);
-    const [showAddClub, setShowAddClub] = useState(false);
-    const [newClub, setNewClub] = useState({ name: '', address: '' });
+    const [managers, setManagers] = useState([]);
+    const [clubForm, setClubForm] = useState({ name: '', address: '' });
+    const [selectedImage, setSelectedImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         fetchClubs();
+        fetchManagers();
     }, []);
 
     const fetchClubs = async () => {
-        try {
-            const data = await callAPI('/api/admin/clubs');
-            setClubs(data);
-        } catch (err) { console.error(err); }
+        try { const data = await callAPI('/api/admin/clubs'); setClubs(data); } catch (e) { console.error(e); }
+    };
+    const fetchManagers = async () => {
+        try { const data = await callAPI('/api/admin/managers'); setManagers(data); } catch (e) { console.error(e); }
     };
 
-    const handleCreateClub = async () => {
+    const handleAddClub = async () => {
+        if (!clubForm.name || !clubForm.address) return alert('Barcha maydonlarni to\'ldiring!');
         setLoading(true);
         try {
-            await callAPI('/api/admin/clubs', {
+            const formData = new FormData();
+            formData.append('name', clubForm.name);
+            formData.append('address', clubForm.address);
+            if (selectedImage) formData.append('image', selectedImage);
+
+            const res = await fetch(`https://long-showing-released-instructor.trycloudflare.com/api/admin/clubs`, {
                 method: 'POST',
-                body: JSON.stringify(newClub)
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('x-token')}` },
+                body: formData
             });
-            setShowAddClub(false);
-            fetchClubs();
-        } catch (err) { alert(err.message); }
+            const result = await res.json();
+            if (result.success) {
+                alert('Klub qo\'shildi! ✅');
+                setClubForm({ name: '', address: '' });
+                setSelectedImage(null);
+                fetchClubs();
+            }
+        } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="super-admin-view"
-            style={{ padding: '20px', paddingBottom: '100px' }}
-        >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h2 style={{ fontSize: '28px', color: '#fff', margin: 0 }}>NEXUS COMMAND 🛰️</h2>
-                <div style={{ background: '#7000ff22', color: '#7000ff', padding: '10px 15px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}>VERSION 1.6.0</div>
-            </div>
+        <div className="admin-dashboard-view" style={{ padding: '20px', paddingBottom: '120px' }}>
 
-            <div className="glass-card stat-card-wide" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '25px', borderRadius: '25px', marginBottom: '30px' }}>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', letterSpacing: '2px', fontWeight: 'bold' }}>JAMI KLUBLAR</div>
-                <div style={{ color: '#fff', fontSize: '42px', fontWeight: '900', marginTop: '5px' }}>{clubs.length}</div>
-            </div>
-
-            <div className="admin-actions" style={{ marginBottom: '30px' }}>
-                <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    className="btn-brand"
-                    onClick={() => setShowAddClub(true)}
-                    style={{
-                        width: '100%', background: 'linear-gradient(90deg, #ff00ff 0%, #7000ff 100%)',
-                        border: 'none', borderRadius: '20px', padding: '18px', color: '#fff', fontWeight: 'bold', fontSize: '14px',
-                        boxShadow: '0 8px 30px rgba(255, 0, 255, 0.2)'
-                    }}
-                >
-                    YANGI KLUB QO'SHISH 🏛️
-                </motion.button>
-            </div>
-
-            <div className="admin-clubs-list" style={{ display: 'grid', gap: '15px' }}>
-                {clubs.map(c => (
-                    <div key={c.id} className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '16px' }}>{c.name}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginTop: '4px' }}>{c.address}</div>
-                        </div>
-                        <button className="btn-outline" style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 15px', borderRadius: '10px', color: '#fff', fontSize: '10px' }}>
-                            Menejer +
-                        </button>
+            {/* 🛰️ SECTION 1: DASHBOARD STATS */}
+            {activeTab === 'dashboard' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '30px' }}>
+                    <div style={{ background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.2)', padding: '25px', borderRadius: '25px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '2px' }}>JAMI KLUBLAR</span>
+                        <h2 style={{ fontSize: '36px', margin: '5px 0' }}>{clubs.length}</h2>
                     </div>
-                ))}
-            </div>
+                    <div style={{ background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.2)', padding: '25px', borderRadius: '25px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '2px' }}>MENEJERLAR</span>
+                        <h2 style={{ fontSize: '36px', margin: '5px 0' }}>{managers.length}</h2>
+                    </div>
+                </div>
+            )}
 
-            {/* ADD CLUB MODAL */}
-            <AnimatePresence>
-                {showAddClub && (
-                    <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                        <motion.div className="glass-card" initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ width: '100%', maxWidth: '400px', background: '#110a1f', padding: '30px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ fontSize: '22px', marginBottom: '20px', textAlign: 'center' }}>Yangi Klub Qutlug' bo'lsin! ✨</h3>
-                            <input placeholder="Klub Nomi" onChange={e => setNewClub({ ...newClub, name: e.target.value })} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '15px', borderRadius: '15px', color: '#fff', marginBottom: '15px' }} />
-                            <input placeholder="Manzili" onChange={e => setNewClub({ ...newClub, address: e.target.value })} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '15px', borderRadius: '15px', color: '#fff', marginBottom: '20px' }} />
-                            <motion.button whileTap={{ scale: 0.95 }} onClick={handleCreateClub} disabled={loading} style={{ width: '100%', background: 'linear-gradient(90deg, #ff00ff 0%, #7000ff 100%)', border: 'none', padding: '15px', borderRadius: '15px', color: '#fff', fontWeight: 'bold' }}>
-                                {loading ? 'YARATILMOQDA...' : 'YARATISH 🏛️'}
+            {/* 🏛️ SECTION 2: CLUBS MANAGEMENT */}
+            {activeTab === 'clubs' && (
+                <div style={{ display: 'grid', gap: '30px' }}>
+
+                    {/* 🆕 ADD CLUB CARD (PREMIUM DESIGN) */}
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(57, 255, 20, 0.3)', padding: '25px', borderRadius: '30px' }}>
+                        <h3 style={{ margin: '0 0 20px', color: '#39ff14' }}>YANGI KLUB QO'SHISH</h3>
+                        <div style={{ display: 'grid', gap: '15px' }}>
+                            <input
+                                placeholder="Klub nomi" value={clubForm.name}
+                                onChange={e => setClubForm({ ...clubForm, name: e.target.value })}
+                                style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', padding: '15px', borderRadius: '15px', color: '#fff' }}
+                            />
+                            <input
+                                placeholder="Manzil (Masalan: Toshkent, Chilonzor)" value={clubForm.address}
+                                onChange={e => setClubForm({ ...clubForm, address: e.target.value })}
+                                style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', padding: '15px', borderRadius: '15px', color: '#fff' }}
+                            />
+
+                            {/* 📸 IMAGE UPLOAD FIELD */}
+                            <div style={{ background: 'rgba(57, 255, 20, 0.05)', border: '1px dashed #39ff14', padding: '15px', borderRadius: '15px', textAlign: 'center', cursor: 'pointer' }}>
+                                <label style={{ cursor: 'pointer', display: 'block' }}>
+                                    {selectedImage ? `Rasm tanlandi: ${selectedImage.name}` : '🖼️ KLUB RASMINI TANLASH (.jpg, .png)'}
+                                    <input
+                                        type="file" accept="image/*" hidden
+                                        onChange={e => setSelectedImage(e.target.files[0])}
+                                    />
+                                </label>
+                            </div>
+
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={handleAddClub} disabled={loading}
+                                style={{ background: '#39ff14', border: 'none', padding: '18px', borderRadius: '15px', fontWeight: 'bold' }}
+                            >
+                                {loading ? 'YUKLANMOQDA...' : 'SAQLASH 🔥'}
                             </motion.button>
-                            <button onClick={() => setShowAddClub(false)} style={{ width: '100%', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', marginTop: '20px' }}>YO'Q, KEYINROQ</button>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+                        </div>
+                    </div>
+
+                    {/* 📜 CLUB LIST */}
+                    <h3 style={{ margin: '0', opacity: 0.5 }}>MAVJUD KLUBLAR</h3>
+                    <div style={{ display: 'grid', gap: '15px' }}>
+                        {clubs.map(club => (
+                            <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: '#39ff1422', marginRight: '15px', overflow: 'hidden' }}>
+                                    {club.image && <img src={`https://long-showing-released-instructor.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <h4 style={{ margin: 0 }}>{club.name}</h4>
+                                    <p style={{ margin: 0, fontSize: '12px', opacity: 0.5 }}>{club.address}</p>
+                                </div>
+                                <div style={{ color: '#39ff14', fontSize: '10px', border: '1px solid #39ff1433', padding: '5px 10px', borderRadius: '8px' }}>AKTIV</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* 👤 SECTION 3: MANAGERS MANAGEMENT */}
+            {activeTab === 'managers' && (
+                <div style={{ display: 'grid', gap: '20px' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #39ff1444', padding: '25px', borderRadius: '30px' }}>
+                        <h3 style={{ margin: '0 0 15px', color: '#39ff14' }}>YANGI MENEJER</h3>
+                        {/* Registration form can go here */}
+                        <p style={{ opacity: 0.5, fontSize: '12px' }}>Menejerlarni klublarga biriktirish va ularning huquqlarini boshqarish.</p>
+                        <button style={{ width: '100%', padding: '15px', background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff14', color: '#39ff14', borderRadius: '15px', fontWeight: 'bold' }}>+ MENEJER QO'SHISH</button>
+                    </div>
+                </div>
+            )}
+
+        </div>
     );
 };
 

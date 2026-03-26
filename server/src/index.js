@@ -20,6 +20,7 @@ app.set('io', io); // Marshrutlarda (routes) ishlatish imkoni
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API route'larni ulash
 app.use('/api', apiRoutes);

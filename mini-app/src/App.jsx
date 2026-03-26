@@ -7,6 +7,7 @@ import Home from './views/Home';
 import ClubIntro from './views/ClubIntro';
 import SuperAdminLogin from './views/SuperAdminLogin';
 import SuperAdminDashboard from './views/SuperAdminDashboard';
+import ManagerLogin from './views/ManagerLogin';
 import ManagerSetup from './views/ManagerSetup';
 
 const App = () => {
@@ -31,6 +32,12 @@ const App = () => {
     localStorage.setItem('x-token', data.token);
     setView('superAdmin');
     setShowSuperLogin(false);
+  };
+
+  const handleManagerLogin = (data) => {
+    setUser(data.user);
+    localStorage.setItem('x-token', data.token);
+    setView('managerSetup'); // Menejer paneli (Hozircha ManagerSetup, keyin bemalol kengaytiramiz)
   };
 
   const logout = () => {
@@ -82,6 +89,7 @@ const App = () => {
               />
             )}
             {view === 'superAdmin' && <SuperAdminDashboard activeTab={adminTab} />}
+            {view === 'managerLogin' && <ManagerLogin onLogin={handleManagerLogin} onBack={() => setView('home')} />}
             {view === 'managerSetup' && <ManagerSetup onFinish={() => setView('home')} />}
           </main>
 
@@ -104,8 +112,8 @@ const App = () => {
                 initial={{ y: 100 }} animate={{ y: 0 }}
                 style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.1)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100 }}
               >
-                <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none' }}>🏠 Asosiy</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'rgba(255,255,255,0.3)' }}>👤 Profil</div>
+                <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none', transition: '0.3s' }}>🏠 Asosiy</div>
+                <div onClick={() => setView('managerLogin')} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: (view === 'managerLogin' || view === 'managerSetup') ? '#7000ff' : 'rgba(255,255,255,0.3)', textShadow: (view === 'managerLogin' || view === 'managerSetup') ? '0 0 15px #7000ff' : 'none', transition: '0.3s' }}>👤 Profil</div>
               </motion.nav>
             )}
           </AnimatePresence>

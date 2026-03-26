@@ -52,18 +52,18 @@ const Intro = ({ onFinish }) => {
             {/* 👾 CONTENT WRAPPER */}
             <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 40px' }}>
 
-                {/* ⚡ LOGO WITH LESS INTENSE SHADOWS */}
+                {/* ⚡ LOGO WITH IMAGE */}
                 <motion.div
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: "spring", stiffness: 80, delay: 0.3 }}
                     style={{
-                        fontSize: '100px', marginBottom: '15px',
-                        filter: 'drop-shadow(0 0 15px rgba(255, 0, 255, 0.3))',
+                        marginBottom: '20px',
+                        filter: 'drop-shadow(0 0 25px rgba(255, 0, 255, 0.4))',
                         willChange: 'transform'
                     }}
                 >
-                    🎮
+                    <img src="/hero.png" alt="Hero" style={{ width: '220px', height: 'auto', borderRadius: '30px' }} />
                 </motion.div>
 
                 <motion.h1

@@ -29,14 +29,15 @@ const Home = ({ onClubSelect }) => {
                         whileTap={{ scale: 0.95 }}
                         style={{
                             minWidth: '280px', height: '160px',
-                            background: i === 1 ? 'linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)' : 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
+                            backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.6)), url("/slide${i}.png")`,
+                            backgroundSize: 'cover', backgroundPosition: 'center',
                             borderRadius: '25px', padding: '20px',
                             display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
                             boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
                         }}
                     >
-                        <span style={{ fontSize: '10px', fontWeight: 'bold', opacity: 0.8 }}>NEW FEATURES</span>
-                        <h3 style={{ margin: 0, fontSize: '20px' }}>Clash Royale Pro</h3>
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#fff', opacity: 0.8 }}>NEW FEATURES</span>
+                        <h3 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>O'yin Olami Slaydi #{i}</h3>
                     </motion.div>
                 ))}
             </div>

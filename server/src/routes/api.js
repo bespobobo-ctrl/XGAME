@@ -6,21 +6,24 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// 🛡️ MODELLAR (Har birini alohida daxshatli - shunchaki to'g'ri import qilamiz)
+// 🛡️ MODELLAR (Bitta joyga jamlaymiz)
 const Club = require('../database/models/Club');
 const User = require('../database/models/User');
 const Session = require('../database/models/Session');
-const PC = require('../database/models/Computer'); // Computer.js ekan! ✨
-const Prize = { findAll: async () => [] }; // Prize modeli hozircha daxshatli - shunchaki vaqtinchalik dummy
+const PC = require('../database/models/Computer');
+const Room = require('../database/models/Room');
 
 // 🛡️ AUTH MIDDLEWARE
 const auth = (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Auth failed' });
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return res.status(401).json({ error: 'Token topilmadi!' });
+        const token = authHeader.split(' ')[1];
         req.user = jwt.verify(token, process.env.JWT_SECRET || 'xgame_secret');
         next();
-    } catch (e) { res.status(401).json({ error: 'Auth failed' }); }
+    } catch (e) {
+        res.status(401).json({ error: 'Auth failed' });
+    }
 };
 
 // 📸 MULTER CONFIG
@@ -36,7 +39,36 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// 🏛️ ADMIN: CLUBS
+// ==========================================
+// 🏠 PUBLIC ROUTES (O'yinchilar uchun)
+// ==========================================
+
+router.get('/clubs', async (req, res) => {
+    try {
+        const clubs = await Club.findAll({ where: { status: 'active' }, order: [['id', 'DESC']] });
+        res.json(clubs);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ==========================================
+// 🛡️ AUTH & LOGIN
+// ==========================================
+
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ where: { username } });
+        if (!user || user.password !== password) return res.status(401).json({ error: 'Login yoki parol xato!' });
+
+        const token = jwt.sign({ id: user.id, role: user.role, clubId: user.ClubId }, process.env.JWT_SECRET || 'xgame_secret');
+        res.json({ success: true, token, user: { id: user.id, username: user.username, role: user.role } });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ==========================================
+// 🏛️ SUPER ADMIN ROUTES
+// ==========================================
+
 router.get('/admin/clubs', auth, async (req, res) => {
     try {
         const clubs = await Club.findAll({ order: [['id', 'DESC']] });
@@ -50,18 +82,6 @@ router.post('/admin/clubs', auth, upload.single('image'), async (req, res) => {
         const imagePath = req.file ? `/uploads/${req.file.filename}` : '/uploads/default_club.png';
         const club = await Club.create({ name, address, level, lat, lng, image: imagePath });
         res.json({ success: true, club });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.put('/admin/clubs/:id', auth, upload.single('image'), async (req, res) => {
-    try {
-        const { name, address, level, lat, lng, status } = req.body;
-        const club = await Club.findByPk(req.params.id);
-        if (!club) return res.status(404).json({ error: 'Not found' });
-        const updateData = { name, address, level, lat, lng, status };
-        if (req.file) updateData.image = `/uploads/${req.file.filename}`;
-        await club.update(updateData);
-        res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -84,7 +104,7 @@ router.get('/admin/managers', auth, async (req, res) => {
         });
         res.json(managers.map(m => ({
             id: m.id, username: m.username, rawPassword: m.rawPassword,
-            status: m.status, ClubId: m.ClubId, clubName: m.Club?.name || '---'
+            status: m.status, ClubId: m.ClubId, clubName: m.Club ? m.Club.name : '---'
         })));
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -97,24 +117,31 @@ router.post('/admin/managers', auth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/admin/managers/:id', auth, async (req, res) => {
+// ==========================================
+// 👤 MANAGER ROUTES (Klub Sozlash)
+// ==========================================
+
+router.post('/manager/setup', auth, async (req, res) => {
     try {
-        const { username, password, status, clubId } = req.body;
-        const manager = await User.findByPk(req.params.id);
-        const updateData = { username, status, ClubId: clubId };
-        if (password) { updateData.password = password; updateData.rawPassword = password; }
-        await manager.update(updateData);
+        const { rooms } = req.body;
+        const clubId = req.user.clubId;
+        if (!clubId) return res.status(400).json({ error: 'Sizda klub biriktirilmagan!' });
+
+        for (const r of rooms) {
+            const room = await Room.create({ name: r.name, price: r.price, ClubId: clubId });
+            for (let i = 1; i <= r.pcCount; i++) {
+                await PC.create({ name: `${r.name} - PC ${i}`, status: 'available', RoomId: room.id, ClubId: clubId });
+            }
+        }
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/login', async (req, res) => {
+// PC'larni olish (Menejer uchun)
+router.get('/pcs', auth, async (req, res) => {
     try {
-        const { username, password } = req.body;
-        const user = await User.findOne({ where: { username } });
-        if (!user || user.password !== password) return res.status(401).json({ error: 'Auth failed' });
-        const token = jwt.sign({ id: user.id, role: user.role, clubId: user.ClubId }, process.env.JWT_SECRET || 'xgame_secret');
-        res.json({ success: true, token, role: user.role });
+        const pcs = await PC.findAll({ where: { ClubId: req.user.clubId }, order: [['id', 'ASC']] });
+        res.json(pcs);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

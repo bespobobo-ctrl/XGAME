@@ -1,150 +1,165 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const slides = [
+    {
+        img: '/slides/slide1.png',
+        title: 'X-GAME ERA',
+        desc: 'Keyingi avlod gaming olamiga xush kelibsiz! Yashil neon va kiber-gaming ruhi.'
+    },
+    {
+        img: '/slides/slide2.png',
+        title: 'BEST CLUBS',
+        desc: 'Sizga eng yaqin va eng premium Game Clublarni bitta ilovada toping.'
+    },
+    {
+        img: '/slides/slide3.png',
+        title: 'FAST MGMT',
+        desc: 'Barcha klublarni boshqarish endi ancha oson va juda tez.'
+    },
+    {
+        img: '/slides/slide4.png',
+        title: 'NEXUS CENTER',
+        desc: 'Klub infratuzilmasini professional darajada sozlang va nazorat qiling.'
+    },
+    {
+        img: '/slides/slide5.png',
+        title: 'BEGIN TO PLAY',
+        desc: 'Tayyormisiz? Hoziroq klubga ulaning va o\'yinni boshlang! ⚡'
+    }
+];
+
+const Diamond = ({ delay, style }) => (
+    <motion.div
+        animate={{
+            y: [0, -30, 0],
+            rotate: [0, 360],
+            scale: [1, 1.2, 1]
+        }}
+        transition={{ duration: 10, repeat: Infinity, delay }}
+        style={{
+            position: 'absolute', width: '40px', height: '40px', zIndex: 5,
+            filter: 'drop-shadow(0 0 15px #39ff14)', ...style
+        }}
+    >
+        <svg viewBox="0 0 100 100" fill="#39ff1488">
+            <path d="M50 0 L90 40 L50 100 L10 40 Z" />
+            <path d="M50 10 L80 40 L50 80 L20 40 Z" fill="#39ff14dd" opacity="0.5" />
+        </svg>
+    </motion.div>
+);
 
 const Intro = ({ onFinish }) => {
-    // Floating Diamond positions
-    const diamonds = [
-        { top: '10%', left: '5%', size: '80px', delay: 0, x: [0, 20, 0], y: [0, -30, 0] },
-        { top: '25%', right: '10%', size: '120px', delay: 1, x: [0, -40, 0], y: [0, 40, 0] },
-        { bottom: '15%', left: '15%', size: '60px', delay: 2, x: [0, 30, 0], y: [0, -20, 0] },
-        { bottom: '20%', right: '5%', size: '100px', delay: 0.5, x: [0, -15, 0], y: [0, 50, 0] },
-    ];
+    const [current, setCurrent] = useState(0);
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (current < slides.length - 1) {
+                setCurrent(prev => prev + 1);
+                setProgress(0);
+            } else {
+                // Optionally wait on the last slide or finish
+            }
+        }, 5000);
+
+        const progressTimer = setInterval(() => {
+            setProgress(prev => Math.min(prev + 1, 100));
+        }, 50);
+
+        return () => { clearInterval(timer); clearInterval(progressTimer); };
+    }, [current]);
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="intro-neon-green"
-            style={{
-                background: '#050505',
-                height: '100vh',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'fixed',
-                top: 0, left: 0, right: 0, bottom: 0,
-                zIndex: 9999,
-                overflow: 'hidden',
-                fontFamily: '"Outfit", sans-serif'
-            }}
-        >
-            {/* 🔮 BACKGROUND GLOW SHAFTS */}
-            <div style={{ position: 'absolute', width: '100%', height: '100%', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '10%', left: '20%', width: '400px', height: '400px', background: 'radial-gradient(circle, #39ff1411 0%, transparent 70%)', filter: 'blur(100px)' }} />
-                <div style={{ position: 'absolute', bottom: '10%', right: '20%', width: '500px', height: '500px', background: 'radial-gradient(circle, #39ff1408 0%, transparent 70%)', filter: 'blur(120px)' }} />
+        <div className="intro-container-pro" style={{ background: '#000', height: '100vh', width: '100vw', overflow: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 10000 }}>
+
+            {/* 🚀 TOP PROGRESS BARS (Instagram Story Style) */}
+            <div style={{ position: 'absolute', top: '20px', left: '15px', right: '15px', display: 'flex', gap: '8px', zIndex: 20 }}>
+                {slides.map((_, i) => (
+                    <div key={i} style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <motion.div
+                            animate={{ width: i < current ? '100%' : (i === current ? `${progress}%` : '0%') }}
+                            style={{ height: '100%', background: '#39ff14', boxShadow: '0 0 10px #39ff14' }}
+                        />
+                    </div>
+                ))}
             </div>
 
-            {/* 🎨 FLOATING DIAMONDS (Crystals) */}
-            {diamonds.map((d, i) => (
-                <motion.img
-                    key={i}
-                    src="/green-diamond.png"
-                    animate={{ x: d.x, y: d.y, rotate: [0, 15, 0] }}
-                    transition={{ duration: 10 + i * 2, repeat: Infinity, ease: "linear", delay: d.delay }}
-                    style={{
-                        position: 'absolute', top: d.top, left: d.left, right: d.right, bottom: d.bottom,
-                        width: d.size, height: 'auto',
-                        filter: 'drop-shadow(0 0 15px #39ff1466)',
-                        opacity: 0.8, zIndex: 0, willChange: 'transform'
-                    }}
-                />
-            ))}
-
-            {/* 🛡️ HERO CHARACTER (Futuristic Green Girl) */}
-            <motion.div
-                initial={{ y: 50, opacity: 0, scale: 0.9 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                transition={{ type: "spring", stiffness: 80, delay: 0.4 }}
-                style={{ position: 'relative', zIndex: 1, marginBottom: '20px' }}
-            >
-                <img
-                    src="/green-hero.png"
-                    alt="Hero"
-                    style={{
-                        width: '240px', height: 'auto', borderRadius: '40px',
-                        boxShadow: '0 0 60px rgba(57, 255, 20, 0.4)',
-                        border: '2px solid rgba(57, 255, 20, 0.2)'
-                    }}
-                />
-                {/* CHARACTER GLOW EFFECT */}
+            {/* 🔮 BACKGROUND CONTENT */}
+            <AnimatePresence mode="wait">
                 <motion.div
-                    animate={{ opacity: [0.3, 0.6, 0.3] }}
-                    transition={{ duration: 3, repeat: Infinity }}
+                    key={current}
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.8 }}
                     style={{
-                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                        background: 'radial-gradient(circle, transparent 50%, #39ff1422 100%)',
-                        borderRadius: '40px'
-                    }}
-                />
-            </motion.div>
-
-            {/* 👾 TEXT & ACTIONS */}
-            <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                <motion.h1
-                    initial={{ y: 15, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.7 }}
-                    style={{
-                        fontSize: '52px', fontWeight: '900', color: '#fff',
-                        margin: '0 0 10px', letterSpacing: '8px',
-                        textShadow: '0 0 25px rgba(57, 255, 20, 0.6)'
+                        position: 'absolute', width: '100%', height: '100%',
+                        backgroundImage: `url(${slides[current].img})`,
+                        backgroundSize: 'cover', backgroundPosition: 'center'
                     }}
                 >
-                    X-GAME
-                </motion.h1>
+                    {/* GRADIENT OVERLAY FOR TEXT */}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '70%', background: 'linear-gradient(to top, #000 0%, transparent 100%)' }} />
+                </motion.div>
+            </AnimatePresence>
 
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.0 }}
-                    style={{
-                        color: 'rgba(255,255,255,0.4)', fontSize: '14px', letterSpacing: '2px',
-                        marginBottom: '40px', textTransform: 'uppercase', fontWeight: 'bold'
-                    }}
-                >
-                    The most accessible iGaming platform
-                </motion.p>
+            {/* 💎 FLOATING DIAMONDS (SVG Particles) */}
+            <Diamond style={{ top: '15%', left: '10%' }} delay={0} />
+            <Diamond style={{ top: '40%', right: '15%' }} delay={1} />
+            <Diamond style={{ bottom: '30%', left: '20%' }} delay={2} />
+            <Diamond style={{ top: '60%', right: '5%' }} delay={0.5} />
 
-                {/* 🚀 NEON GREEN BUTTON */}
-                <motion.button
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 1.3 }}
-                    whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(57, 255, 20, 0.8)' }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={onFinish}
-                    style={{
-                        background: 'linear-gradient(90deg, #39ff14 0%, #1e8e0d 100%)',
-                        border: 'none', borderRadius: '15px',
-                        color: '#000', fontSize: '18px', fontWeight: '900',
-                        padding: '20px 70px', cursor: 'pointer',
-                        boxShadow: '0 10px 40px rgba(57, 255, 20, 0.4)',
-                        letterSpacing: '3px', willChange: 'transform'
-                    }}
-                >
-                    BEGIN TO PLAY ⚡
-                </motion.button>
+            {/* 📝 CONTENT TEXT */}
+            <div style={{ position: 'absolute', bottom: '80px', left: '30px', right: '30px', zIndex: 30 }}>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={current}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -20, opacity: 0 }}
+                        style={{ textAlign: 'left' }}
+                    >
+                        <h2 style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '4px', margin: '0 0 10px', textTransform: 'uppercase' }}>
+                            0{current + 1} / SCI-FI JOURNEY
+                        </h2>
+                        <h1 style={{ fontSize: '42px', fontWeight: '900', color: '#fff', margin: '0 0 15px', letterSpacing: '2px' }}>
+                            {slides[current].title}
+                        </h1>
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', lineHeight: '1.6', maxWidth: '300px' }}>
+                            {slides[current].desc}
+                        </p>
+                    </motion.div>
+                </AnimatePresence>
+
+                {/* 🚀 PRIMARY BUTTON (Only for last slide or can stay throughout) */}
+                {current === slides.length - 1 ? (
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={onFinish}
+                        style={{
+                            width: '100%', background: 'linear-gradient(90deg, #39ff14 0%, #1e8e0d 100%)',
+                            border: 'none', borderRadius: '20px', padding: '22px',
+                            color: '#000', fontSize: '20px', fontWeight: '900',
+                            marginTop: '40px', cursor: 'pointer',
+                            boxShadow: '0 15px 40px rgba(57, 255, 20, 0.4)',
+                            letterSpacing: '2px'
+                        }}
+                    >
+                        BEGIN TO PLAY ⚡
+                    </motion.button>
+                ) : (
+                    <button
+                        onClick={() => setCurrent(prev => prev + 1)}
+                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', marginTop: '40px', fontSize: '14px', letterSpacing: '2px' }}
+                    >
+                        SKIP →
+                    </button>
+                )}
             </div>
 
-            <div style={{ position: 'absolute', bottom: '40px', color: 'rgba(57, 255, 20, 0.5)', fontSize: '10px', letterSpacing: '3px' }}>
-                IGAMING INFRASTRUCTURE v2.0
-            </div>
-
-            <style>{`
-        .intro-neon-green::before {
-          content: "";
-          position: absolute;
-          width: 100%; height: 100%;
-          background-image: 
-            linear-gradient(rgba(57, 255, 20, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(57, 255, 20, 0.05) 1px, transparent 1px);
-          background-size: 50px 50px;
-          opacity: 0.4;
-        }
-      `}</style>
-        </motion.div>
+        </div>
     );
 };
 

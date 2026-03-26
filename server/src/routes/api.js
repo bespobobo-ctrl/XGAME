@@ -98,9 +98,19 @@ router.post('/admin/clubs', auth, upload.single('image'), async (req, res) => {
     try {
         const { name, address, level, lat, lng } = req.body;
         const imagePath = req.file ? `/uploads/${req.file.filename}` : '/uploads/default_club.png';
-        const club = await Club.create({ name, address, level, lat, lng, image: imagePath });
+        const club = await Club.create({
+            name,
+            address,
+            level,
+            lat: parseFloat(lat) || 0,
+            lng: parseFloat(lng) || 0,
+            image: imagePath
+        });
         res.json({ success: true, club });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        console.error('[CREATE CLUB ERROR]', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.put('/admin/clubs/:id', auth, upload.single('image'), async (req, res) => {
@@ -108,7 +118,15 @@ router.put('/admin/clubs/:id', auth, upload.single('image'), async (req, res) =>
         const { name, address, level, lat, lng, status } = req.body;
         const club = await Club.findByPk(req.params.id);
         if (!club) return res.status(404).json({ error: 'NotFound' });
-        const updateData = { name, address, level, lat, lng, status };
+
+        const updateData = {
+            name,
+            address,
+            level,
+            lat: parseFloat(lat) || club.lat,
+            lng: parseFloat(lng) || club.lng,
+            status
+        };
         if (req.file) updateData.image = `/uploads/${req.file.filename}`;
         await club.update(updateData);
         res.json({ success: true });

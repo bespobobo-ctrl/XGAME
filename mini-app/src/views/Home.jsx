@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { callAPI } from '../api';
+import API_URL, { callAPI } from '../api';
 
 const Home = ({ onClubSelect }) => {
     const [clubs, setClubs] = useState([]);
@@ -75,7 +75,7 @@ const Home = ({ onClubSelect }) => {
                     >
                         <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                             {club.image ? (
-                                <img src={`https://synthesis-legends-lamb-davidson.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="node" />
+                                <img src={`${API_URL}${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="node" />
                             ) : (
                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '100px', background: 'linear-gradient(#111, #000)' }}>🏛️</div>
                             )}

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { callAPI } from '../api';
+import API_URL, { callAPI } from '../api';
 
 const greenIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -81,7 +81,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
         const method = editingClub ? 'PUT' : 'POST';
 
         try {
-            const res = await fetch(`https://synthesis-legends-lamb-davidson.trycloudflare.com${url}`, {
+            const res = await fetch(`${API_URL}${url}`, {
                 method,
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('x-token')}` },
                 body: formData
@@ -102,7 +102,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
         if (res.success) { setIsManagerFormOpen(false); setEditingManager(null); callAPI('/api/admin/managers').then(setManagers); }
     };
 
-    const API_URL = 'https://synthesis-legends-lamb-davidson.trycloudflare.com';
+    // API_URL is now imported from '../api'
 
     return (
         <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '15px' }}>

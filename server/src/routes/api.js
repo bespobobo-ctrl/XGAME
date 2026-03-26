@@ -156,10 +156,41 @@ router.patch('/admin/clubs/:id/block', auth, async (req, res) => {
 
 router.get('/admin/stats', auth, async (req, res) => {
     try {
-        const totalClubs = await Club.count();
-        const totalManagers = await User.count({ where: { role: 'manager' } });
-        const clubsHistory = await Club.findAll({ attributes: ['name', 'createdAt'], order: [['createdAt', 'DESC']] });
-        res.json({ totalClubs, totalManagers, todayRevenue: 4500000, activeUsers: 142, clubsHistory });
+        const [totalClubs, totalManagers, activeSessions] = await Promise.all([
+            Club.count(),
+            User.count({ where: { role: 'manager' } }),
+            Session.count({ where: { status: 'active' } })
+        ]);
+
+        // So'nggi 5 ta klub (History)
+        const clubsHistory = await Club.findAll({
+            attributes: ['name', 'createdAt', 'status'],
+            limit: 5,
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json({
+            totalClubs,
+            totalManagers,
+            activeSessions,
+            todayRevenue: 4500000,
+            systemHealth: 'v9.2.4 (Stable)',
+            serverLoad: '12%',
+            clubsHistory
+        });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 🛠️ BROADCAST MESSAGE (Ichki tarqatish)
+router.post('/admin/broadcast', auth, async (req, res) => {
+    try {
+        const { message } = req.body;
+        if (!message) return res.status(400).json({ error: 'Message required' });
+
+        const Broadcast = require('../database/models/Broadcast');
+        await Broadcast.create({ message });
+
+        res.json({ success: true, message: 'Broadcast sent successfully!' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

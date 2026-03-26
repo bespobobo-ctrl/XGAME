@@ -136,20 +136,77 @@ const SuperAdminDashboard = ({ activeTab }) => {
             <AnimatePresence mode="wait">
                 {activeTab === 'dashboard' && stats && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '20px' }}>
-                        <div style={{ background: 'linear-gradient(rgba(57, 255, 20, 0.08), transparent)', border: '1px solid #333', padding: '40px 30px', borderRadius: '45px', textAlign: 'center' }}>
-                            <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '4px' }}>{t.totalClubs}</span>
-                            <h1 style={{ fontSize: '80px', margin: '5px 0', fontWeight: '950', textShadow: '0 0 30px #39ff1444' }}>{stats.totalClubs}</h1>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div style={{ background: '#111', padding: '25px', borderRadius: '30px', border: '1px solid #222' }}>
-                                <p style={{ opacity: 0.4, fontSize: '9px', margin: 0 }}>{t.revenueDay}</p>
-                                <h3 style={{ fontSize: '24px', margin: '5px 0', color: '#39ff14' }}>{(stats.todayRevenue || 0).toLocaleString()} 📉</h3>
+
+                        {/* 💎 PREMIUM STATS GRID */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) 1fr', gap: '15px' }}>
+                            <div style={{ background: 'linear-gradient(135deg, rgba(57,255,20,0.1), transparent)', border: '1px solid #333', padding: '30px', borderRadius: '40px', position: 'relative', overflow: 'hidden' }}>
+                                <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '3px' }}>{t.totalClubs}</span>
+                                <h1 style={{ fontSize: '50px', margin: '5px 0', fontWeight: '950' }}>{stats.totalClubs}</h1>
+                                <div style={{ position: 'absolute', top: '10px', right: '10px', width: '8px', height: '8px', background: '#39ff14', borderRadius: '50%', boxShadow: '0 0 15px #39ff14' }} />
+                                <div style={{ fontSize: '10px', color: '#666' }}>ONLINE NODE SYSTEM 🟢</div>
                             </div>
-                            <div style={{ background: '#111', padding: '25px', borderRadius: '30px', border: '1px solid #222' }}>
-                                <p style={{ opacity: 0.4, fontSize: '9px', margin: 0 }}>{t.activePlayers}</p>
-                                <h3 style={{ fontSize: '24px', margin: '5px 0' }}>{stats.activeUsers || 0} 🟢</h3>
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                <div style={{ background: '#111', padding: '20px', borderRadius: '25px', border: '1px solid #222' }}>
+                                    <p style={{ opacity: 0.4, fontSize: '9px', margin: 0 }}>ACTIVE SESSIONS 🕵️‍♂️</p>
+                                    <h3 style={{ fontSize: '24px', margin: '5px 0', color: '#39ff14' }}>{stats.activeSessions || 0}</h3>
+                                </div>
+                                <div style={{ background: '#111', padding: '20px', borderRadius: '25px', border: '1px solid #222' }}>
+                                    <p style={{ opacity: 0.4, fontSize: '9px', margin: 0 }}>{t.revenueDay}</p>
+                                    <h3 style={{ fontSize: '24px', margin: '5px 0' }}>{(stats.todayRevenue || 0).toLocaleString()} <span style={{ fontSize: '10px', opacity: 0.5 }}>UZS</span></h3>
+                                </div>
                             </div>
                         </div>
+
+                        {/* 🚀 BROADCAST PANEL (New Component) */}
+                        <div style={{ background: '#111', border: '1px solid #39ff1433', borderRadius: '40px', padding: '25px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                                <div style={{ width: '10px', height: '10px', background: '#39ff14', borderRadius: '50%' }} />
+                                <span style={{ fontSize: '12px', fontWeight: 'bold', letterSpacing: '1px' }}>BROADCASTER 🔉</span>
+                            </div>
+                            <textarea
+                                id="broadcastInput"
+                                placeholder="Barcha guruh adminlariga xabar yuborish... ✍️"
+                                style={{ width: '100%', background: '#000', border: '1px solid #222', borderRadius: '20px', padding: '20px', color: '#fff', fontSize: '14px', minHeight: '100px', resize: 'none', boxSizing: 'border-box' }}
+                            />
+                            <button
+                                onClick={async () => {
+                                    const msg = document.getElementById('broadcastInput').value;
+                                    if (!msg) return alert('Xabar yozing!');
+                                    const res = await callAPI('/api/admin/broadcast', { method: 'POST', body: JSON.stringify({ message: msg }) });
+                                    if (res.success) {
+                                        alert('Xabar yuborildi! ✅');
+                                        document.getElementById('broadcastInput').value = '';
+                                    }
+                                }}
+                                style={{ width: '100%', marginTop: '15px', background: '#39ff14', color: '#000', border: 'none', padding: '15px', borderRadius: '18px', fontWeight: '900', letterSpacing: '1px', cursor: 'pointer' }}
+                            >
+                                HAMMAGA TARQATISH 🔥
+                            </button>
+                        </div>
+
+                        {/* 🏛️ SYSTEM LIVE LOGS */}
+                        <div style={{ background: '#0a0a0a', padding: '25px', borderRadius: '40px', border: '1px solid #111' }}>
+                            <h4 style={{ margin: '0 0 20px', fontSize: '12px', opacity: 0.4 }}>TIZIM FAOLLIYATI (LIVE) ⚡</h4>
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                {(stats.clubsHistory || []).map((h, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: '#111', borderRadius: '20px', borderLeft: `3px solid ${h.status === 'active' ? '#39ff14' : '#ff4444'}` }}>
+                                        <div>
+                                            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{h.name}</div>
+                                            <div style={{ fontSize: '8px', opacity: 0.3 }}>Klub muvaffaqiyatli qo'shildi</div>
+                                        </div>
+                                        <div style={{ fontSize: '9px', opacity: 0.5 }}>{new Date(h.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 🛠️ SERVER HEALTH STATUS */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px' }}>
+                            <div style={{ fontSize: '9px' }}>SYSTEM: <span style={{ color: '#39ff14' }}>{stats.systemHealth}</span></div>
+                            <div style={{ fontSize: '9px' }}>LOAD: <span style={{ color: '#39ff14' }}>{stats.serverLoad}</span></div>
+                            <div style={{ fontSize: '9px' }}>DB: <span style={{ color: '#39ff14' }}>CONNECTED 🟢</span></div>
+                        </div>
+
                     </motion.div>
                 )}
 

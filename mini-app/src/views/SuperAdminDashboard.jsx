@@ -35,7 +35,7 @@ const translations = {
         save: 'SAQLASh ✨',
         cancel: 'BEKOR QILISh',
         assignManager: 'MENEJER TAYINLASH',
-        editManager: 'MENEJERNI TAHRIRLASH ✎',
+        editManager: 'TAHRIRLASH ✎',
         login: 'Login',
         password: 'Parol (bo\'sh bo\'lsa o\'zgarmaydi)',
         assign: 'TAYINLASH 👤',
@@ -86,9 +86,11 @@ const SuperAdminDashboard = ({ activeTab }) => {
     const [clubs, setClubs] = useState([]);
     const [managers, setManagers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isFormOpen, setIsFormOpen] = useState(false);
 
-    // 📝 EDITING STATES
+    // 🧬 SEPARATED MODAL STATES (Optimization!)
+    const [isClubFormOpen, setIsClubFormOpen] = useState(false);
+    const [isManagerFormOpen, setIsManagerFormOpen] = useState(false);
+
     const [editingClub, setEditingClub] = useState(null);
     const [editingManager, setEditingManager] = useState(null);
 
@@ -102,10 +104,10 @@ const SuperAdminDashboard = ({ activeTab }) => {
     }, []);
 
     const fetchClubs = async () => {
-        const data = await callAPI('/api/admin/clubs'); setClubs(data || []);
+        try { const data = await callAPI('/api/admin/clubs'); setClubs(data || []); } catch (e) { }
     };
     const fetchManagers = async () => {
-        const data = await callAPI('/api/admin/managers'); setManagers(data || []);
+        try { const data = await callAPI('/api/admin/managers'); setManagers(data || []); } catch (e) { }
     };
 
     const isOnline = (dateStr) => {
@@ -132,7 +134,10 @@ const SuperAdminDashboard = ({ activeTab }) => {
             const url = editingClub ? `https://synthesis-legends-lamb-davidson.trycloudflare.com/api/admin/clubs/${editingClub.id}` : `https://synthesis-legends-lamb-davidson.trycloudflare.com/api/admin/clubs`;
             const res = await fetch(url, { method: editingClub ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('x-token')}` }, body: formData });
             const result = await res.json();
-            if (result.success) { closeModal(); fetchClubs(); }
+            if (result.success) {
+                setIsClubFormOpen(false); setEditingClub(null); fetchClubs();
+                setClubForm({ name: '', address: '', level: 'standard', lat: 41.2995, lng: 69.2401 });
+            }
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
@@ -141,25 +146,17 @@ const SuperAdminDashboard = ({ activeTab }) => {
         setLoading(true);
         try {
             const url = editingManager ? `/api/admin/managers/${editingManager.id}` : '/api/admin/managers';
-            const method = editingManager ? 'PUT' : 'POST';
-            const res = await callAPI(url, { method, body: JSON.stringify(managerForm) });
-            if (res.success) { closeModal(); fetchManagers(); }
+            const res = await callAPI(url, { method: editingManager ? 'PUT' : 'POST', body: JSON.stringify(managerForm) });
+            if (res.success) {
+                setIsManagerFormOpen(false); setEditingManager(null); fetchManagers();
+                setManagerForm({ username: '', password: '', clubId: '' });
+            }
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
     const deleteManager = async (id) => {
         if (!window.confirm(t.delete)) return;
         try { await callAPI(`/api/admin/managers/${id}`, { method: 'DELETE' }); fetchManagers(); } catch (e) { console.error(e); }
-    };
-
-    const openEditClub = (club) => { setEditingClub(club); setClubForm({ name: club.name, address: club.address, level: club.level, lat: club.lat, lng: club.lng }); setIsFormOpen(true); };
-    const openEditManager = (m) => { setEditingManager(m); setManagerForm({ username: m.username, password: '', clubId: m.ClubId }); setIsFormOpen(true); };
-
-    const closeModal = () => {
-        setIsFormOpen(false); setEditingClub(null); setEditingManager(null);
-        setClubForm({ name: '', address: '', level: 'standard', lat: 41.2995, lng: 69.2401 });
-        setManagerForm({ username: '', password: '', clubId: '' });
-        setSelectedImage(null);
     };
 
     return (
@@ -173,21 +170,10 @@ const SuperAdminDashboard = ({ activeTab }) => {
 
             <AnimatePresence mode="wait">
                 {activeTab === 'dashboard' && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'grid', gap: '15px' }}>
-                        <div style={{ background: 'linear-gradient(rgba(57, 255, 20, 0.08), transparent)', border: '1px solid #39ff1433', padding: '40px 30px', borderRadius: '35px', textAlign: 'center', position: 'relative' }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '15px' }}>
+                        <div style={{ background: 'rgba(57, 255, 20, 0.08)', padding: '40px', borderRadius: '35px', textAlign: 'center' }}>
                             <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '4px' }}>{t.nodesOnline}</span>
-                            <motion.h1 style={{ fontSize: '80px', margin: '5px 0', fontWeight: '950' }}>{clubs.length}</motion.h1>
-                            <p style={{ opacity: 0.4, fontSize: '12px' }}>{t.activeClubs}</p>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '25px', border: '1px solid #fff1' }}>
-                                <span style={{ opacity: 0.4, fontSize: '8px' }}>{t.managersCount}</span>
-                                <h2 style={{ fontSize: '28px', margin: '5px 0' }}>{managers.length}</h2>
-                            </div>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '25px', border: '1px solid #fff1' }}>
-                                <span style={{ opacity: 0.4, fontSize: '8px' }}>{t.systemLoad}</span>
-                                <h2 style={{ fontSize: '28px', margin: '5px 0', color: '#00ddeb' }}>42% ✨</h2>
-                            </div>
+                            <h1 style={{ fontSize: '80px', margin: '5px 0', fontWeight: '950' }}>{clubs.length}</h1>
                         </div>
                     </motion.div>
                 )}
@@ -195,19 +181,19 @@ const SuperAdminDashboard = ({ activeTab }) => {
                 {activeTab === 'clubs' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '15px' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <input placeholder={t.searchNodes} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid #fff2', borderRadius: '15px', padding: '12px', color: '#fff' }} />
-                            <button onClick={() => setIsFormOpen(true)} style={{ background: '#39ff14', border: 'none', width: '50px', borderRadius: '15px', fontWeight: 'bold' }}>+</button>
+                            <input placeholder={t.searchNodes} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ flex: 1, background: '#111', border: '1px solid #fff2', borderRadius: '15px', padding: '12px', color: '#fff' }} />
+                            <button onClick={() => setIsClubFormOpen(true)} style={{ background: '#39ff14', border: 'none', width: '55px', borderRadius: '15px', fontWeight: 'bold' }}>+</button>
                         </div>
                         <div style={{ display: 'grid', gap: '10px' }}>
                             {clubs.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(club => (
-                                <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '25px', border: club.status === 'blocked' ? '1px solid #ff444455' : '1px solid #fff1' }}>
+                                <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '25px', border: '1px solid #fff1' }}>
                                     <div style={{ flex: 1 }}>
-                                        <h4 style={{ margin: 0, opacity: club.status === 'blocked' ? 0.4 : 1 }}>{club.name}</h4>
+                                        <h4 style={{ margin: 0 }}>{club.name}</h4>
                                         <span style={{ fontSize: '8px', opacity: 0.3 }}>{club.address}</span>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        <button onClick={() => openEditClub(club)} style={{ background: 'none', border: 'none', color: '#39ff14', fontSize: '18px' }}>✎</button>
-                                        <button onClick={() => callAPI(`/api/admin/clubs/${club.id}`, { method: 'DELETE' }).then(fetchClubs)} style={{ background: 'none', border: 'none', opacity: 0.15 }}>🗑️</button>
+                                    <div style={{ display: 'flex', gap: '15px' }}>
+                                        <button onClick={() => { setEditingClub(club); setClubForm({ name: club.name, address: club.address, level: club.level, lat: club.lat, lng: club.lng }); setIsClubFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '18px' }}>✎</button>
+                                        <button onClick={() => callAPI(`/api/admin/clubs/${club.id}`, { method: 'DELETE' }).then(fetchClubs)} style={{ opacity: 0.2, background: 'none', border: 'none', fontSize: '16px' }}>🗑️</button>
                                     </div>
                                 </div>
                             ))}
@@ -216,66 +202,75 @@ const SuperAdminDashboard = ({ activeTab }) => {
                 )}
 
                 {activeTab === 'managers' && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '20px' }}>
-                        <button onClick={() => setIsFormOpen(true)} style={{ background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff14', padding: '15px', borderRadius: '20px', color: '#39ff14', fontWeight: 'bold' }}>+ {t.assignManager}</button>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '15px' }}>
+                        <button onClick={() => setIsManagerFormOpen(true)} style={{ background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff14', padding: '15px', borderRadius: '20px', color: '#39ff14', fontWeight: 'bold' }}>+ {t.assignManager}</button>
                         <div style={{ display: 'grid', gap: '12px' }}>
-                            {managers.map(m => (
-                                <div key={m.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '30px', border: '1px solid #fff1' }}>
-                                    <div style={{ display: 'flex', justifySelf: 'flex-end', justifyContent: 'flex-end', gap: '10px' }}>
-                                        <button onClick={() => openEditManager(m)} style={{ background: 'none', border: 'none', color: '#39ff14' }}>✎</button>
-                                        <button onClick={() => deleteManager(m.id)} style={{ background: 'none', border: 'none', opacity: 0.2 }}>🗑️</button>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>👤</div>
-                                        <div>
-                                            <h3 style={{ margin: 0, fontSize: '18px' }}>{m.username}</h3>
-                                            <span style={{ fontSize: '9px', background: 'rgba(57, 255, 20, 0.1)', color: '#39ff14', padding: '3px 8px', borderRadius: '5px' }}>{m.clubName}</span>
+                            {managers.map(m => {
+                                const online = isOnline(m.lastActive);
+                                return (
+                                    <div key={m.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '30px', border: '1px solid #fff1' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: online ? '#39ff14' : '#555' }} />
+                                                <h3 style={{ margin: 0, fontSize: '18px' }}>{m.username}</h3>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '15px' }}>
+                                                <button onClick={() => { setEditingManager(m); setManagerForm({ username: m.username, password: '', clubId: m.ClubId }); setIsManagerFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '18px' }}>✎</button>
+                                                <button onClick={() => deleteManager(m.id)} style={{ opacity: 0.2, background: 'none', border: 'none' }}>🗑️</button>
+                                            </div>
+                                        </div>
+                                        <span style={{ fontSize: '9px', background: '#39ff1411', color: '#39ff14', padding: '4px 10px', borderRadius: '6px' }}>{m.clubName}</span>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px', opacity: 0.5, fontSize: '10px' }}>
+                                            <div>{t.lastActive}: <b>{formatDate(m.lastActive)}</b></div>
+                                            <div>{t.givenDate}: <b>{formatDate(m.createdAt)}</b></div>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '10px' }}>
-                                        <div><p style={{ opacity: 0.4, margin: 0 }}>{t.lastActive}</p><b>{formatDate(m.lastActive)}</b></div>
-                                        <div><p style={{ opacity: 0.4, margin: 0 }}>{t.givenDate}</p><b>{formatDate(m.createdAt)}</b></div>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* 🗺️ SHARED MODAL */}
+            {/* 🏆 MODAL: CLUB OPTIMIZED 🗺️ */}
             <AnimatePresence>
-                {isFormOpen && (
-                    <motion.div initial={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(20px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}>
-                        <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ width: '100%', maxWidth: '450px', background: '#0a0a0a', border: '1px solid #39ff1444', borderRadius: '40px', padding: '30px' }}>
-                            {activeTab === 'clubs' ? (
-                                <>
-                                    <h2 style={{ color: '#39ff14', textAlign: 'center' }}>{editingClub ? t.editClub : t.newClub}</h2>
-                                    {/* CLUBS FORM (Map, Inputs) - Simplified for brevity but functional */}
-                                    <div style={{ display: 'grid', gap: '10px' }}>
-                                        <input placeholder={t.clubName} value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
-                                        <input placeholder={t.address} value={clubForm.address} onChange={e => setClubForm({ ...clubForm, address: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
-                                        <button onClick={handleSaveClub} style={{ background: '#39ff14', border: 'none', padding: '20px', borderRadius: '15px', fontWeight: 'bold' }}>{t.save}</button>
-                                        <button onClick={closeModal} style={{ color: '#ff4444', background: 'none', border: 'none' }}>{t.cancel}</button>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <h2 style={{ color: '#39ff14', textAlign: 'center' }}>{editingManager ? t.editManager : t.assignManager}</h2>
-                                    <div style={{ display: 'grid', gap: '15px' }}>
-                                        <input placeholder={t.login} value={managerForm.username} onChange={e => setManagerForm({ ...managerForm, username: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
-                                        <input type="text" placeholder={t.password} value={managerForm.password} onChange={e => setManagerForm({ ...managerForm, password: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
-                                        <p style={{ fontSize: '10px', opacity: 0.5, margin: 0 }}>* {t.password}</p>
-                                        <select value={managerForm.clubId} onChange={e => setManagerForm({ ...managerForm, clubId: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }}>
-                                            <option value="">Klub...</option>
-                                            {clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
-                                        <button onClick={handleSaveManager} style={{ background: '#39ff14', border: 'none', padding: '20px', borderRadius: '15px', fontWeight: 'bold', color: '#000' }}>{editingManager ? t.update : t.assign}</button>
-                                        <button onClick={closeModal} style={{ color: '#ff4444', background: 'none', border: 'none' }}>{t.cancel}</button>
-                                    </div>
-                                </>
-                            )}
-                        </motion.div>
+                {isClubFormOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}>
+                        <div style={{ width: '100%', maxWidth: '450px', background: '#0a0a0a', border: '1px solid #333', borderRadius: '40px', padding: '30px', overflowY: 'auto', maxHeight: '90vh' }}>
+                            <h2 style={{ color: '#39ff14', textAlign: 'center' }}>{editingClub ? t.editClub : t.newClub}</h2>
+                            <div style={{ height: '200px', borderRadius: '20px', overflow: 'hidden', marginBottom: '15px' }}>
+                                <MapContainer center={[clubForm.lat, clubForm.lng]} zoom={12} style={{ height: '100%', width: '100%' }}>
+                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                    <Marker position={[clubForm.lat, clubForm.lng]} icon={greenIcon} />
+                                    <LocationPicker onSelect={(pos) => setClubForm({ ...clubForm, lat: pos.lat, lng: pos.lng })} />
+                                </MapContainer>
+                            </div>
+                            <input placeholder={t.clubName} value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} style={{ width: '100%', background: '#111', border: '1px solid #333', padding: '15px', borderRadius: '15px', color: '#fff', marginBottom: '10px' }} />
+                            <input placeholder={t.address} value={clubForm.address} onChange={e => setClubForm({ ...clubForm, address: e.target.value })} style={{ width: '100%', background: '#111', border: '1px solid #333', padding: '15px', borderRadius: '15px', color: '#fff', marginBottom: '15px' }} />
+                            <button onClick={handleSaveClub} style={{ width: '100%', background: '#39ff14', border: 'none', padding: '18px', borderRadius: '15px', fontWeight: 'bold' }}>{t.save}</button>
+                            <button onClick={() => setIsClubFormOpen(false)} style={{ width: '100%', color: '#ff4444', background: 'none', border: 'none', marginTop: '10px' }}>{t.cancel}</button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 👤 MODAL: MANAGER (LIGHTWEIGHT - NO LAG) ⚡ */}
+            <AnimatePresence>
+                {isManagerFormOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}>
+                        <div style={{ width: '100%', maxWidth: '400px', background: '#0a0a0a', border: '1px solid #333', borderRadius: '35px', padding: '30px' }}>
+                            <h2 style={{ color: '#39ff14', textAlign: 'center' }}>{editingManager ? t.editManager : t.assignManager}</h2>
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                <input placeholder={t.login} value={managerForm.username} onChange={e => setManagerForm({ ...managerForm, username: e.target.value })} style={{ background: '#111', border: '1px solid #333', padding: '15px', borderRadius: '15px', color: '#fff' }} />
+                                <input type="text" placeholder={t.password} value={managerForm.password} onChange={e => setManagerForm({ ...managerForm, password: e.target.value })} style={{ background: '#111', border: '1px solid #333', padding: '15px', borderRadius: '15px', color: '#fff' }} />
+                                <select value={managerForm.clubId} onChange={e => setManagerForm({ ...managerForm, clubId: e.target.value })} style={{ background: '#111', border: '1px solid #333', padding: '15px', borderRadius: '15px', color: '#fff' }}>
+                                    <option value="">Klub...</option>
+                                    {clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                <button onClick={handleSaveManager} style={{ background: '#39ff14', border: 'none', padding: '18px', borderRadius: '15px', fontWeight: 'bold', marginTop: '10px' }}>{editingManager ? t.update : t.assign}</button>
+                                <button onClick={() => setIsManagerFormOpen(false)} style={{ color: '#ff4444', background: 'none', border: 'none', marginTop: '5px' }}>{t.cancel}</button>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

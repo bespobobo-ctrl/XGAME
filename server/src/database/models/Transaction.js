@@ -7,14 +7,6 @@ const Transaction = sequelize.define('Transaction', {
         autoIncrement: true,
         primaryKey: true,
     },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    clubId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
     amount: {
         type: DataTypes.INTEGER,
         allowNull: false,

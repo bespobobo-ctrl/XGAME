@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../config/database');
-const User = require('./User');
-const Computer = require('./Computer');
 
 const Session = sequelize.define('Session', {
     id: {
@@ -31,12 +29,5 @@ const Session = sequelize.define('Session', {
         defaultValue: 'active',
     }
 });
-
-// Relatsiyalar
-User.hasMany(Session);
-Session.belongsTo(User);
-
-Computer.hasMany(Session);
-Session.belongsTo(Computer);
 
 module.exports = Session;

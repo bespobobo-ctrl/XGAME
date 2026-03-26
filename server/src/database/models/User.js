@@ -40,10 +40,6 @@ const User = sequelize.define('User', {
     password: {
         type: DataTypes.STRING,
     },
-    ClubId: {
-        type: DataTypes.INTEGER,
-        defaultValue: 1, // Default or null
-    },
     lastLoginAt: {
         type: DataTypes.DATE,
     },

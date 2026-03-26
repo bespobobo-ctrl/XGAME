@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <title>LOCKED | GameZone</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #050505;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      cursor: none; /* Sichqoncha ko'rinmaydi */
+    }
+
+    .container {
+      text-align: center;
+      position: relative;
+    }
+
+    /* Qizil Pulsli Qulf */
+    .lock-icon {
+      font-size: 8rem;
+      color: #ef4444;
+      text-shadow: 0 0 50px rgba(239, 68, 68, 0.6);
+      animation: pulse 2s infinite alternate;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 4rem;
+      letter-spacing: 5px;
+      margin: 0 0 10px 0;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #fff, #888);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p {
+      font-size: 1.5rem;
+      color: #a1a1aa;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: -150px; /* Ozgina tepaga suriladi */
+      width: 100%;
+      color: #52525b;
+      font-size: 1rem;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      100% { transform: scale(1.1); filter: brightness(1.5); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="lock-icon">🔒</div>
+    <h1>GameZone | X-Game</h1>
+    <p>Ushbu kompyuter vaqtinchalik qulflangan.</p>
+    <p style="font-size: 1.2rem; margin-top: 30px;">
+      O'ynash uchun Telegram Bot orqali bron qiling <br>yoki Administratorga murojaat qiling!
+    </p>
+
+    <!-- Kichik yordam idenfikatori kompyuterni nomini ko'rsatish uchun -->
+    <div class="footer">
+      System ID: <span id="pc-name">Loading...</span>
+    </div>
+  </div>
+
+  <script>
+    // Agar agent uzoq serverdan ismini(nomini) olsa shu yerga kiritadi
+    const { ipcRenderer } = require('electron');
+    ipcRenderer.on('update-pc-name', (event, name) => {
+      document.getElementById('pc-name').innerText = name;
+    });
+  </script>
+
+</body>
+</html>

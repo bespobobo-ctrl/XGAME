@@ -1,0 +1,14 @@
+{
+  "uz": {
+    "welcome": "Assalomu alaykum, <b>{name}</b>!\n\n🎮 <b>GameZone X-Game</b> klubimizning onlayn boshqaruv tizimiga xush kelibsiz!\n\nBu bot orqali siz:\n✅ Kompyuterlar bo'shligini ko'rishingiz\n✅ Balansingizni tekshirishingiz\n✅ Vaqt sotib olib, o'yinni boshlashingiz mumkin.\n\nTugmalardan birini tanlang:",
+    "menu_cabinet": "🚀 KABINETGA KIRISH",
+    "menu_balance": "💰 Mening balansim",
+    "menu_help": "ℹ️ Yordam",
+    "menu_lang": "🌐 Tilni o'zgartirish",
+    "balance_text": "💳 <b>Sizning balansingiz:</b> {balance} so'm.\n\nHisobni to'ldirish uchun kassirga murojaat qiling.",
+    "help_text": "Bu bot orqali siz uyda turib X-Game filiali qaysi kompyuter band yoki bo'shligini ko'ra olasiz. Vaqt sotib olasiz va o'zingiz '▶️ Start' qilishingiz mumkin.",
+    "choose_lang": "Iltimos, tilni tanlang:",
+    "lang_changed": "✅ Til muvaffaqiyatli o'zgartirildi!",
+    "error": "⚠️ Tizimda nosozlik yuz berdi. Iltimos, keyinroq urinib ko'ring."
+  }
+}

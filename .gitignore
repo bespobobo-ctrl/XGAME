@@ -1,0 +1,8 @@
+node_modules/
+# .env (Temporarily commenting out to allow sync)
+*.db
+*.log
+dist/
+build/
+.DS_Store
+pc-agent/config.json

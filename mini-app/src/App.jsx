@@ -64,8 +64,8 @@ const App = () => {
 
           {/* 👤 NAVIGATION BAR (Optional) */}
           <nav className="bottom-nav" style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.1)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100 }}>
-            <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none' }}>🏠 Home</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'rgba(255,255,255,0.3)' }}>👤 Profile</div>
+            <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none' }}>🏠 Asosiy</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'rgba(255,255,255,0.3)' }}>👤 Profil</div>
           </nav>
         </>
       )}

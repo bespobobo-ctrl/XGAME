@@ -63,7 +63,7 @@ const Home = ({ onClubSelect }) => {
                         <div style={{ padding: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h3 style={{ margin: 0, fontSize: '18px' }}>{club.name}</h3>
-                                <div style={{ background: '#39ff1422', color: '#39ff14', padding: '5px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>⭐ FEATURED</div>
+                                <div style={{ background: '#39ff1422', color: '#39ff14', padding: '5px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>⭐ TANLANGAN</div>
                             </div>
                             <p style={{ margin: '5px 0 0', opacity: 0.6, fontSize: '12px' }}>{club.address}</p>
                         </div>

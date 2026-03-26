@@ -2,16 +2,15 @@
 
 :root {
   --bg-dark: #05040a;
-  --bg-card: rgba(20, 18, 28, 0.6);
+  --bg-card: rgba(15, 12, 25, 0.7);
   --accent-purple: #b030ff;
   --accent-blue: #00d4ff;
   --success-green: #00ffa3;
   --danger-red: #ff3b3b;
   --text-primary: #ffffff;
-  --text-muted: #a0a0a5;
-  --border-glow: rgba(176, 48, 255, 0.3);
-  --panel-bg: rgba(15, 12, 22, 0.85);
-  --glass-bg: rgba(255, 255, 255, 0.03);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --brand-gradient: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-blue) 100%);
 }
 
 * {

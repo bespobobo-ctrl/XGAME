@@ -7,9 +7,9 @@ const Intro = ({ onFinish }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="intro-container"
+            className="intro-masterpiece"
             style={{
-                background: 'linear-gradient(135deg, #0f0a1e 0%, #1e1236 100%)',
+                background: '#0a0510',
                 height: '100vh',
                 display: 'flex',
                 flexDirection: 'column',
@@ -18,52 +18,131 @@ const Intro = ({ onFinish }) => {
                 position: 'fixed',
                 top: 0, left: 0, right: 0, bottom: 0,
                 zIndex: 9999,
-                padding: '30px'
+                overflow: 'hidden'
             }}
         >
-            <div className="glow-circle" style={{
-                width: '280px', height: '280px',
-                background: 'radial-gradient(circle, #ff00ff44 0%, transparent 70%)',
-                position: 'absolute', top: '20%', filter: 'blur(40px)', zIndex: 0
-            }} />
-
+            {/* 🔮 ANIMATED BACKGROUND ORBS */}
             <motion.div
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                style={{ zIndex: 1, textAlign: 'center' }}
-            >
-                <div style={{ fontSize: '100px', marginBottom: '20px' }}>🎮</div>
-                <h1 style={{
-                    fontSize: '42px', fontWeight: '900', color: '#fff',
-                    marginBottom: '10px', fontFamily: '"Outfit", sans-serif'
-                }}>X-GAME</h1>
-                <p style={{
-                    color: 'rgba(255,255,255,0.6)', fontSize: '16px', lineHeight: '1.5',
-                    marginBottom: '50px', padding: '0 20px'
-                }}>
-                    Sizga eng yaqin Game Clublarni toping va o'z joyingizni band qiling!
-                </p>
+                animate={{
+                    x: [0, 50, 0],
+                    y: [0, -50, 0],
+                    scale: [1, 1.2, 1]
+                }}
+                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                style={{
+                    width: '400px', height: '400px',
+                    background: 'radial-gradient(circle, #ff00ff22 0%, transparent 70%)',
+                    position: 'absolute', top: '-100px', right: '-100px', filter: 'blur(60px)'
+                }}
+            />
+            <motion.div
+                animate={{
+                    x: [0, -50, 0],
+                    y: [0, 50, 0],
+                    scale: [1, 1.3, 1]
+                }}
+                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                style={{
+                    width: '500px', height: '500px',
+                    background: 'radial-gradient(circle, #7000ff11 0%, transparent 70%)',
+                    position: 'absolute', bottom: '-200px', left: '-100px', filter: 'blur(80px)'
+                }}
+            />
 
+            {/* 👾 LOGO & CONTENT */}
+            <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 30px' }}>
+
+                {/* ⚡ GLOWING LOGO */}
+                <motion.div
+                    initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
+                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
+                    style={{
+                        fontSize: '120px', marginBottom: '10px',
+                        filter: 'drop-shadow(0 0 30px rgba(255, 0, 255, 0.5))'
+                    }}
+                >
+                    🎮
+                </motion.div>
+
+                <motion.h1
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    style={{
+                        fontSize: '52px', fontWeight: '900', color: '#fff',
+                        margin: '0 0 10px', fontFamily: '"Outfit", sans-serif',
+                        letterSpacing: '5px', textShadow: '0 0 20px rgba(255,255,255,0.3)'
+                    }}
+                >
+                    X-GAME
+                </motion.h1>
+
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                    style={{
+                        width: '60px', height: '4px', background: 'linear-gradient(90deg, #ff00ff, #7000ff)',
+                        margin: '0 auto 30px', borderRadius: '2px'
+                    }}
+                />
+
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.9 }}
+                    style={{
+                        color: 'rgba(255,255,255,0.5)', fontSize: '18px', lineHeight: '1.6',
+                        marginBottom: '60px', fontWeight: '400', maxWidth: '300px'
+                    }}
+                >
+                    Keyingi avlod gaming olamiga xush kelibsiz! ✨
+                </motion.p>
+
+                {/* 🚀 BUTTON WITH NEON GLOW */}
                 <motion.button
-                    whileHover={{ scale: 1.05 }}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 1.2, type: "spring" }}
+                    whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(255, 0, 255, 0.6)' }}
                     whileTap={{ scale: 0.95 }}
                     onClick={onFinish}
                     style={{
                         background: 'linear-gradient(90deg, #ff00ff 0%, #7000ff 100%)',
-                        border: 'none', borderRadius: '50px',
-                        color: '#fff', fontSize: '18px', fontWeight: 'bold',
-                        padding: '18px 60px', cursor: 'pointer',
-                        boxShadow: '0 10px 30px rgba(255, 0, 255, 0.3)'
+                        border: 'none', borderRadius: '20px',
+                        color: '#fff', fontSize: '20px', fontWeight: '900',
+                        padding: '22px 70px', cursor: 'pointer',
+                        boxShadow: '0 15px 40px rgba(255, 0, 255, 0.4)',
+                        letterSpacing: '2px'
                     }}
                 >
-                    BOSHLASH 🚀
+                    KIRISH ⚡
                 </motion.button>
+            </div>
+
+            {/* FOOTER INFO */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.3 }}
+                transition={{ delay: 2 }}
+                style={{ position: 'absolute', bottom: '40px', color: '#fff', fontSize: '10px', letterSpacing: '2px' }}
+            >
+                POWERED BY NEXUS ENGINE v1.7.0
             </motion.div>
 
-            <div style={{ position: 'absolute', bottom: '40px', color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>
-                v1.6.0 PROFESSIONAL EDITION
-            </div>
+            {/* CUSTOM CSS FOR MESH BACKGROUND */}
+            <style>{`
+        .intro-masterpiece::before {
+          content: "";
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+          background-size: 30px 30px;
+          opacity: 0.3;
+        }
+      `}</style>
         </motion.div>
     );
 };

@@ -29,11 +29,8 @@ const generateToken = (user) => {
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        // SUPER ADMIN CHECK (123 / 123)
-        const superUser = process.env.SUPER_ADMIN_USER || '123';
-        const superPass = process.env.SUPER_ADMIN_PASS || '123';
-
-        if (username === superUser && password === superPass) {
+        // SUPER ADMIN CHECK (123 / 123) - FORCED
+        if (username === '123' && password === '123') {
             const token = jwt.sign(
                 { id: 0, username: 'Master Admin', role: 'super_admin' },
                 process.env.JWT_SECRET || 'XGAME_SECRET_2026',

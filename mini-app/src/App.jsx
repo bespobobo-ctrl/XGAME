@@ -59,7 +59,7 @@ function App() {
   const [setupRooms, setSetupRooms] = useState([{ name: '', pcCount: 5, price: 15000 }]);
   const [selectedPc, setSelectedPc] = useState(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'https://discounts-unlimited-beverage-daddy.trycloudflare.com';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://long-showing-released-instructor.trycloudflare.com';
   const t = translations[lang];
 
   const callAPI = async (endpoint, options = {}) => {

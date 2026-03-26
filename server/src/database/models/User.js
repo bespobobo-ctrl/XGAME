@@ -4,20 +4,23 @@ const bcrypt = require('bcryptjs');
 
 const User = sequelize.define('User', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    telegramId: { type: DataTypes.STRING, unique: true, allowNull: true }, // MENEJERLAR U-N NULL BOLISHI MUMKIN
+    telegramId: { type: DataTypes.STRING, unique: true, allowNull: true },
     firstName: { type: DataTypes.STRING },
     lastName: { type: DataTypes.STRING },
-    username: { type: DataTypes.STRING, unique: true }, // LOGIN MUST BE UNIQUE
+    username: { type: DataTypes.STRING, unique: true },
     phone: { type: DataTypes.STRING },
     balance: { type: DataTypes.INTEGER, defaultValue: 0 },
-    role: { type: DataTypes.STRING, defaultValue: 'customer' }, // 'customer' | 'manager' | 'super_admin'
-    password: { type: DataTypes.STRING }, // MENEJERLAR U-N
-    ClubId: { type: DataTypes.INTEGER, allowNull: true } // MENEJER BIRIKKANI
+    role: { type: DataTypes.STRING, defaultValue: 'customer' },
+    password: { type: DataTypes.STRING },
+    ClubId: { type: DataTypes.INTEGER, allowNull: true },
+
+    // 🕵️‍♂️ TRACKING FIELDS (ADD THESE!)
+    lastLogin: { type: DataTypes.DATE },
+    lastActive: { type: DataTypes.DATE },
 }, {
     hooks: {
         beforeCreate: async (user) => {
             if (user.password) user.password = await bcrypt.hash(user.password, 10);
-            // 🛰️ MENEJERLAR UCHUN UNIKAL ID (Unique Constraint Fix)
             if (!user.telegramId && user.role === 'manager') {
                 user.telegramId = `MANAGER_${user.username}_${Date.now()}`;
             }

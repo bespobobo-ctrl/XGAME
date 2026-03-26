@@ -197,8 +197,20 @@ router.delete('/admin/clubs/:id', auth, authorize('super_admin'), async (req, re
 
 router.get('/admin/managers', auth, authorize('super_admin'), async (req, res) => {
     try {
-        const managers = await User.findAll({ where: { role: 'manager' } });
-        res.json(managers);
+        const managers = await User.findAll({
+            where: { role: 'manager' },
+            attributes: ['id', 'username', 'ClubId', 'lastLogin', 'lastActive', 'createdAt']
+        });
+        const clubs = await Club.findAll({ attributes: ['id', 'name'] });
+
+        const result = managers.map(m => {
+            const club = clubs.find(c => c.id === m.ClubId);
+            return {
+                ...m.toJSON(),
+                clubName: club ? club.name : 'Noma\'lum ❓'
+            };
+        });
+        res.json(result);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -48,6 +48,18 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
     await initializeDatabase();
 
+    // 🛡️ Super Adminni tekshirish va yaratish
+    const User = require('./database/models/User');
+    const existingAdmin = await User.findOne({ where: { username: '123' } });
+    if (!existingAdmin) {
+        await User.create({
+            username: '123',
+            password: '123',
+            role: 'super_admin'
+        });
+        console.log('Master Admin yaratildi: 123 / 123 🛡️');
+    }
+
     // WebSockets ulash (Agentlarni eshitadi)
     setupWebSockets(io);
 

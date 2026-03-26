@@ -59,7 +59,13 @@ const Home = ({ onClubSelect }) => {
                             display: 'flex', flexDirection: 'column', height: '320px'
                         }}
                     >
-                        <div style={{ background: 'linear-gradient(135deg, #1e8e0d 0%, #39ff14 100%)', height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '60px' }}>🏢</div>
+                        <div style={{ height: '220px', overflow: 'hidden', background: '#39ff1411', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {club.image ? (
+                                <img src={`https://planned-usages-forever-music.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <span style={{ fontSize: '60px' }}>🏛️</span>
+                            )}
+                        </div>
                         <div style={{ padding: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h3 style={{ margin: 0, fontSize: '18px' }}>{club.name}</h3>

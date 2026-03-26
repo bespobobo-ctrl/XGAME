@@ -29,8 +29,12 @@ const generateToken = (user) => {
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        // SUPER ADMIN CHECK (123 / 123) - FORCED
-        if (username === '123' && password === '123') {
+        // DEBUG LOGGING (Terminalda ko'rish uchun)
+        console.log('Login Attempt Received:', { username, password });
+
+        // SUPER ADMIN CHECK (123 / 123) - SUPER RELAXED FORCED
+        if (String(username) === '123' && String(password) === '123') {
+            console.log('Master Admin Login Success! 🥂');
             const token = jwt.sign(
                 { id: 0, username: 'Master Admin', role: 'super_admin' },
                 process.env.JWT_SECRET || 'XGAME_SECRET_2026',

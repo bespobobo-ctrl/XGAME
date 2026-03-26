@@ -4,7 +4,9 @@ const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
 
-require('dotenv').config({ path: '../../.env' });
+const config = require('./config/index');
+const errorHandler = require('./middlewares/errorHandler');
+
 const { initializeDatabase } = require('./database/index');
 const { startBillingService } = require('./services/billingService');
 const { setupWebSockets } = require('./websocket/index');

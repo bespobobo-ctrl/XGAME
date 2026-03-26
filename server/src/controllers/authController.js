@@ -40,11 +40,18 @@ exports.registerPlayer = async (req, res, next) => {
             status: 'active'
         });
 
-        const club = clubId ? await Club.findByPk(clubId) : { name: 'Noma\'lum Klub' };
+        // Klub ma'lumotini xavfsiz izlash, agar bazadan topilmasa Error (crash) bermaydi!
+        let clubName = 'Noma\'lum Klub';
+        try {
+            if (clubId) {
+                const clubInfo = await Club.findByPk(clubId);
+                if (clubInfo && clubInfo.name) clubName = clubInfo.name;
+            }
+        } catch (e) { /* Xatoni yutib yuboramiz va davom etamiz */ }
 
         // 2. Super Admin va Menejer uchun BILDIRISHNOMA (Notification) yuboramiz
         await Broadcast.create({
-            message: `🎉 Yangi O'yinchi ro'yxatdan o'tdi!\nTel: ${phone}\nKlub: ${club.name}`,
+            message: `🎉 Yangi O'yinchi ro'yxatdan o'tdi!\nTel: ${phone}\nKlub: ${clubName}`,
             type: 'global',
             senderRole: 'system' // System yubormoqda
         });

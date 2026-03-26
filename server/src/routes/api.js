@@ -31,6 +31,7 @@ const auth = (req, res, next) => {
 // 🏁 PUBLIC ROUTES
 router.get('/ping', authCtrl.ping);
 router.post('/login', authCtrl.login);
+router.post('/register', authCtrl.registerPlayer);
 
 // 🏛️ CLUB ROUTES
 router.get('/clubs', clubCtrl.getAllClubs);

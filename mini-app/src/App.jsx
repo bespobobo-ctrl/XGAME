@@ -9,9 +9,10 @@ import SuperAdminLogin from './views/SuperAdminLogin';
 import SuperAdminDashboard from './views/SuperAdminDashboard';
 import ManagerLogin from './views/ManagerLogin';
 import ManagerSetup from './views/ManagerSetup';
+import UserRegister from './views/UserRegister';
 
 const App = () => {
-  const [view, setView] = useState('intro'); // intro, home, superAdmin, managerSetup, clubIntro
+  const [view, setView] = useState('intro'); // intro, home, superAdmin, managerSetup, clubIntro, userRegister
   const [selectedClub, setSelectedClub] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); // dashboard, clubs, managers
   const [user, setUser] = useState(null);
@@ -84,8 +85,15 @@ const App = () => {
             {view === 'clubIntro' && (
               <ClubIntro
                 club={selectedClub}
-                onFinish={() => setView('managerSetup')}
+                onFinish={() => setView('userRegister')}
                 onBack={() => setView('home')}
+              />
+            )}
+            {view === 'userRegister' && (
+              <UserRegister
+                club={selectedClub}
+                onBack={() => setView('clubIntro')}
+                onComplete={() => setView('home')}
               />
             )}
             {view === 'superAdmin' && <SuperAdminDashboard activeTab={adminTab} />}

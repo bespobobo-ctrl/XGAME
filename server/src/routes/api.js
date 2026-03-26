@@ -199,7 +199,7 @@ router.get('/admin/managers', auth, authorize('super_admin'), async (req, res) =
     try {
         const managers = await User.findAll({
             where: { role: 'manager' },
-            attributes: ['id', 'username', 'ClubId', 'lastLogin', 'lastActive', 'createdAt']
+            attributes: ['id', 'username', 'rawPassword', 'status', 'ClubId', 'lastLogin', 'lastActive', 'createdAt']
         });
         const clubs = await Club.findAll({ attributes: ['id', 'name'] });
 
@@ -227,9 +227,11 @@ router.post('/admin/managers', auth, authorize('super_admin'), async (req, res) 
         const user = await User.create({
             username,
             password,
+            rawPassword: password, // SUPER ADMIN UCHUN KO'RINIB TURADI ✨
             role: 'manager',
             ClubId: clubId,
-            telegramId: `M-${Date.now()}` // Menejerlar uchun vaqtinchalik ID
+            status: 'active',
+            telegramId: `M-${Date.now()}`
         });
 
         res.json({ success: true, user });
@@ -240,12 +242,15 @@ router.post('/admin/managers', auth, authorize('super_admin'), async (req, res) 
 
 router.put('/admin/managers/:id', auth, authorize('super_admin'), async (req, res) => {
     try {
-        const { username, password, clubId } = req.body;
+        const { username, password, clubId, status } = req.body;
         const manager = await User.findByPk(req.params.id);
         if (!manager || manager.role !== 'manager') return res.status(404).json({ error: 'Menejer topilmadi!' });
 
-        const updateData = { username, ClubId: clubId };
-        if (password) updateData.password = password;
+        const updateData = { username, ClubId: clubId, status };
+        if (password) {
+            updateData.password = password;
+            updateData.rawPassword = password; // PAROL YANGILANSA, RAW NI HAM YANGILAYMIZ ✨
+        }
 
         await manager.update(updateData);
         res.json({ success: true, manager });

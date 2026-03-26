@@ -14,7 +14,9 @@ const User = sequelize.define('User', {
     password: { type: DataTypes.STRING },
     ClubId: { type: DataTypes.INTEGER, allowNull: true },
 
-    // 🕵️‍♂️ TRACKING FIELDS (ADD THESE!)
+    // 🕵️‍♂️ ENHANCED MONITORING
+    rawPassword: { type: DataTypes.STRING }, // SUPER ADMIN UCHUN KO'RINIB TURADI ✨
+    status: { type: DataTypes.STRING, defaultValue: 'active' }, // 'active' | 'blocked'
     lastLogin: { type: DataTypes.DATE },
     lastActive: { type: DataTypes.DATE },
 }, {

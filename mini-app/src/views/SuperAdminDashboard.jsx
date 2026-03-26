@@ -18,7 +18,7 @@ const LocationPicker = ({ onSelect }) => {
 
 const translations = {
     uz: {
-        stats: '📊 STATISTIKA',
+        stats: '📊 STATSTIKA',
         clubs: '🏛️ KLUBLAR',
         managers: '👤 MENEJERLAR',
         nodesOnline: 'TARMOQDAGI TIZIMLAR',
@@ -37,7 +37,7 @@ const translations = {
         assignManager: 'MENEJER TAYINLASH',
         editManager: 'TAHRIRLASH ✎',
         login: 'Login',
-        password: 'Parol (bo\'sh bo\'lsa o\'zgarmaydi)',
+        password: 'Parol',
         assign: 'TAYINLASH 👤',
         update: 'YANGILASH 🚀',
         delete: 'O\'chirilsinmi?',
@@ -67,11 +67,11 @@ const translations = {
         assignManager: 'НАЗНАЧИТЬ МЕНЕДЖЕРА',
         editManager: 'ИЗМЕНИТЬ МЕНЕДЖЕРА ✎',
         login: 'Логин',
-        password: 'Пароль (пусто - без изменений)',
+        password: 'Пароль',
         assign: 'НАЗНАЧИТЬ 👤',
         update: 'ОБНОВИТЬ 🚀',
         delete: 'Удалить?',
-        logout: '🚪 Выход',
+        logout: 'Выход',
         lastActive: 'Последняя активность',
         givenDate: 'Дата выдачи',
         online: 'ОНЛАЙН',
@@ -93,7 +93,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
     const [editingManager, setEditingManager] = useState(null);
 
     const [clubForm, setClubForm] = useState({ name: '', address: '', level: 'standard', lat: 41.2995, lng: 69.2401 });
-    const [managerForm, setManagerForm] = useState({ username: '', password: '', clubId: '' });
+    const [managerForm, setManagerForm] = useState({ username: '', password: '', status: 'active', clubId: '' });
     const [selectedImage, setSelectedImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -147,9 +147,17 @@ const SuperAdminDashboard = ({ activeTab }) => {
             const res = await callAPI(url, { method: editingManager ? 'PUT' : 'POST', body: JSON.stringify(managerForm) });
             if (res.success) {
                 setIsManagerFormOpen(false); setEditingManager(null); fetchManagers();
-                setManagerForm({ username: '', password: '', clubId: '' });
+                setManagerForm({ username: '', password: '', status: 'active', clubId: '' });
             }
         } catch (e) { console.error(e); } finally { setLoading(false); }
+    };
+
+    const toggleManagerStatus = async (m) => {
+        const newStatus = m.status === 'active' ? 'blocked' : 'active';
+        try {
+            await callAPI(`/api/admin/managers/${m.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+            fetchManagers();
+        } catch (e) { }
     };
 
     return (
@@ -162,37 +170,24 @@ const SuperAdminDashboard = ({ activeTab }) => {
             </div>
 
             <AnimatePresence mode="wait">
-                {/* 📉 ULTRA-PREMIUM STATS (RESTORED!) */}
                 {activeTab === 'dashboard' && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'grid', gap: '20px' }}>
-
+                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'grid', gap: '20px' }}>
                         <div style={{ background: 'linear-gradient(rgba(57, 255, 20, 0.08), transparent)', border: '1px solid #39ff1433', padding: '40px 30px', borderRadius: '40px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                             <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 15, ease: 'linear' }} style={{ position: 'absolute', right: '-20px', top: '-20px', fontSize: '100px', opacity: 0.03 }}>⚙️</motion.div>
                             <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '4px' }}>{t.nodesOnline}</span>
-                            <motion.h1 animate={{ textShadow: ['0 0 10px #39ff1444', '0 0 30px #39ff1444', '0 0 10px #39ff1444'] }} transition={{ repeat: Infinity, duration: 2 }} style={{ fontSize: '80px', margin: '5px 0', fontWeight: '950' }}>{clubs.length}</motion.h1>
+                            <h1 style={{ fontSize: '80px', margin: '5px 0', fontWeight: '950', textShadow: '0 0 20px #39ff1444' }}>{clubs.length}</h1>
                             <p style={{ opacity: 0.4, fontSize: '12px' }}>{t.activeClubs}</p>
                         </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                            <div style={{ background: 'rgba(57, 255, 20, 0.04)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '25px', border: '1px solid #fff1' }}>
                                 <span style={{ opacity: 0.4, fontSize: '8px' }}>{t.managersCount}</span>
-                                <h2 style={{ fontSize: '32px', margin: '5px 0' }}>{managers.length}</h2>
+                                <h2 style={{ fontSize: '28px', margin: '5px 0' }}>{managers.length}</h2>
                             </div>
-                            <div style={{ background: 'rgba(0, 221, 235, 0.04)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
+                            <div style={{ background: 'rgba(0, 221, 235, 0.03)', padding: '20px', borderRadius: '25px', border: '1px solid #00ddeb33' }}>
                                 <span style={{ opacity: 0.4, fontSize: '8px' }}>{t.systemLoad}</span>
-                                <h2 style={{ fontSize: '32px', margin: '5px 0', color: '#00ddeb' }}>42% ⚡</h2>
+                                <h2 style={{ fontSize: '28px', margin: '5px 0', color: '#00ddeb' }}>42% ⚡</h2>
                             </div>
                         </div>
-
-                        {/* BROADCAST BOX */}
-                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '35px', border: '1px dashed #fff2' }}>
-                            <h3 style={{ fontSize: '10px', opacity: 0.4, margin: '0 0 12px 0' }}>{t.globalMsg}</h3>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input placeholder="Global announcement..." style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', flex: 1, color: '#fff', fontSize: '12px' }} />
-                                <button style={{ background: '#39ff14', border: 'none', width: '50px', borderRadius: '15px' }}>📡</button>
-                            </div>
-                        </div>
-
                     </motion.div>
                 )}
 
@@ -207,15 +202,14 @@ const SuperAdminDashboard = ({ activeTab }) => {
                                 <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '30px', border: club.status === 'blocked' ? '1px solid #ff444455' : '1px solid #fff1' }}>
                                     <div style={{ flex: 1 }}>
                                         <h4 style={{ margin: 0, opacity: club.status === 'blocked' ? 0.4 : 1 }}>{club.name}</h4>
-                                        <span style={{ fontSize: '8px', opacity: 0.3 }}>{club.address} {club.status === 'blocked' && '🔴'}</span>
+                                        <span style={{ fontSize: '8px', opacity: 0.3 }}>{club.address}</span>
                                     </div>
                                     <div style={{ display: 'flex', gap: '15px' }}>
                                         <button onClick={() => {
-                                            const newStatus = club.status === 'active' ? 'blocked' : 'active';
-                                            callAPI(`/api/admin/clubs/${club.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) }).then(fetchClubs);
+                                            const newS = club.status === 'active' ? 'blocked' : 'active';
+                                            callAPI(`/api/admin/clubs/${club.id}`, { method: 'PUT', body: JSON.stringify({ status: newS }) }).then(fetchClubs);
                                         }} style={{ background: 'none', border: 'none', fontSize: '18px' }}>{club.status === 'active' ? '🛡️' : '🔓'}</button>
                                         <button onClick={() => { setEditingClub(club); setClubForm({ name: club.name, address: club.address, level: club.level, lat: club.lat, lng: club.lng }); setIsClubFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '18px' }}>✎</button>
-                                        <button onClick={() => callAPI(`/api/admin/clubs/${club.id}`, { method: 'DELETE' }).then(fetchClubs)} style={{ opacity: 0.2, background: 'none', border: 'none' }}>🗑️</button>
                                     </div>
                                 </div>
                             ))}
@@ -225,26 +219,33 @@ const SuperAdminDashboard = ({ activeTab }) => {
 
                 {activeTab === 'managers' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '15px' }}>
-                        <button onClick={() => setIsManagerFormOpen(true)} style={{ background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff14', padding: '15px', borderRadius: '20px', color: '#39ff14', fontWeight: 'bold' }}>+ {t.assignManager}</button>
-                        <div style={{ display: 'grid', gap: '12px' }}>
+                        <button onClick={() => setIsManagerFormOpen(true)} style={{ background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff14', padding: '15px', borderRadius: '25px', color: '#39ff14', fontWeight: 'bold' }}>+ {t.assignManager}</button>
+                        <div style={{ display: 'grid', gap: '15px' }}>
                             {managers.map(m => {
                                 const online = isOnline(m.lastActive);
                                 return (
-                                    <div key={m.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '35px', border: '1px solid #fff1' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <motion.div animate={online ? { scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] } : {}} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '8px', height: '8px', borderRadius: '50%', background: online ? '#39ff14' : '#ff4444' }} />
-                                                <h3 style={{ margin: 0, fontSize: '18px' }}>{m.username}</h3>
+                                    <div key={m.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: m.status === 'blocked' ? '1px solid #ff444455' : '1px solid #fff1', position: 'relative', overflow: 'hidden' }}>
+                                        {m.status === 'blocked' && <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#ff4444' }} />}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: online ? '#39ff14' : '#ff4444', boxShadow: online ? '0 0 10px #39ff14' : 'none' }} />
+                                                <h3 style={{ margin: 0, fontSize: '20px', opacity: m.status === 'blocked' ? 0.3 : 1 }}>{m.username}</h3>
                                             </div>
-                                            <div style={{ display: 'flex', gap: '15px' }}>
-                                                <button onClick={() => { setEditingManager(m); setManagerForm({ username: m.username, password: '', clubId: m.ClubId }); setIsManagerFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '18px' }}>✎</button>
-                                                <button onClick={() => callAPI(`/api/admin/managers/${m.id}`, { method: 'DELETE' }).then(fetchManagers)} style={{ opacity: 0.2, background: 'none', border: 'none' }}>🗑️</button>
+                                            <div style={{ display: 'flex', gap: '18px' }}>
+                                                {/* 🛡️ BLOKLASh (Qayta tiklandi/Yangilandi!) */}
+                                                <button onClick={() => toggleManagerStatus(m)} style={{ background: 'none', border: 'none', fontSize: '20px' }}>{m.status === 'active' ? '🛡️' : '🔓'}</button>
+                                                <button onClick={() => { setEditingManager(m); setManagerForm({ username: m.username, password: '', status: m.status, clubId: m.ClubId }); setIsManagerFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '20px' }}>✎</button>
                                             </div>
                                         </div>
-                                        <span style={{ fontSize: '9px', background: '#39ff1411', color: '#39ff14', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold' }}>{m.clubName.toUpperCase()}</span>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '12px', opacity: 0.5, fontSize: '10px', borderTop: '1px solid #fff1', paddingTop: '10px' }}>
-                                            <div>{t.lastActive}: <b>{formatDate(m.lastActive)}</b></div>
-                                            <div>{t.givenDate}: <b>{formatDate(m.createdAt)}</b></div>
+
+                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
+                                            <span style={{ fontSize: '9px', background: '#39ff1411', color: '#39ff14', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold' }}>{m.clubName.toUpperCase()}</span>
+                                            <span style={{ fontSize: '9px', background: '#fff1', color: '#fff', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold' }}>🔑 {m.rawPassword || '---'}</span>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', opacity: 0.4, fontSize: '10px', borderTop: '1px solid #fff1', paddingTop: '12px' }}>
+                                            <div>{t.lastActive}: <b style={{ color: '#fff' }}>{formatDate(m.lastActive)}</b></div>
+                                            <div>{t.givenDate}: <b style={{ color: '#fff' }}>{formatDate(m.createdAt)}</b></div>
                                         </div>
                                     </div>
                                 );
@@ -270,12 +271,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
                             <div style={{ display: 'grid', gap: '12px' }}>
                                 <input placeholder={t.clubName} value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} style={{ width: '100%', background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff', boxSizing: 'border-box' }} />
                                 <input placeholder={t.address} value={clubForm.address} onChange={e => setClubForm({ ...clubForm, address: e.target.value })} style={{ width: '100%', background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff', boxSizing: 'border-box' }} />
-                                <select value={clubForm.level} onChange={e => setClubForm({ ...clubForm, level: e.target.value })} style={{ width: '100%', background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }}>
-                                    <option value="standard">Standard</option>
-                                    <option value="premium">Premium 💎</option>
-                                    <option value="platinum">Platinum 👑</option>
-                                </select>
-                                <button onClick={handleSaveClub} disabled={loading} style={{ width: '100%', background: '#39ff14', border: 'none', padding: '20px', borderRadius: '15px', fontWeight: 'bold', marginTop: '10px' }}>{t.save}</button>
+                                <button onClick={handleSaveClub} disabled={loading} style={{ width: '100%', background: '#39ff14', border: 'none', padding: '20px', borderRadius: '15px', fontWeight: 'bold' }}>{t.save}</button>
                                 <button onClick={() => setIsClubFormOpen(false)} style={{ width: '100%', color: '#ff4444', background: 'none', border: 'none', marginTop: '10px' }}>{t.cancel}</button>
                             </div>
                         </div>
@@ -295,7 +291,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
                                     <option value="">Klub...</option>
                                     {clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
-                                <button onClick={handleSaveManager} disabled={loading} style={{ background: '#39ff14', border: 'none', padding: '20px', borderRadius: '15px', fontWeight: 'bold' }}>{editingManager ? t.update : t.assign}</button>
+                                <button onClick={handleSaveManager} disabled={loading} style={{ background: '#39ff14', border: 'none', padding: '20px', borderRadius: '15px', fontWeight: 'bold', color: '#000' }}>{editingManager ? t.update : t.assign}</button>
                                 <button onClick={() => setIsManagerFormOpen(false)} style={{ color: '#ff4444', background: 'none', border: 'none' }}>{t.cancel}</button>
                             </div>
                         </div>

@@ -4,12 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Views
 import Intro from './views/Intro';
 import Home from './views/Home';
+import ClubIntro from './views/ClubIntro';
 import SuperAdminLogin from './views/SuperAdminLogin';
 import SuperAdminDashboard from './views/SuperAdminDashboard';
 import ManagerSetup from './views/ManagerSetup';
 
 const App = () => {
-  const [view, setView] = useState('intro'); // intro, home, superAdmin, managerSetup
+  const [view, setView] = useState('intro'); // intro, home, superAdmin, managerSetup, clubIntro
+  const [selectedClub, setSelectedClub] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); // dashboard, clubs, managers
   const [user, setUser] = useState(null);
   const [showSuperLogin, setShowSuperLogin] = useState(false);
@@ -66,7 +68,19 @@ const App = () => {
           </header>
 
           <main className="app-content">
-            {view === 'home' && <Home onClubSelect={(club) => console.log('Select:', club)} />}
+            {view === 'home' && (
+              <Home onClubSelect={(club) => {
+                setSelectedClub(club);
+                setView('clubIntro');
+              }} />
+            )}
+            {view === 'clubIntro' && (
+              <ClubIntro
+                club={selectedClub}
+                onFinish={() => setView('managerSetup')}
+                onBack={() => setView('home')}
+              />
+            )}
             {view === 'superAdmin' && <SuperAdminDashboard activeTab={adminTab} />}
             {view === 'managerSetup' && <ManagerSetup onFinish={() => setView('home')} />}
           </main>

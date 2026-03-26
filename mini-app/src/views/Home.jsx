@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
 
 const Home = ({ onClubSelect }) => {
     const [clubs, setClubs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const scrollRef = useRef(null);
+    const [activeIndex, setActiveIndex] = useState(0);
 
     useEffect(() => {
         fetchClubs();
@@ -18,99 +20,137 @@ const Home = ({ onClubSelect }) => {
         finally { setLoading(false); }
     };
 
-    if (loading) return <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#39ff14' }}>NEXUS INITIALIZING... ✨</div>;
+    // 🌊 SCROLL LISTENER (FOR DOTS)
+    const handleScroll = (e) => {
+        const index = Math.round(e.target.scrollLeft / (window.innerWidth * 0.85));
+        setActiveIndex(index);
+    };
+
+    if (loading) return (
+        <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#39ff14' }}>
+            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>✨</motion.div>
+            <span style={{ marginLeft: '10px' }}>NEXUS SYNCING...</span>
+        </div>
+    );
 
     return (
-        <div className="home-view" style={{ minHeight: '100vh', background: '#050505', paddingTop: '20px' }}>
+        <div className="home-view" style={{ minHeight: '100vh', background: '#000', position: 'relative' }}>
 
-            {/* 🌌 DYNAMIC BACKGROUND BLUR */}
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at center, #39ff1411 0%, transparent 70%)', zIndex: -1 }} />
+            {/* 🪐 2026 TREND: DYNAMIC MESH GRADIENT BACKGROUND */}
+            <div style={{
+                position: 'fixed', top: 0, left: 0, width: '101%', height: '101%',
+                background: 'radial-gradient(circle at 50% 50%, #050505 0%, #000 100%)',
+                zIndex: -2
+            }} />
 
-            {/* 📸 CAROUSEL CONTAINER (Snap Scroll) */}
+            {/* 🌀 MOVING NEON BLOBS (Glowing Background) */}
+            <motion.div
+                animate={{
+                    x: [0, 50, -50, 0],
+                    y: [0, -50, 50, 0],
+                    scale: [1, 1.2, 1, 1.1]
+                }}
+                transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+                style={{ position: 'fixed', top: '20vh', left: '10vw', width: '300px', height: '300px', background: 'radial-gradient(60% 60% at 50% 50%, rgba(57, 255, 20, 0.08) 0%, transparent 100%)', filter: 'blur(80px)', zIndex: -1 }}
+            />
+            <motion.div
+                animate={{
+                    x: [0, -70, 70, 0],
+                    y: [0, 80, -80, 0],
+                    scale: [1, 1.1, 1.2, 1]
+                }}
+                transition={{ repeat: Infinity, duration: 25, ease: 'linear', delay: 2 }}
+                style={{ position: 'fixed', bottom: '10vh', right: '5vw', width: '400px', height: '400px', background: 'radial-gradient(60% 60% at 50% 50%, rgba(0, 221, 235, 0.06) 0%, transparent 100%)', filter: 'blur(100px)', zIndex: -1 }}
+            />
+
+            {/* 📽️ NOISE TEXTURE OVERLAY (Premium Look) */}
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.03, pointerEvents: 'none', background: 'url("https://grainy-gradients.vercel.app/noise.svg")', zIndex: 0 }} />
+
+            {/* 🏙️ HEADER SECTION */}
+            <div style={{ padding: '30px 30px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', zIndex: 1, position: 'relative' }}>
+                <div>
+                    <h2 style={{ margin: 0, fontSize: '32px', fontWeight: '900', letterSpacing: '1px' }}>NODES</h2>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#39ff14', fontWeight: 'bold', opacity: 0.7 }}>SELECT YOUR STATION</p>
+                </div>
+                <div style={{ fontSize: '10px', opacity: 0.3 }}>20.26 VERSION</div>
+            </div>
+
+            {/* 📸 CAROUSEL (Snap Scroll) */}
             <div
+                ref={scrollRef}
+                onScroll={handleScroll}
                 className="clubs-carousel"
                 style={{
                     display: 'flex',
                     overflowX: 'auto',
                     scrollSnapType: 'x mandatory',
-                    padding: '0 30px',
-                    paddingBottom: '100px',
+                    padding: '30px',
+                    paddingBottom: '120px',
                     gap: '20px',
                     scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
+                    msOverflowStyle: 'none',
+                    zIndex: 2,
+                    position: 'relative'
                 }}
             >
                 <style>{`.clubs-carousel::-webkit-scrollbar { display: none; }`}</style>
 
-                {clubs.length > 0 ? clubs.map(club => (
+                {clubs.map((club, idx) => (
                     <motion.div
                         key={club.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => onClubSelect(club)}
                         style={{
                             minWidth: '85vw',
-                            height: '75vh',
+                            height: '70vh',
                             scrollSnapAlign: 'center',
                             position: 'relative',
-                            borderRadius: '45px',
+                            borderRadius: '40px',
                             overflow: 'hidden',
                             background: '#111',
-                            border: '1px solid rgba(255,255,255,0.05)',
-                            boxShadow: '0 30px 60px rgba(0,0,0,0.6)'
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
                         }}
                     >
-                        {/* 🖼️ CLUB IMAGE */}
-                        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                            {club.image ? (
-                                <img
-                                    src={`https://synthesis-legends-lamb-davidson.trycloudflare.com${club.image}`}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    alt={club.name}
-                                />
-                            ) : (
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(45deg, #111, #222)', fontSize: '100px' }}>🏛️</div>
-                            )}
+                        {club.image ? (
+                            <img src={`https://synthesis-legends-lamb-davidson.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="node" />
+                        ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px', background: '#222' }}>🏛️</div>
+                        )}
 
-                            {/* 🖤 GRADIENT OVERLAY (Xuddi rasmda bo'lganidek) */}
-                            <div style={{
-                                position: 'absolute',
-                                bottom: 0, left: 0, right: 0,
-                                height: '50%',
-                                background: 'linear-gradient(transparent, rgba(0,0,0,0.9))',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'flex-end',
-                                padding: '35px'
-                            }}>
-                                <motion.div
-                                    initial={{ y: 20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.2 }}
-                                >
-                                    <h2 style={{ margin: '0 0 5px', fontSize: '30px', fontWeight: '900', color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{club.name}</h2>
-                                    <p style={{ margin: 0, fontSize: '14px', color: '#39ff14', fontWeight: '600', opacity: 0.8, letterSpacing: '1px' }}>{club.address.toUpperCase()}</p>
+                        <div style={{
+                            position: 'absolute', bottom: 0, left: 0, right: 0,
+                            height: '45%',
+                            background: 'linear-gradient(transparent, rgba(0,0,0,0.95))',
+                            padding: '35px',
+                            display: 'flex', flexDirection: 'column', justifyContent: 'flex-end'
+                        }}>
+                            <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '900', textShadow: '0 4px 15px rgba(0,0,0,0.5)' }}>{club.name}</h2>
+                            <p style={{ margin: '5px 0 15px', fontSize: '12px', color: '#39ff14', fontWeight: 'bold' }}>{club.address}</p>
 
-                                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                                        <span style={{ fontSize: '10px', padding: '5px 12px', borderRadius: '10px', background: 'rgba(57, 255, 20, 0.2)', border: '1px solid #39ff1455', color: '#39ff14', fontWeight: 'bold' }}>{club.level.toUpperCase()}</span>
-                                        <span style={{ fontSize: '10px', padding: '5px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 'bold' }}>ONLINE</span>
-                                    </div>
-                                </motion.div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <span style={{ fontSize: '9px', padding: '6px 14px', borderRadius: '30px', background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff1455', color: '#39ff14', fontWeight: 'bold' }}>{club.level.toUpperCase()} STATION</span>
+                                {club.locationUrl && (
+                                    <a href={club.locationUrl} target="_blank" style={{ fontSize: '9px', padding: '6px 14px', borderRadius: '30px', background: 'rgba(255,255,255,0.05)', border: '1px solid #fff2', color: '#fff', textDecoration: 'none' }}>📍 TRAJECTORY</a>
+                                )}
                             </div>
                         </div>
                     </motion.div>
-                )) : (
-                    <div style={{ minWidth: '85vw', height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
-                        No nodes found in the network.
-                    </div>
-                )}
+                ))}
             </div>
 
-            {/* 🌀 SLIDER DOTS INDICATOR */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-60px' }}>
+            {/* 🌀 DYNAMIC DOTS */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-100px', zIndex: 3, position: 'relative' }}>
                 {clubs.map((_, i) => (
-                    <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: i === 0 ? '#39ff14' : 'rgba(255,255,255,0.2)' }} />
+                    <motion.div
+                        key={i}
+                        animate={{
+                            scale: i === activeIndex ? 1.4 : 1,
+                            opacity: i === activeIndex ? 1 : 0.2,
+                            width: i === activeIndex ? '20px' : '8px',
+                        }}
+                        style={{ height: '8px', borderRadius: '10px', background: '#39ff14' }}
+                    />
                 ))}
             </div>
 

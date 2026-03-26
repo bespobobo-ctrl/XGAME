@@ -1,16 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { callAPI } from '../api';
+
+// 📍 CUSTOM ICON (Fix for leaflet default icon issue)
+const greenIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+// 🗺️ HELPER: MAP CLICK HANDLER
+const LocationPicker = ({ onSelect }) => {
+    useMapEvents({
+        click(e) { onSelect(e.latlng); }
+    });
+    return null;
+};
 
 const SuperAdminDashboard = ({ activeTab }) => {
     const [clubs, setClubs] = useState([]);
     const [managers, setManagers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [levelFilter, setLevelFilter] = useState('all');
     const [isFormOpen, setIsFormOpen] = useState(false);
 
-    // FORMA HOLATI (GOOGLE MAPS BILAN)
-    const [clubForm, setClubForm] = useState({ name: '', address: '', level: 'standard', locationUrl: '' });
+    // NEW CLUB DATA (WITH LAT/LNG)
+    const [clubForm, setClubForm] = useState({ name: '', address: '', level: 'standard', lat: 41.2995, lng: 69.2401 });
     const [managerForm, setManagerForm] = useState({ username: '', password: '', clubId: '' });
     const [selectedImage, setSelectedImage] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -28,14 +48,15 @@ const SuperAdminDashboard = ({ activeTab }) => {
     };
 
     const handleAddClub = async () => {
-        if (!clubForm.name || !clubForm.address) return alert('Barcha maydonlarni to\'ldiring! 🛑');
+        if (!clubForm.name || !clubForm.address) return alert('To\'ldiring! 🛑');
         setLoading(true);
         try {
             const formData = new FormData();
             formData.append('name', clubForm.name);
             formData.append('address', clubForm.address);
             formData.append('level', clubForm.level);
-            formData.append('locationUrl', clubForm.locationUrl); // GOOGLE MAPS LINK
+            formData.append('lat', clubForm.lat);
+            formData.append('lng', clubForm.lng);
             if (selectedImage) formData.append('image', selectedImage);
 
             const res = await fetch(`https://synthesis-legends-lamb-davidson.trycloudflare.com/api/admin/clubs`, {
@@ -45,13 +66,11 @@ const SuperAdminDashboard = ({ activeTab }) => {
             });
             const result = await res.json();
             if (result.success) {
-                alert('Muvaffaqiyatli! 🏗️🔥');
-                setClubForm({ name: '', address: '', level: 'standard', locationUrl: '' });
-                setSelectedImage(null);
-                setIsFormOpen(false);
-                fetchClubs();
+                alert('Klub xaritaga muhrlandi! 🚀🔥');
+                setClubForm({ name: '', address: '', level: 'standard', lat: 41.2995, lng: 69.2401 });
+                setSelectedImage(null); setIsFormOpen(false); fetchClubs();
             }
-        } catch (e) { console.error('E:', e); }
+        } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
@@ -66,6 +85,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
     const deleteClub = async (id) => {
         if (!window.confirm('O\'chirilsinmi? 🗑️')) return;
         try {
+            await callAPI(`/api/admin/managers?clubId=${id}`); // Get managers
             await callAPI(`/api/admin/clubs/${id}`, { method: 'DELETE' });
             fetchClubs();
         } catch (e) { console.error(e); }
@@ -87,144 +107,110 @@ const SuperAdminDashboard = ({ activeTab }) => {
         finally { setLoading(false); }
     };
 
-    const deleteManager = async (id) => {
-        if (!window.confirm('Menejerni o\'chirmoqchimisiz? 🗑️')) return;
-        try {
-            await callAPI(`/api/admin/managers/${id}`, { method: 'DELETE' });
-            fetchManagers();
-        } catch (e) { console.error(e); }
-    }
-
-    const filteredClubs = clubs.filter(club => {
-        const matchesSearch = (club.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesLevel = levelFilter === 'all' || club.level === levelFilter;
-        return matchesSearch && matchesLevel;
-    });
-
     return (
-        <div className="admin-dashboard-view" style={{ padding: '15px', paddingBottom: '120px', minHeight: '100vh', background: '#000', boxSizing: 'border-box' }}>
+        <div className="admin-dashboard-view" style={{ padding: '15px', paddingBottom: '120px', minHeight: '100vh', background: '#000', color: '#fff' }}>
 
             <AnimatePresence mode="wait">
-                {/* 📊 BO'LIM 1: STATISTIKA */}
                 {activeTab === 'dashboard' && (
-                    <motion.div key="stats" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} style={{ display: 'grid', gap: '20px' }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '20px' }}>
                         <div style={{ background: 'rgba(57, 255, 20, 0.05)', border: '1px solid #39ff1444', padding: '30px', borderRadius: '30px', textAlign: 'center' }}>
-                            <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '4px' }}>NETWORK SCALE</span>
+                            <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '4px' }}>LIVE NETWORK</span>
                             <h1 style={{ fontSize: '64px', margin: '5px 0', fontWeight: '900' }}>{clubs.length}</h1>
-                            <p style={{ opacity: 0.4, fontSize: '12px' }}>Aktiv O'yin Klublari</p>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '25px', textAlign: 'center' }}>
-                                <span style={{ opacity: 0.5, fontSize: '10px' }}>MANAGERS</span>
-                                <h2 style={{ fontSize: '32px', margin: '5px 0' }}>{managers.length}</h2>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '25px', textAlign: 'center' }}>
+                                <span style={{ opacity: 0.5, fontSize: '10px' }}>STAFF</span>
+                                <h2>{managers.length}</h2>
                             </div>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '25px', textAlign: 'center' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '25px', textAlign: 'center' }}>
                                 <span style={{ opacity: 0.5, fontSize: '10px' }}>LOAD</span>
-                                <h2 style={{ fontSize: '32px', margin: '5px 0' }}>72% ✨</h2>
-                            </div>
-                        </div>
-                        <div style={{ background: 'rgba(30,144,255,0.05)', border: '1px solid #1e90ff44', padding: '20px', borderRadius: '25px' }}>
-                            <h3 style={{ fontSize: '12px', opacity: 0.4 }}>GLOBAL MESSAGE</h3>
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <input placeholder="Barcha klublarga xabar..." style={{ background: '#000', border: '1px solid #fff2', padding: '12px', borderRadius: '12px', flex: 1, color: '#fff' }} />
-                                <button style={{ background: '#1e90ff', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: 'bold' }}>📡</button>
+                                <h2>84% ✨</h2>
                             </div>
                         </div>
                     </motion.div>
                 )}
 
-                {/* 🏛️ BO'LIM 2: KLUBLAR BOShQARUVI */}
                 {activeTab === 'clubs' && (
-                    <motion.div key="clubs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '20px' }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '15px' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <input
-                                placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                                placeholder="Search nodes..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                                 style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid #fff2', borderRadius: '15px', padding: '12px', color: '#fff' }}
                             />
-                            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setIsFormOpen(true)} style={{ background: '#39ff14', border: 'none', width: '50px', borderRadius: '15px', fontSize: '20px' }}>+</motion.button>
+                            <button onClick={() => setIsFormOpen(true)} style={{ background: '#39ff14', border: 'none', width: '50px', borderRadius: '15px', fontWeight: 'bold' }}>+</button>
                         </div>
 
                         <div style={{ display: 'grid', gap: '12px' }}>
-                            {filteredClubs.map(club => (
-                                <motion.div layout key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '20px', border: '1px solid #fff1' }}>
+                            {clubs.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(club => (
+                                <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '25px', border: '1px solid #fff1' }}>
                                     <div style={{ width: '45px', height: '45px', borderRadius: '10px', background: '#39ff1411', marginRight: '15px', overflow: 'hidden' }}>
                                         {club.image && <img src={`https://synthesis-legends-lamb-davidson.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <h4 style={{ margin: 0 }}>{club.name}</h4>
-                                        <div style={{ display: 'flex', gap: '5px' }}>
-                                            <span style={{ fontSize: '7px', color: '#39ff14' }}>{club.level.toUpperCase()}</span>
-                                            {club.locationUrl && <a href={club.locationUrl} target="_blank" style={{ fontSize: '7px', color: '#1e90ff' }}>📍 MAPS</a>}
-                                        </div>
+                                        <span style={{ fontSize: '8px', opacity: 0.3 }}>📍 {club.lat.toFixed(4)}, {club.lng.toFixed(4)}</span>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
                                         <button onClick={() => toggleStatus(club)} style={{ background: 'none', border: 'none', color: club.status === 'active' ? '#39ff14' : '#ff4444' }}>{club.status === 'active' ? '🛡️' : '🔓'}</button>
                                         <button onClick={() => deleteClub(club.id)} style={{ background: 'none', border: 'none', opacity: 0.2 }}>🗑️</button>
                                     </div>
-                                </motion.div>
+                                </div>
                             ))}
                         </div>
                     </motion.div>
                 )}
 
-                {/* 👤 BO'LIM 3: MENEJERLAR BOShQARUVI (QAYTA TIKLANDI!) */}
                 {activeTab === 'managers' && (
-                    <motion.div key="managers" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'grid', gap: '25px' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #fff2', padding: '30px', borderRadius: '35px' }}>
-                            <h2 style={{ margin: '0 0 20px', color: '#39ff14' }}>MENEJER TAYINLASH</h2>
-                            <div style={{ display: 'grid', gap: '15px' }}>
-                                <input placeholder="Username" value={managerForm.username} onChange={e => setManagerForm({ ...managerForm, username: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
-                                <input type="password" placeholder="Password" value={managerForm.password} onChange={e => setManagerForm({ ...managerForm, password: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '20px' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '30px', border: '1px solid #fff2' }}>
+                            <h2 style={{ margin: '0 0 15px', color: '#39ff14' }}>MENEJER TAYINLASH</h2>
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                <input placeholder="Login" value={managerForm.username} onChange={e => setManagerForm({ ...managerForm, username: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
+                                <input type="password" placeholder="Parol" value={managerForm.password} onChange={e => setManagerForm({ ...managerForm, password: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
                                 <select value={managerForm.clubId} onChange={e => setManagerForm({ ...managerForm, clubId: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }}>
                                     <option value="">Klubni tanlang...</option>
                                     {clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
-                                <button onClick={handleAddManager} style={{ background: '#39ff14', border: 'none', padding: '20px', borderRadius: '20px', fontWeight: 'bold', color: '#000' }}>LOGIN YARATISH 👤</button>
+                                <button onClick={handleAddManager} style={{ background: '#39ff14', border: 'none', padding: '18px', borderRadius: '15px', fontWeight: 'bold', color: '#000' }}>TAYINLASH 👤</button>
                             </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gap: '12px' }}>
-                            {managers.map(m => (
-                                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '15px 25px', borderRadius: '20px' }}>
-                                    <div>
-                                        <h5 style={{ margin: 0 }}>{m.username}</h5>
-                                        <p style={{ margin: 0, fontSize: '9px', opacity: 0.3 }}>Klub ID: {m.ClubId}</p>
-                                    </div>
-                                    <button onClick={() => deleteManager(m.id)} style={{ background: 'none', border: 'none', color: '#ff4444', opacity: 0.5 }}>🗑️</button>
-                                </div>
-                            ))}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* 💎 MODAL: YANGI KLUB (GOOGE MAPS LINK BILAN) */}
+            {/* 🗺️ MODAL: MAP PICKER FORM */}
             <AnimatePresence>
                 {isFormOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(20px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                        <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ width: '100%', maxWidth: '380px', background: '#0a0a0a', border: '1px solid #39ff1444', borderRadius: '35px', padding: '30px' }}>
-                            <h2 style={{ margin: '0 0 20px', textAlign: 'center', color: '#39ff14' }}>YANGI KLUB 🏛️</h2>
-                            <div style={{ display: 'grid', gap: '15px' }}>
-                                <input placeholder="Klub nomi" value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
-                                <input placeholder="Manzil" value={clubForm.address} onChange={e => setClubForm({ ...clubForm, address: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }} />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(20px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', boxSizing: 'border-box' }}>
+                        <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ width: '100%', maxWidth: '450px', maxHeight: '90vh', overflowY: 'auto', background: '#0a0a0a', border: '1px solid #39ff1444', borderRadius: '35px', padding: '25px' }}>
+                            <h2 style={{ margin: '0 0 15px', textAlign: 'center', color: '#39ff14', fontSize: '18px' }}>XARITADAN BELGILASh 🌍</h2>
 
-                                <div style={{ display: 'grid', gap: '5px' }}>
-                                    <label style={{ fontSize: '10px', opacity: 0.4, marginLeft: '5px' }}>🌍 GOOGLE MAPS LINK (Haqiqiy koordinata)</label>
-                                    <input placeholder="https://maps.google.com/..." value={clubForm.locationUrl} onChange={e => setClubForm({ ...clubForm, locationUrl: e.target.value })} style={{ background: '#111', border: '1px solid #1e90ff44', padding: '15px', borderRadius: '15px', color: '#fff' }} />
-                                </div>
+                            <div style={{ height: '220px', borderRadius: '20px', overflow: 'hidden', border: '1px solid #fff2', marginBottom: '15px' }}>
+                                <MapContainer center={[41.2995, 69.2401]} zoom={11} style={{ height: '100%', width: '100%' }}>
+                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                    <Marker position={[clubForm.lat, clubForm.lng]} icon={greenIcon} />
+                                    <LocationPicker onSelect={(pos) => setClubForm({ ...clubForm, lat: pos.lat, lng: pos.lng })} />
+                                </MapContainer>
+                            </div>
 
-                                <select value={clubForm.level} onChange={e => setClubForm({ ...clubForm, level: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '15px', borderRadius: '15px', color: '#fff' }}>
-                                    <option value="standard">Standard</option>
-                                    <option value="premium">Premium 💎</option>
-                                    <option value="platinum">Platinum 👑</option>
+                            <p style={{ textAlign: 'center', fontSize: '10px', opacity: 0.4, marginBottom: '15px' }}>📍 Nuqtani tanlang: {clubForm.lat.toFixed(4)}, {clubForm.lng.toFixed(4)}</p>
+
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                <input placeholder="Klub nomi" value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '14px', borderRadius: '12px', color: '#fff' }} />
+                                <input placeholder="Manzil (Matn)" value={clubForm.address} onChange={e => setClubForm({ ...clubForm, address: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '14px', borderRadius: '12px', color: '#fff' }} />
+
+                                <select value={clubForm.level} onChange={e => setClubForm({ ...clubForm, level: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '14px', borderRadius: '12px', color: '#fff' }}>
+                                    <option value="standard">Standard Node</option>
+                                    <option value="premium">Premium Node 💎</option>
+                                    <option value="platinum">Platinum Node 👑</option>
                                 </select>
 
-                                <input type="file" accept="image/*" onChange={e => setSelectedImage(e.target.files[0])} style={{ fontSize: '12px', opacity: 0.5 }} />
+                                <input type="file" onChange={e => setSelectedImage(e.target.files[0])} style={{ fontSize: '11px', opacity: 0.5 }} />
 
-                                <button onClick={handleAddClub} disabled={loading} style={{ background: '#39ff14', border: 'none', padding: '20px', borderRadius: '20px', fontWeight: 'bold', color: '#000', marginTop: '10px' }}>
-                                    {loading ? 'YUKLANMOQDA...' : 'KLUB YARATISH 🚀'}
+                                <button onClick={handleAddClub} disabled={loading} style={{ background: 'linear-gradient(90deg, #39ff14, #00ddeb)', border: 'none', padding: '18px', borderRadius: '15px', fontWeight: 'bold', color: '#000', marginTop: '5px' }}>
+                                    {loading ? 'WAIT...' : 'INITIALIZE ON MAP 🚀'}
                                 </button>
-                                <button onClick={() => setIsFormOpen(false)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: '11px' }}>BEKOR QILISH</button>
+                                <button onClick={() => setIsFormOpen(false)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: '12px' }}>CANCEL</button>
                             </div>
                         </motion.div>
                     </motion.div>

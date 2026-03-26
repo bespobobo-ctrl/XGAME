@@ -154,9 +154,15 @@ router.get('/clubs', async (req, res) => {
 
 router.post('/admin/clubs', auth, authorize('super_admin'), upload.single('image'), async (req, res) => {
     try {
-        const { name, address, level, locationUrl } = req.body;
+        const { name, address, level, locationUrl, lat, lng } = req.body;
         const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-        const club = await Club.create({ name, address, image: imagePath, level: level || 'standard', locationUrl: locationUrl || '' });
+        const club = await Club.create({
+            name, address, image: imagePath,
+            level: level || 'standard',
+            locationUrl: locationUrl || '',
+            lat: parseFloat(lat) || 41.2995,
+            lng: parseFloat(lng) || 69.2401
+        });
         res.json({ success: true, club });
     } catch (err) {
         res.status(400).json({ error: err.message });

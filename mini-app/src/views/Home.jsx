@@ -61,7 +61,7 @@ const Home = ({ onClubSelect }) => {
                     >
                         <div style={{ height: '220px', overflow: 'hidden', background: '#39ff1411', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {club.image ? (
-                                <img src={`https://humidity-parenting-highway-mod.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img src={`https://synthesis-legends-lamb-davidson.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
                                 <span style={{ fontSize: '60px' }}>🏛️</span>
                             )}

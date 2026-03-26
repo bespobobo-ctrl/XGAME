@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { callAPI } from '../api';
+import API_URL, { callAPI } from '../api';
 
 const SuperAdminLogin = ({ onLogin, onCancel }) => {
     const [user, setUser] = useState('');
@@ -9,10 +9,10 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
     const [serverStatus, setServerStatus] = useState('checking'); // checking, online, offline
 
     useEffect(() => {
-        // 🛰️ SERVER STATUS CHECK
+        // 🛰️ SERVER STATUS CHECK (Global Sync Ready)
         const checkServer = async () => {
             try {
-                const res = await fetch('https://synthesis-legends-lamb-davidson.trycloudflare.com/ping');
+                const res = await fetch(`${API_URL}/ping`);
                 if (res.ok) setServerStatus('online');
                 else setServerStatus('offline');
             } catch (e) {

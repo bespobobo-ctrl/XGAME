@@ -6,18 +6,18 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// 🛡️ MODELLAR (Bitta joyga jamlaymiz)
+// 🛡️ MODELLARNI TO'G'RI IMPORT QILISH (Hech narsa yo'qolmasligi uchun)
 const Club = require('../database/models/Club');
 const User = require('../database/models/User');
 const Session = require('../database/models/Session');
 const PC = require('../database/models/Computer');
 const Room = require('../database/models/Room');
 
-// 🛡️ AUTH MIDDLEWARE
+// 🛡️ AUTH MIDDLEWARE (NEXUS READY)
 const auth = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
-        if (!authHeader) return res.status(401).json({ error: 'Token topilmadi!' });
+        if (!authHeader) return res.status(401).json({ error: 'Auth failed' });
         const token = authHeader.split(' ')[1];
         req.user = jwt.verify(token, process.env.JWT_SECRET || 'xgame_secret');
         next();
@@ -40,34 +40,46 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ==========================================
-// 🏠 PUBLIC ROUTES (O'yinchilar uchun)
-// ==========================================
-
-router.get('/clubs', async (req, res) => {
-    try {
-        const clubs = await Club.findAll({ where: { status: 'active' }, order: [['id', 'DESC']] });
-        res.json(clubs);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ==========================================
-// 🛡️ AUTH & LOGIN
+// 🛡️ UNIVERSAL LOGIN (NEXUS RECONCILED)
 // ==========================================
 
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = await User.findOne({ where: { username } });
-        if (!user || user.password !== password) return res.status(401).json({ error: 'Login yoki parol xato!' });
+        console.log(`[LOGIN ATTEMPT] Username: ${username}`); // 🕵️‍♂️ Debug logs
 
-        const token = jwt.sign({ id: user.id, role: user.role, clubId: user.ClubId }, process.env.JWT_SECRET || 'xgame_secret');
-        res.json({ success: true, token, user: { id: user.id, username: user.username, role: user.role } });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        const user = await User.findOne({ where: { username } });
+        if (!user || user.password !== password) {
+            return res.status(401).json({ success: false, message: 'Login yoki parol xato! ❌' });
+        }
+
+        // 🛡️ Token generatsiya (Role va ClubId bilan)
+        const token = jwt.sign(
+            { id: user.id, role: user.role, clubId: user.ClubId },
+            process.env.JWT_SECRET || 'xgame_secret'
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: { id: user.id, username: user.username, role: user.role, clubId: user.ClubId }
+        });
+    } catch (err) {
+        console.error('[LOGIN ERROR]', err);
+        res.status(500).json({ success: false, message: 'Server xatosi! 🛑' });
+    }
 });
 
 // ==========================================
-// 🏛️ SUPER ADMIN ROUTES
+// 🏠 PUBLIC & ADMIN ROUTES
 // ==========================================
+
+router.get('/clubs', async (req, res) => {
+    try {
+        const clubs = await Club.findAll({ order: [['id', 'DESC']] });
+        res.json(clubs);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 router.get('/admin/clubs', auth, async (req, res) => {
     try {
@@ -85,7 +97,18 @@ router.post('/admin/clubs', auth, upload.single('image'), async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 📊 ADMIN: STATS
+router.put('/admin/clubs/:id', auth, upload.single('image'), async (req, res) => {
+    try {
+        const { name, address, level, lat, lng, status } = req.body;
+        const club = await Club.findByPk(req.params.id);
+        if (!club) return res.status(404).json({ error: 'NotFound' });
+        const updateData = { name, address, level, lat, lng, status };
+        if (req.file) updateData.image = `/uploads/${req.file.filename}`;
+        await club.update(updateData);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/admin/stats', auth, async (req, res) => {
     try {
         const totalClubs = await Club.count();
@@ -95,7 +118,6 @@ router.get('/admin/stats', auth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 👤 ADMIN: MANAGERS
 router.get('/admin/managers', auth, async (req, res) => {
     try {
         const managers = await User.findAll({
@@ -118,15 +140,13 @@ router.post('/admin/managers', auth, async (req, res) => {
 });
 
 // ==========================================
-// 👤 MANAGER ROUTES (Klub Sozlash)
+// 👤 MANAGER ROUTES
 // ==========================================
 
 router.post('/manager/setup', auth, async (req, res) => {
     try {
         const { rooms } = req.body;
         const clubId = req.user.clubId;
-        if (!clubId) return res.status(400).json({ error: 'Sizda klub biriktirilmagan!' });
-
         for (const r of rooms) {
             const room = await Room.create({ name: r.name, price: r.price, ClubId: clubId });
             for (let i = 1; i <= r.pcCount; i++) {
@@ -137,7 +157,6 @@ router.post('/manager/setup', auth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PC'larni olish (Menejer uchun)
 router.get('/pcs', auth, async (req, res) => {
     try {
         const pcs = await PC.findAll({ where: { ClubId: req.user.clubId }, order: [['id', 'ASC']] });

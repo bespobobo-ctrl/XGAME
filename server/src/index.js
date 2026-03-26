@@ -55,7 +55,8 @@ async function startServer() {
         await User.create({
             username: '123',
             password: '123',
-            role: 'super_admin'
+            role: 'super_admin',
+            telegramId: '0' // Majburiy maydon to'ldirildi
         });
         console.log('Master Admin yaratildi: 123 / 123 🛡️');
     }

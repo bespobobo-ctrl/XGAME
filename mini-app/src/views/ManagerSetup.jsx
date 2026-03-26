@@ -9,7 +9,7 @@ const ManagerSetup = ({ onFinish }) => {
     const submitSetup = async () => {
         setLoading(true);
         try {
-            await callAPI('/api/setup-club', {
+            await callAPI('/api/manager/setup', {
                 method: 'POST',
                 body: JSON.stringify({ rooms: setupRooms })
             });

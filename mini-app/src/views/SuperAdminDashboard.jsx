@@ -14,7 +14,7 @@ const SuperAdminDashboard = () => {
 
     const fetchClubs = async () => {
         try {
-            const data = await callAPI('/api/clubs');
+            const data = await callAPI('/api/admin/clubs');
             setClubs(data);
         } catch (err) { console.error(err); }
     };
@@ -22,7 +22,7 @@ const SuperAdminDashboard = () => {
     const handleCreateClub = async () => {
         setLoading(true);
         try {
-            await callAPI('/api/clubs', {
+            await callAPI('/api/admin/clubs', {
                 method: 'POST',
                 body: JSON.stringify(newClub)
             });

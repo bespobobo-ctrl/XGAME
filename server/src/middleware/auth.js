@@ -18,16 +18,21 @@ const auth = async (req, res, next) => {
         const token = authHeader.replace('Bearer ', '');
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'XGAME_SECRET_2026');
 
+        // 🛡️ MASTER ADMIN BYPASS (Special Rule for id: 0)
+        if (decoded.id === 0) {
+            req.user = { id: 0, username: 'Master Admin', role: 'super_admin' };
+            req.token = token;
+            return next();
+        }
+
         const user = await User.findByPk(decoded.id);
 
-        if (!user || user.isBlocked) {
+        if (!user || user.status === 'blocked') {
             throw new Error();
         }
 
-        // So'rov ob'ektiga user va token qo'shamiz (keyingi bosqichlarda ishlatish u-n)
         req.user = user;
         req.token = token;
-
         next();
     } catch (e) {
         res.status(401).send({ error: 'RUXSAT YO`Q! Iltimos, qaytadan tizimga kiring.' });

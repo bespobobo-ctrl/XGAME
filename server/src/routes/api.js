@@ -169,12 +169,15 @@ router.post('/admin/clubs', auth, authorize('super_admin'), upload.single('image
     }
 });
 
-router.put('/admin/clubs/:id', auth, authorize('super_admin'), async (req, res) => {
+router.put('/admin/clubs/:id', auth, authorize('super_admin'), upload.single('image'), async (req, res) => {
     try {
-        const { status, level, priority, name, address } = req.body;
         const club = await Club.findByPk(req.params.id);
         if (!club) return res.status(404).json({ error: 'Klub topilmadi!' });
-        await club.update({ status, level, priority, name, address });
+
+        const updateData = { ...req.body };
+        if (req.file) updateData.image = `/uploads/${req.file.filename}`;
+
+        await club.update(updateData);
         res.json({ success: true, club });
     } catch (err) {
         res.status(400).json({ error: err.message });

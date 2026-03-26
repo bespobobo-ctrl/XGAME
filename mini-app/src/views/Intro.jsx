@@ -7,7 +7,7 @@ const Intro = ({ onFinish }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="intro-masterpiece"
+            className="intro-masterpiece-v2"
             style={{
                 background: '#0a0510',
                 height: '100vh',
@@ -21,126 +21,124 @@ const Intro = ({ onFinish }) => {
                 overflow: 'hidden'
             }}
         >
-            {/* 🔮 ANIMATED BACKGROUND ORBS */}
+            {/* 🔮 OPTIMIZED BACKGROUND ORBS (Using back-layer for better performance) */}
             <motion.div
                 animate={{
-                    x: [0, 50, 0],
-                    y: [0, -50, 0],
-                    scale: [1, 1.2, 1]
-                }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                style={{
-                    width: '400px', height: '400px',
-                    background: 'radial-gradient(circle, #ff00ff22 0%, transparent 70%)',
-                    position: 'absolute', top: '-100px', right: '-100px', filter: 'blur(60px)'
-                }}
-            />
-            <motion.div
-                animate={{
-                    x: [0, -50, 0],
-                    y: [0, 50, 0],
-                    scale: [1, 1.3, 1]
+                    x: [0, 40, 0],
+                    y: [0, -40, 0]
                 }}
                 transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                 style={{
-                    width: '500px', height: '500px',
-                    background: 'radial-gradient(circle, #7000ff11 0%, transparent 70%)',
-                    position: 'absolute', bottom: '-200px', left: '-100px', filter: 'blur(80px)'
+                    width: '350px', height: '350px',
+                    background: 'rgba(255, 0, 255, 0.15)',
+                    position: 'absolute', top: '-10%', right: '-10%', filter: 'blur(50px)',
+                    borderRadius: '50%', willChange: 'transform'
+                }}
+            />
+            <motion.div
+                animate={{
+                    x: [0, -40, 0],
+                    y: [0, 40, 0]
+                }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                style={{
+                    width: '450px', height: '450px',
+                    background: 'rgba(112, 0, 255, 0.1)',
+                    position: 'absolute', bottom: '-20%', left: '-10%', filter: 'blur(70px)',
+                    borderRadius: '50%', willChange: 'transform'
                 }}
             />
 
-            {/* 👾 LOGO & CONTENT */}
-            <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 30px' }}>
+            {/* 👾 CONTENT WRAPPER */}
+            <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 40px' }}>
 
-                {/* ⚡ GLOWING LOGO */}
+                {/* ⚡ LOGO WITH LESS INTENSE SHADOWS */}
                 <motion.div
-                    initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
-                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
+                    initial={{ scale: 0.7, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 80, delay: 0.3 }}
                     style={{
-                        fontSize: '120px', marginBottom: '10px',
-                        filter: 'drop-shadow(0 0 30px rgba(255, 0, 255, 0.5))'
+                        fontSize: '100px', marginBottom: '15px',
+                        filter: 'drop-shadow(0 0 15px rgba(255, 0, 255, 0.3))',
+                        willChange: 'transform'
                     }}
                 >
                     🎮
                 </motion.div>
 
                 <motion.h1
-                    initial={{ y: 20, opacity: 0 }}
+                    initial={{ y: 15, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ delay: 0.6 }}
                     style={{
-                        fontSize: '52px', fontWeight: '900', color: '#fff',
-                        margin: '0 0 10px', fontFamily: '"Outfit", sans-serif',
-                        letterSpacing: '5px', textShadow: '0 0 20px rgba(255,255,255,0.3)'
+                        fontSize: '48px', fontWeight: '900', color: '#fff',
+                        margin: '0 0 12px', fontFamily: '"Outfit", sans-serif',
+                        letterSpacing: '4px', textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+                        willChange: 'transform'
                     }}
                 >
                     X-GAME
                 </motion.h1>
 
                 <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.7 }}
+                    initial={{ width: 0 }}
+                    animate={{ width: '50px' }}
+                    transition={{ delay: 0.8 }}
                     style={{
-                        width: '60px', height: '4px', background: 'linear-gradient(90deg, #ff00ff, #7000ff)',
-                        margin: '0 auto 30px', borderRadius: '2px'
+                        height: '3px', background: 'linear-gradient(90deg, #ff00ff, #7000ff)',
+                        margin: '0 auto 35px', borderRadius: '2px'
                     }}
                 />
 
                 <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.9 }}
+                    transition={{ delay: 1.0 }}
                     style={{
-                        color: 'rgba(255,255,255,0.5)', fontSize: '18px', lineHeight: '1.6',
-                        marginBottom: '60px', fontWeight: '400', maxWidth: '300px'
+                        color: 'rgba(255,255,255,0.4)', fontSize: '16px', lineHeight: '1.5',
+                        marginBottom: '50px', fontWeight: '400', maxWidth: '280px',
+                        margin: '0 auto 50px'
                     }}
                 >
                     Keyingi avlod gaming olamiga xush kelibsiz! ✨
                 </motion.p>
 
-                {/* 🚀 BUTTON WITH NEON GLOW */}
+                {/* 🚀 SMOOTH BUTTON */}
                 <motion.button
-                    initial={{ scale: 0.8, opacity: 0 }}
+                    initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 1.2, type: "spring" }}
-                    whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(255, 0, 255, 0.6)' }}
-                    whileTap={{ scale: 0.95 }}
+                    transition={{ delay: 1.3 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={onFinish}
                     style={{
                         background: 'linear-gradient(90deg, #ff00ff 0%, #7000ff 100%)',
-                        border: 'none', borderRadius: '20px',
-                        color: '#fff', fontSize: '20px', fontWeight: '900',
-                        padding: '22px 70px', cursor: 'pointer',
-                        boxShadow: '0 15px 40px rgba(255, 0, 255, 0.4)',
-                        letterSpacing: '2px'
+                        border: 'none', borderRadius: '18px',
+                        color: '#fff', fontSize: '18px', fontWeight: '900',
+                        padding: '20px 60px', cursor: 'pointer',
+                        boxShadow: '0 10px 25px rgba(255, 0, 255, 0.3)',
+                        letterSpacing: '1px', willChange: 'transform'
                     }}
                 >
                     KIRISH ⚡
                 </motion.button>
             </div>
 
-            {/* FOOTER INFO */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.3 }}
-                transition={{ delay: 2 }}
-                style={{ position: 'absolute', bottom: '40px', color: '#fff', fontSize: '10px', letterSpacing: '2px' }}
-            >
-                POWERED BY NEXUS ENGINE v1.7.0
-            </motion.div>
+            {/* FOOTER */}
+            <div style={{ position: 'absolute', bottom: '40px', color: 'rgba(255,255,255,0.2)', fontSize: '10px', letterSpacing: '2px' }}>
+                POWERED BY NEXUS ENGINE v1.7.5
+            </div>
 
-            {/* CUSTOM CSS FOR MESH BACKGROUND */}
             <style>{`
-        .intro-masterpiece::before {
+        .intro-masterpiece-v2::before {
           content: "";
           position: absolute;
           width: 100%;
           height: 100%;
-          background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-          background-size: 30px 30px;
-          opacity: 0.3;
+          background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+          background-size: 40px 40px;
+          opacity: 0.4;
+          z-index: 0;
         }
       `}</style>
         </motion.div>

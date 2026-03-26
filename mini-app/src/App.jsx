@@ -53,13 +53,13 @@ const App = () => {
       {/* 🏠 MAIN APPLICATION UI */}
       {view !== 'intro' && (
         <>
-          <header className="app-header" style={{ padding: '25px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'linear-gradient(rgba(5,5,5,0.9), transparent)', backdropFilter: 'blur(5px)' }}>
+          <header className="app-header" style={{ padding: '35px 20px 0px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'linear-gradient(rgba(5,5,5,1), transparent)' }}>
             <motion.h1
               onMouseDown={startLongPress} onMouseUp={stopLongPress}
               onTouchStart={startLongPress} onTouchEnd={stopLongPress}
-              animate={{ textShadow: ['0 0 10px #39ff14', '0 0 25px #39ff14', '0 0 10px #39ff14'] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              style={{ margin: 0, fontSize: '32px', fontWeight: '950', letterSpacing: '8px', cursor: 'grab', color: '#fff' }}
+              animate={{ textShadow: ['0 0 10px #39ff14', '0 0 30px #39ff14', '0 0 10px #39ff14'] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              style={{ margin: 0, fontSize: '40px', fontWeight: '950', letterSpacing: '8px', cursor: 'grab', color: '#fff' }}
             >
               {view === 'superAdmin' ? 'NEXUS' : 'X-GAME'}
             </motion.h1>

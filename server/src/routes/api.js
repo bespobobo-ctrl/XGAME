@@ -150,10 +150,35 @@ router.post('/admin/clubs', auth, authorize('super_admin'), upload.single('image
     }
 });
 
+router.get('/admin/managers', auth, authorize('super_admin'), async (req, res) => {
+    try {
+        const managers = await User.findAll({ where: { role: 'manager' } });
+        res.json(managers);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.post('/admin/managers', auth, authorize('super_admin'), async (req, res) => {
-    const { username, password, ClubId } = req.body;
-    const user = await User.create({ username, password, role: 'manager', ClubId });
-    res.json(user);
+    try {
+        const { username, password, clubId } = req.body;
+
+        // Login bandligini tekshirish
+        const existing = await User.findOne({ where: { username } });
+        if (existing) return res.status(400).json({ success: false, message: 'Bu login band! 🚫' });
+
+        const user = await User.create({
+            username,
+            password,
+            role: 'manager',
+            ClubId: clubId,
+            telegramId: `M-${Date.now()}` // Menejerlar uchun vaqtinchalik ID
+        });
+
+        res.json({ success: true, user });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
 });
 
 router.post('/start-session', auth, async (req, res) => {

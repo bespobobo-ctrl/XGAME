@@ -23,6 +23,7 @@ const translations = {
         activeUsers: 'AKTIV O\'YINChILAR',
         peakHours: 'TIRBANLIK SOATLARI',
         recentAct: 'JONLI VOQEALAR 🕵️‍♂️',
+        clubTimeline: 'KLUBLAR TARIXI (REG) 🏛️',
         systemLoad: 'TIZIM YUKLAMASI',
         searchNodes: 'Qidiruv...',
         newClub: 'YANGI KLUB 🏛️',
@@ -31,7 +32,8 @@ const translations = {
         cancel: 'BEKOR QILISh',
         assign: 'TAYINLASH 👤',
         online: 'ONLAYN',
-        offline: 'OFLAYN'
+        offline: 'OFLAYN',
+        totalClubs: 'UMUMIY KLUBLAR'
     },
     ru: {
         statsTile: '📊 КОМАНДНЫЙ ЦЕНТР',
@@ -39,6 +41,7 @@ const translations = {
         activeUsers: 'АКТИВНЫЕ ИГРОКИ',
         peakHours: 'ЧАСЫ ПИК 📈',
         recentAct: 'ЖИВАЯ ЛЕНТА 🕵️‍♂️',
+        clubTimeline: 'ИСТОРИЯ КЛУБОВ (РЕГ) 🏛️',
         systemLoad: 'ЗАГРУЗКА',
         searchNodes: 'Поиск...',
         newClub: 'НОВЫЙ КЛУБ 🏛️',
@@ -47,7 +50,8 @@ const translations = {
         cancel: 'ОТМЕНА',
         assign: 'НАЗНАЧИТЬ 👤',
         online: 'ОНЛАЙН',
-        offline: 'ОФФЛАЙН'
+        offline: 'ОФФЛАЙН',
+        totalClubs: 'ВСЕГО КЛУБОВ'
     }
 };
 
@@ -79,16 +83,12 @@ const SuperAdminDashboard = ({ activeTab }) => {
 
     const fetchClubs = async () => { try { const data = await callAPI('/api/admin/clubs'); setClubs(data || []); } catch (e) { } };
     const fetchManagers = async () => { try { const data = await callAPI('/api/admin/managers'); setManagers(data || []); } catch (e) { } };
-    const fetchStats = async () => {
-        try {
-            const data = await callAPI('/api/admin/stats');
-            if (data) setStats(data);
-        } catch (e) { console.log("Stats fetch error", e); }
-    };
+    const fetchStats = async () => { try { const data = await callAPI('/api/admin/stats'); if (data) setStats(data); } catch (e) { } };
 
-    const formatDate = (dateStr) => {
+    const formatDate = (dateStr, full = false) => {
         if (!dateStr) return '---';
-        return new Date(dateStr).toLocaleTimeString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const opt = full ? { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' } : { hour: '2-digit', minute: '2-digit' };
+        return new Date(dateStr).toLocaleString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', opt);
     };
 
     const handleSaveClub = async () => {
@@ -102,7 +102,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
             const res = await fetch(editingClub ? `https://synthesis-legends-lamb-davidson.trycloudflare.com/api/admin/clubs/${editingClub.id}` : `https://synthesis-legends-lamb-davidson.trycloudflare.com/api/admin/clubs`, {
                 method: editingClub ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('x-token')}` }, body: formData
             });
-            if ((await res.json()).success) { setIsClubFormOpen(false); setEditingClub(null); fetchClubs(); }
+            if ((await res.json()).success) { setIsClubFormOpen(false); setEditingClub(null); fetchClubs(); fetchStats(); }
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
@@ -111,7 +111,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
         setLoading(true);
         try {
             const res = await callAPI(editingManager ? `/api/admin/managers/${editingManager.id}` : '/api/admin/managers', { method: editingManager ? 'PUT' : 'POST', body: JSON.stringify(managerForm) });
-            if (res.success) { setIsManagerFormOpen(false); setEditingManager(null); fetchManagers(); }
+            if (res.success) { setIsManagerFormOpen(false); setEditingManager(null); fetchManagers(); fetchStats(); }
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
@@ -124,59 +124,57 @@ const SuperAdminDashboard = ({ activeTab }) => {
             </div>
 
             <AnimatePresence mode="wait">
-                {/* 📊 DASHBOARD: COMMAND CENTER V5 (SAFETY WRAPPED) */}
                 {activeTab === 'dashboard' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '20px' }}>
                         {stats ? (
                             <>
-                                {/* 💰 REVENUE */}
-                                <div style={{ background: 'radial-gradient(circle at top, rgba(57, 255, 20, 0.1), transparent)', border: '1px solid #39ff1444', padding: '40px', borderRadius: '45px', textAlign: 'center' }}>
-                                    <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '5px', opacity: 0.6 }}>{t.revenueDay}</span>
-                                    <motion.h1 animate={{ scale: [1, 1.02, 1] }} transition={{ repeat: Infinity, duration: 2 }} style={{ fontSize: '60px', margin: '15px 0', textShadow: '0 0 30px #39ff1455', fontWeight: '950' }}>
-                                        {(stats.todayRevenue || 0).toLocaleString()} <span style={{ fontSize: '24px', opacity: 0.4 }}>UZS</span>
-                                    </motion.h1>
-                                    <div style={{ fontSize: '10px', color: '#39ff14', background: 'rgba(57, 255, 20, 0.1)', padding: '5px 15px', borderRadius: '20px', display: 'inline-block' }}>+12.4% 📈</div>
+                                {/* 🏛️ TOTAL CLUBS COUNTER (RESTORED!) */}
+                                <div style={{ background: 'linear-gradient(rgba(57, 255, 20, 0.08), transparent)', border: '1px solid #39ff1433', padding: '40px', borderRadius: '45px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 20, ease: 'linear' }} style={{ position: 'absolute', right: '-20px', top: '-20px', fontSize: '100px', opacity: 0.05 }}>🏛️</motion.div>
+                                    <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '5px' }}>{t.totalClubs}</span>
+                                    <motion.h1 animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 2.5 }} style={{ fontSize: '80px', margin: '5px 0', fontWeight: '950', textShadow: '0 0 40px #39ff1444' }}>{stats.totalClubs}</motion.h1>
+                                    <div style={{ fontSize: '10px', opacity: 0.4 }}>GLOBAL NETWORK 🛰️</div>
                                 </div>
 
-                                {/* 📉 CHART */}
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '40px', border: '1px solid #fff1' }}>
-                                    <span style={{ fontSize: '10px', opacity: 0.5, display: 'block', marginBottom: '15px' }}>{t.peakHours}</span>
-                                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '100px', gap: '8px', padding: '0 10px' }}>
-                                        {(stats.peakHours || []).map((h, i) => (
-                                            <motion.div key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }} style={{ flex: 1, background: 'linear-gradient(to top, #39ff14, #00ddeb)', borderRadius: '4px', opacity: 0.8 }} />
-                                        ))}
-                                    </div>
+                                {/* 💰 REVENUE CARD */}
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
+                                    <span style={{ fontSize: '9px', opacity: 0.4 }}>{t.revenueDay}</span>
+                                    <h2 style={{ fontSize: '32px', margin: '10px 0', color: '#39ff14' }}>{(stats.todayRevenue || 0).toLocaleString()} <small style={{ fontSize: '12px', opacity: 0.5 }}>UZS</small></h2>
                                 </div>
 
                                 {/* 🚁 GRID */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                     <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
                                         <p style={{ fontSize: '9px', opacity: 0.4, margin: 0 }}>{t.activeUsers}</p>
-                                        <h2 style={{ fontSize: '32px', margin: '5px 0' }}>{stats.activeUsers || 0} 🟢</h2>
+                                        <h2 style={{ fontSize: '28px', margin: '5px 0' }}>{stats.activeUsers || 0} 🟢</h2>
                                     </div>
                                     <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
-                                        <p style={{ fontSize: '9px', opacity: 0.4, margin: 0 }}>{t.systemLoad}</p>
-                                        <h2 style={{ fontSize: '32px', margin: '5px 0' }}>{stats.load || 42}% ⚙️</h2>
+                                        <p style={{ fontSize: '9px', opacity: 0.4, margin: 0 }}>{t.managersCount}</p>
+                                        <h2 style={{ fontSize: '28px', margin: '5px 0' }}>{stats.totalManagers || 0} 👤</h2>
                                     </div>
                                 </div>
 
-                                {/* 🕵️‍♂️ FEED */}
-                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '35px', border: '1px dashed #fff2', maxHeight: '180px', overflowY: 'auto' }}>
-                                    <h3 style={{ fontSize: '10px', opacity: 0.4, marginBottom: '15px' }}>{t.recentAct}</h3>
-                                    {(stats.recentActivity || []).map((act, i) => (
-                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', borderBottom: '1px solid #fff1', paddingBottom: '8px', marginBottom: '8px' }}>
-                                            <span>👤 {act.user}</span>
-                                            <span style={{ color: '#00ddeb' }}>{act.action}</span>
-                                            <span style={{ opacity: 0.3 }}>{formatDate(act.time)}</span>
-                                        </div>
-                                    ))}
+                                {/* 📅 CLUB REGISTRATION TIMELINE (NEW!) */}
+                                <div style={{ background: 'rgba(57, 255, 20, 0.02)', padding: '30px', borderRadius: '40px', border: '1px dashed #39ff1433' }}>
+                                    <h3 style={{ fontSize: '10px', opacity: 0.5, marginBottom: '20px', letterSpacing: '2px' }}>{t.clubTimeline}</h3>
+                                    <div style={{ display: 'grid', gap: '15px' }}>
+                                        {(stats.clubsHistory || []).map((c, i) => (
+                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', borderBottom: '1px solid #fff1', paddingBottom: '10px' }}>
+                                                <div>
+                                                    <b style={{ color: '#39ff14' }}>{c.name}</b>
+                                                    <div style={{ fontSize: '8px', opacity: 0.3 }}>ID: {i + 1001}</div>
+                                                </div>
+                                                <span style={{ background: '#fff1', padding: '4px 10px', borderRadius: '8px', fontSize: '10px' }}>📅 {formatDate(c.createdAt, true)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
+
                             </>
                         ) : (
-                            /* ⚡ LOADING PLACEHOLDER (NO BLACK SCREEN) */
-                            <div style={{ padding: '80px', textAlign: 'center' }}>
-                                <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ fontSize: '50px' }}>🛰️</motion.div>
-                                <p style={{ fontSize: '12px', opacity: 0.4, marginTop: '20px', letterSpacing: '4px' }}>CONNECTING TO NEXUS...</p>
+                            <div style={{ padding: '100px', textAlign: 'center' }}>
+                                <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ fontSize: '60px' }}>🛰️</motion.div>
+                                <p style={{ fontSize: '11px', opacity: 0.3, letterSpacing: '4px', marginTop: '20px' }}>FETCHING GLOBAL DATA...</p>
                             </div>
                         )}
                     </motion.div>
@@ -193,7 +191,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
                             {(clubs || []).filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(club => (
                                 <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '30px', border: club.status === 'blocked' ? '1px solid #ff4444' : '1px solid #fff1' }}>
                                     <div style={{ flex: 1 }}>
-                                        <h4 style={{ margin: 0, opacity: club.status === 'blocked' ? 0.3 : 1 }}>{club.name}</h4>
+                                        <h4 style={{ margin: 0 }}>{club.name}</h4>
                                         <span style={{ fontSize: '8px', opacity: 0.3 }}>{club.address}</span>
                                     </div>
                                     <div style={{ display: 'flex', gap: '15px' }}>
@@ -220,8 +218,8 @@ const SuperAdminDashboard = ({ activeTab }) => {
                                         <h3 style={{ margin: 0, fontSize: '20px' }}>{m.username}</h3>
                                         <button onClick={() => { setEditingManager(m); setManagerForm({ username: m.username, password: '', status: m.status, clubId: m.ClubId }); setIsManagerFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '20px' }}>✎</button>
                                     </div>
-                                    <span style={{ fontSize: '9px', background: '#fff1', color: '#39ff14', padding: '4px 12px', borderRadius: '8px' }}>🔑 {m.rawPassword || '---'}</span>
-                                    <p style={{ fontSize: '9px', opacity: 0.4, marginTop: '8px' }}>{m.clubName || '---'}</p>
+                                    <span style={{ fontSize: '10px', background: '#39ff1411', color: '#39ff14', padding: '6px 15px', borderRadius: '10px', fontWeight: 'bold' }}>🔑 {m.rawPassword || '---'}</span>
+                                    <p style={{ fontSize: '9px', opacity: 0.4, marginTop: '10px', borderTop: '1px solid #fff1', paddingTop: '10px' }}>{m.clubName || '---'}</p>
                                 </div>
                             ))}
                         </div>
@@ -243,7 +241,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
                                 </MapContainer>
                             </div>
                             <div style={{ display: 'grid', gap: '15px' }}>
-                                <input placeholder="Nomi" value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} style={{ width: '100%', background: '#111', border: '1px solid #fff2', padding: '18px', borderRadius: '20px', color: '#fff', boxSizing: 'border-box' }} />
+                                <input placeholder="Klub nomi" value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} style={{ width: '100%', background: '#111', border: '1px solid #fff2', padding: '18px', borderRadius: '20px', color: '#fff', boxSizing: 'border-box' }} />
                                 <input placeholder="Manzil" value={clubForm.address} onChange={e => setClubForm({ ...clubForm, address: e.target.value })} style={{ width: '100%', background: '#111', border: '1px solid #fff2', padding: '18px', borderRadius: '20px', color: '#fff', boxSizing: 'border-box' }} />
                                 <button onClick={handleSaveClub} style={{ width: '100%', background: '#39ff14', border: 'none', padding: '22px', borderRadius: '20px', fontWeight: 'bold' }}>{t.save}</button>
                                 <button onClick={() => setIsClubFormOpen(false)} style={{ width: '100%', background: 'none', border: 'none', color: '#ff4444', marginTop: '10px' }}>{t.cancel}</button>

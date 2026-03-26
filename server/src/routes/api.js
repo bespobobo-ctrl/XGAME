@@ -214,18 +214,25 @@ router.get('/admin/stats', auth, authorize('super_admin'), async (req, res) => {
             attributes: ['username', 'lastActive']
         });
 
+        // AKTIV KLUBAR TARIXI (Registration History)
+        const clubsHistory = await Club.findAll({
+            attributes: ['name', 'createdAt'],
+            order: [['createdAt', 'DESC']]
+        });
+
         res.json({
             totalClubs,
             totalManagers,
             todayRevenue,
             activeUsers,
             load: 42,
-            peakHours: [10, 20, 45, 80, 60, 40, 90, 100, 70, 50, 30, 15], // Hourly activity points
+            peakHours: [10, 20, 45, 80, 60, 40, 90, 100, 70, 50, 30, 15],
             recentActivity: recentManagers.map(m => ({
                 user: m.username,
                 action: 'Online Faollik 🟢',
                 time: m.lastActive
-            }))
+            })),
+            clubsHistory // BUNI QO'SHDIK ✨
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

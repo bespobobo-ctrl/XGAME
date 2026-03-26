@@ -1,4 +1,4 @@
-const API_URL = 'https://planned-usages-forever-music.trycloudflare.com';
+const API_URL = 'https://humidity-parenting-highway-mod.trycloudflare.com';
 
 export const callAPI = async (endpoint, options = {}) => {
     const token = localStorage.getItem('x-token');

@@ -12,7 +12,7 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
         // 🛰️ SERVER STATUS CHECK
         const checkServer = async () => {
             try {
-                const res = await fetch('https://planned-usages-forever-music.trycloudflare.com/ping');
+                const res = await fetch('https://humidity-parenting-highway-mod.trycloudflare.com/ping');
                 if (res.ok) setServerStatus('online');
                 else setServerStatus('offline');
             } catch (e) {

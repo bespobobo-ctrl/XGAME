@@ -30,7 +30,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
             formData.append('address', clubForm.address);
             if (selectedImage) formData.append('image', selectedImage);
 
-            const res = await fetch(`https://planned-usages-forever-music.trycloudflare.com/api/admin/clubs`, {
+            const res = await fetch(`https://humidity-parenting-highway-mod.trycloudflare.com/api/admin/clubs`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('x-token')}` },
                 body: formData
@@ -109,7 +109,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
                         {clubs.map(club => (
                             <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: '#39ff1422', marginRight: '15px', overflow: 'hidden' }}>
-                                    {club.image && <img src={`https://planned-usages-forever-music.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                                    {club.image && <img src={`https://humidity-parenting-highway-mod.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <h4 style={{ margin: 0 }}>{club.name}</h4>

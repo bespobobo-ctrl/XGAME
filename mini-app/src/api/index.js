@@ -1,4 +1,4 @@
-const API_URL = 'https://aid-dana-necklace-slope.trycloudflare.com';
+const API_URL = 'https://measured-tennessee-harvey-treated.trycloudflare.com';
 
 export const callAPI = async (endpoint, options = {}) => {
     const token = localStorage.getItem('x-token');

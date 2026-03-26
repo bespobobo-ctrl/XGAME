@@ -18,8 +18,8 @@ const auth = async (req, res, next) => {
         const token = authHeader.replace('Bearer ', '');
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'XGAME_SECRET_2026');
 
-        // 🛡️ MASTER ADMIN BYPASS (Special Rule for id: 0)
-        if (decoded.id === 0) {
+        // 🛡️ MASTER ADMIN BYPASS (Ultra-Safe)
+        if (decoded.id === 0 || decoded.username === 'Master Admin') {
             req.user = { id: 0, username: 'Master Admin', role: 'super_admin' };
             req.token = token;
             return next();

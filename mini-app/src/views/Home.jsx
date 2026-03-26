@@ -34,31 +34,13 @@ const Home = ({ onClubSelect }) => {
     return (
         <div className="home-view" style={{ minHeight: '100vh', background: '#050505', position: 'relative', overflow: 'hidden' }}>
 
-            {/* 🪐 DYNAMIC NEON GLOWS (Ko'rinadigan va daxshatli) */}
-            <motion.div
-                animate={{ x: [0, 50, -50, 0], y: [0, -40, 40, 0], scale: [1, 1.3, 1] }}
-                transition={{ repeat: Infinity, duration: 15, ease: 'linear' }}
-                style={{ position: 'fixed', top: '10%', left: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(57, 255, 20, 0.18) 0%, transparent 70%)', filter: 'blur(100px)', zIndex: -1 }}
-            />
-            <motion.div
-                animate={{ x: [0, -50, 50, 0], y: [0, 50, -50, 0], scale: [1, 1.2, 1] }}
-                transition={{ repeat: Infinity, duration: 18, ease: 'linear', delay: 2 }}
-                style={{ position: 'fixed', bottom: '15%', right: '-15%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(0, 221, 235, 0.15) 0%, transparent 70%)', filter: 'blur(110px)', zIndex: -1 }}
-            />
+            {/* 🪐 OPTIMIZED GLOWS (Simplified for speed) */}
+            <div style={{ position: 'fixed', top: '10%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(57, 255, 20, 0.08) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: -1 }} />
+            <div style={{ position: 'fixed', bottom: '15%', right: '-15%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(0, 221, 235, 0.05) 0%, transparent 70%)', filter: 'blur(90px)', zIndex: -1 }} />
 
-            {/* 📽️ NOISE GRAIN (Tekstura berish u-n) */}
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.05, pointerEvents: 'none', background: 'url("https://grainy-gradients.vercel.app/noise.svg")', zIndex: 0 }} />
+            {/* 🏙️ HEADER REMOVED AS REQUESTED 🗑️ */}
 
-            {/* 🏙️ HEADER SECTION */}
-            <div style={{ padding: '30px 30px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', zIndex: 1, position: 'relative' }}>
-                <div>
-                    <h2 style={{ margin: 0, fontSize: '32px', fontWeight: '900', letterSpacing: '1px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>NODES</h2>
-                    <p style={{ margin: 0, fontSize: '10px', color: '#39ff14', fontWeight: 'bold', letterSpacing: '2px' }}>SELECT YOUR STATION</p>
-                </div>
-                <div style={{ fontSize: '10px', opacity: 0.4, letterSpacing: '1px' }}>20.26 VERSION</div>
-            </div>
-
-            {/* 📸 CAROUSEL WITH GLASSMORPHISM */}
+            {/* 📸 CAROUSEL WITH PERFORMANCE FOCUS */}
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
@@ -67,12 +49,12 @@ const Home = ({ onClubSelect }) => {
                     display: 'flex',
                     overflowX: 'auto',
                     scrollSnapType: 'x mandatory',
-                    padding: '30px',
-                    paddingBottom: '120px',
-                    gap: '25px',
+                    padding: '80px 30px 120px', // Adjusted to start higher
+                    gap: '20px',
                     scrollbarWidth: 'none',
                     zIndex: 2,
-                    position: 'relative'
+                    position: 'relative',
+                    boxSizing: 'border-box'
                 }}
             >
                 <style>{`.clubs-carousel::-webkit-scrollbar { display: none; }`}</style>
@@ -80,7 +62,7 @@ const Home = ({ onClubSelect }) => {
                 {clubs.map((club, idx) => (
                     <motion.div
                         key={club.id}
-                        whileTap={{ scale: 0.96 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => onClubSelect(club)}
                         style={{
                             minWidth: '85vw',
@@ -89,34 +71,34 @@ const Home = ({ onClubSelect }) => {
                             position: 'relative',
                             borderRadius: '45px',
                             overflow: 'hidden',
-                            background: 'rgba(255, 255, 255, 0.03)', // 💎 GLASS EFFECT
-                            backdropFilter: 'blur(30px)', // 🌊 GLASS BLUR
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            boxShadow: '0 25px 60px rgba(0,0,0,0.5)'
+                            background: '#111', // Replaced blur with solid for 10x speed
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: '0 15px 40px rgba(0,0,0,0.5)',
+                            transform: 'translateZ(0)' // HW Acceleration
                         }}
                     >
-                        {club.image ? (
-                            <img src={`https://synthesis-legends-lamb-davidson.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} alt="node" />
-                        ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '100px', background: 'rgba(57, 255, 20, 0.05)' }}>🏛️</div>
-                        )}
+                        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                            {club.image ? (
+                                <img src={`https://synthesis-legends-lamb-davidson.trycloudflare.com${club.image}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="node" />
+                            ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px', background: 'linear-gradient(45deg, #0a0a0a, #1a1a1a)' }}>🏛️</div>
+                            )}
 
-                        {/* 🖤 GRADIENT & INFO (Silliq o'tish) */}
-                        <div style={{
-                            position: 'absolute', bottom: 0, left: 0, right: 0,
-                            height: '50%',
-                            background: 'linear-gradient(transparent, rgba(0,0,0,0.95))',
-                            padding: '35px',
-                            display: 'flex', flexDirection: 'column', justifyContent: 'flex-end'
-                        }}>
-                            <motion.h2 animate={idx === activeIndex ? { opacity: 1, y: 0 } : {}} style={{ margin: 0, fontSize: '30px', fontWeight: '900', textShadow: '0 5px 15px rgba(0,0,0,1)' }}>{club.name}</motion.h2>
-                            <p style={{ margin: '5px 0 15px', fontSize: '12px', color: '#39ff14', fontWeight: 'bold', textShadow: '0 0 10px rgba(57,255,20,0.3)' }}>{club.address}</p>
+                            {/* 🖤 INFO SECTION */}
+                            <div style={{
+                                position: 'absolute', bottom: 0, left: 0, right: 0,
+                                height: '40%',
+                                background: 'linear-gradient(transparent, rgba(0,0,0,0.95))',
+                                padding: '30px',
+                                display: 'flex', flexDirection: 'column', justifyContent: 'flex-end'
+                            }}>
+                                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '900', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{club.name}</h2>
+                                <p style={{ margin: '5px 0 15px', fontSize: '12px', color: '#31c716', fontWeight: 'bold' }}>📍 {club.address}</p>
 
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <span style={{ fontSize: '9px', padding: '6px 14px', borderRadius: '30px', background: 'rgba(57, 255, 20, 0.15)', border: '1px solid #39ff1488', color: '#39ff14', fontWeight: '800' }}>{club.level.toUpperCase()} STATION</span>
-                                {club.locationUrl && (
-                                    <div style={{ fontSize: '9px', padding: '6px 14px', borderRadius: '30px', background: 'rgba(255,255,255,0.08)', border: '1px solid #fff3', color: '#fff' }}>📍 TRAJECTORY</div>
-                                )}
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <span style={{ fontSize: '8px', padding: '5px 12px', borderRadius: '30px', background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff1444', color: '#39ff14', fontWeight: '800' }}>{club.level.toUpperCase()}</span>
+                                    <span style={{ fontSize: '8px', padding: '5px 12px', borderRadius: '30px', background: 'rgba(255,255,255,0.05)', color: '#fff' }}>CLICK TO SYNC</span>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -124,14 +106,13 @@ const Home = ({ onClubSelect }) => {
             </div>
 
             {/* 🌀 DYNAMIC CAPSULE INDICATORS */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-100px', zIndex: 3, position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-100px', zIndex: 3, position: 'relative', pointerEvents: 'none' }}>
                 {clubs.map((_, i) => (
                     <motion.div
                         key={i}
                         animate={{
-                            width: i === activeIndex ? '28px' : '8px',
-                            background: i === activeIndex ? '#39ff14' : 'rgba(255,255,255,0.15)',
-                            boxShadow: i === activeIndex ? '0 0 15px #39ff14' : 'none'
+                            width: i === activeIndex ? '24px' : '8px',
+                            background: i === activeIndex ? '#39ff14' : 'rgba(255,255,255,0.2)'
                         }}
                         style={{ height: '8px', borderRadius: '10px' }}
                     />

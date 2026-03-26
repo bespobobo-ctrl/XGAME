@@ -79,7 +79,12 @@ const SuperAdminDashboard = ({ activeTab }) => {
 
     const fetchClubs = async () => { try { const data = await callAPI('/api/admin/clubs'); setClubs(data || []); } catch (e) { } };
     const fetchManagers = async () => { try { const data = await callAPI('/api/admin/managers'); setManagers(data || []); } catch (e) { } };
-    const fetchStats = async () => { try { const data = await callAPI('/api/admin/stats'); setStats(data); } catch (e) { } };
+    const fetchStats = async () => {
+        try {
+            const data = await callAPI('/api/admin/stats');
+            if (data) setStats(data);
+        } catch (e) { console.log("Stats fetch error", e); }
+    };
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '---';
@@ -119,61 +124,61 @@ const SuperAdminDashboard = ({ activeTab }) => {
             </div>
 
             <AnimatePresence mode="wait">
-                {/* 📊 DASHBOARD: COMMAND CENTER V5 (RESTORED & JONLANGAN) */}
-                {activeTab === 'dashboard' && stats && (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'grid', gap: '20px' }}>
+                {/* 📊 DASHBOARD: COMMAND CENTER V5 (SAFETY WRAPPED) */}
+                {activeTab === 'dashboard' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '20px' }}>
+                        {stats ? (
+                            <>
+                                {/* 💰 REVENUE */}
+                                <div style={{ background: 'radial-gradient(circle at top, rgba(57, 255, 20, 0.1), transparent)', border: '1px solid #39ff1444', padding: '40px', borderRadius: '45px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '5px', opacity: 0.6 }}>{t.revenueDay}</span>
+                                    <motion.h1 animate={{ scale: [1, 1.02, 1] }} transition={{ repeat: Infinity, duration: 2 }} style={{ fontSize: '60px', margin: '15px 0', textShadow: '0 0 30px #39ff1455', fontWeight: '950' }}>
+                                        {(stats.todayRevenue || 0).toLocaleString()} <span style={{ fontSize: '24px', opacity: 0.4 }}>UZS</span>
+                                    </motion.h1>
+                                    <div style={{ fontSize: '10px', color: '#39ff14', background: 'rgba(57, 255, 20, 0.1)', padding: '5px 15px', borderRadius: '20px', display: 'inline-block' }}>+12.4% 📈</div>
+                                </div>
 
-                        {/* 💰 BIG REVENUE GLOW CARD */}
-                        <div style={{ background: 'radial-gradient(circle at top, rgba(57, 255, 20, 0.1), transparent)', border: '1px solid #39ff1444', padding: '40px', borderRadius: '45px', textAlign: 'center', position: 'relative' }}>
-                            <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '5px', opacity: 0.6 }}>{t.revenueDay}</span>
-                            <motion.h1 animate={{ scale: [1, 1.02, 1] }} transition={{ repeat: Infinity, duration: 2 }} style={{ fontSize: '60px', margin: '15px 0', textShadow: '0 0 30px #39ff1455', fontWeight: '950' }}>
-                                {stats.todayRevenue.toLocaleString()} <span style={{ fontSize: '24px', opacity: 0.4 }}>UZS</span>
-                            </motion.h1>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
-                                <div style={{ fontSize: '10px', color: '#39ff14', background: 'rgba(57, 255, 20, 0.1)', padding: '5px 15px', borderRadius: '20px' }}>+12.4% 📈</div>
-                                <div style={{ fontSize: '10px', color: '#fff', opacity: 0.3 }}>Live Sync System 🛰️</div>
-                            </div>
-                        </div>
+                                {/* 📉 CHART */}
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '40px', border: '1px solid #fff1' }}>
+                                    <span style={{ fontSize: '10px', opacity: 0.5, display: 'block', marginBottom: '15px' }}>{t.peakHours}</span>
+                                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '100px', gap: '8px', padding: '0 10px' }}>
+                                        {(stats.peakHours || []).map((h, i) => (
+                                            <motion.div key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }} style={{ flex: 1, background: 'linear-gradient(to top, #39ff14, #00ddeb)', borderRadius: '4px', opacity: 0.8 }} />
+                                        ))}
+                                    </div>
+                                </div>
 
-                        {/* 📉 PEAK HOURS MINI CHART */}
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '40px', border: '1px solid #fff1' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                <span style={{ fontSize: '10px', opacity: 0.5 }}>{t.peakHours}</span>
-                                <span style={{ color: '#39ff14', fontSize: '8px' }}>REAL-TIME MONITOR ☢️</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'flex-end', height: '100px', gap: '8px', padding: '0 10px' }}>
-                                {stats.peakHours.map((h, i) => (
-                                    <motion.div key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }} transition={{ delay: i * 0.05 }} style={{ flex: 1, background: 'linear-gradient(to top, #39ff14, #00ddeb)', borderRadius: '4px 4px 2px 2px', opacity: 0.8 }} />
-                                ))}
-                            </div>
-                        </div>
+                                {/* 🚁 GRID */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
+                                        <p style={{ fontSize: '9px', opacity: 0.4, margin: 0 }}>{t.activeUsers}</p>
+                                        <h2 style={{ fontSize: '32px', margin: '5px 0' }}>{stats.activeUsers || 0} 🟢</h2>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
+                                        <p style={{ fontSize: '9px', opacity: 0.4, margin: 0 }}>{t.systemLoad}</p>
+                                        <h2 style={{ fontSize: '32px', margin: '5px 0' }}>{stats.load || 42}% ⚙️</h2>
+                                    </div>
+                                </div>
 
-                        {/* 🚁 SMALL METRICS GRID */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
-                                <p style={{ fontSize: '9px', opacity: 0.4, margin: 0 }}>{t.activeUsers}</p>
-                                <motion.h2 animate={{ color: ['#fff', '#39ff14', '#fff'] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ fontSize: '32px', margin: '5px 0' }}>{stats.activeUsers} <span style={{ fontSize: '12px' }}>🟢</span></motion.h2>
+                                {/* 🕵️‍♂️ FEED */}
+                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '35px', border: '1px dashed #fff2', maxHeight: '180px', overflowY: 'auto' }}>
+                                    <h3 style={{ fontSize: '10px', opacity: 0.4, marginBottom: '15px' }}>{t.recentAct}</h3>
+                                    {(stats.recentActivity || []).map((act, i) => (
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', borderBottom: '1px solid #fff1', paddingBottom: '8px', marginBottom: '8px' }}>
+                                            <span>👤 {act.user}</span>
+                                            <span style={{ color: '#00ddeb' }}>{act.action}</span>
+                                            <span style={{ opacity: 0.3 }}>{formatDate(act.time)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            /* ⚡ LOADING PLACEHOLDER (NO BLACK SCREEN) */
+                            <div style={{ padding: '80px', textAlign: 'center' }}>
+                                <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ fontSize: '50px' }}>🛰️</motion.div>
+                                <p style={{ fontSize: '12px', opacity: 0.4, marginTop: '20px', letterSpacing: '4px' }}>CONNECTING TO NEXUS...</p>
                             </div>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: '1px solid #fff1' }}>
-                                <p style={{ fontSize: '9px', opacity: 0.4, margin: 0 }}>{t.systemLoad}</p>
-                                <h2 style={{ fontSize: '32px', margin: '5px 0' }}>{stats.load}% <span style={{ fontSize: '12px' }}>⚙️</span></h2>
-                            </div>
-                        </div>
-
-                        {/* 🕵️‍♂️ LIVE ACTIVITY LENTA */}
-                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '35px', border: '1px dashed #fff2', maxHeight: '180px', overflowY: 'auto' }}>
-                            <h3 style={{ fontSize: '10px', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '15px' }}>{t.recentAct}</h3>
-                            <div style={{ display: 'grid', gap: '12px' }}>
-                                {stats.recentActivity.map((act, i) => (
-                                    <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', borderBottom: '1px solid #fff1', paddingBottom: '8px' }}>
-                                        <span>👤 <b>{act.user}</b></span>
-                                        <span style={{ color: '#00ddeb' }}>{act.action}</span>
-                                        <span style={{ opacity: 0.3 }}>{formatDate(act.time)}</span>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </div>
-
+                        )}
                     </motion.div>
                 )}
 
@@ -185,15 +190,18 @@ const SuperAdminDashboard = ({ activeTab }) => {
                             <button onClick={() => setIsClubFormOpen(true)} style={{ background: '#39ff14', border: 'none', width: '55px', borderRadius: '15px', fontWeight: 'bold' }}>+</button>
                         </div>
                         <div style={{ display: 'grid', gap: '10px' }}>
-                            {clubs.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(club => (
+                            {(clubs || []).filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(club => (
                                 <div key={club.id} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '30px', border: club.status === 'blocked' ? '1px solid #ff4444' : '1px solid #fff1' }}>
                                     <div style={{ flex: 1 }}>
                                         <h4 style={{ margin: 0, opacity: club.status === 'blocked' ? 0.3 : 1 }}>{club.name}</h4>
                                         <span style={{ fontSize: '8px', opacity: 0.3 }}>{club.address}</span>
                                     </div>
                                     <div style={{ display: 'flex', gap: '15px' }}>
+                                        <button onClick={() => {
+                                            const newS = club.status === 'active' ? 'blocked' : 'active';
+                                            callAPI(`/api/admin/clubs/${club.id}`, { method: 'PUT', body: JSON.stringify({ status: newS }) }).then(fetchClubs);
+                                        }} style={{ background: 'none', border: 'none', fontSize: '20px' }}>{club.status === 'active' ? '🛡️' : '🔓'}</button>
                                         <button onClick={() => { setEditingClub(club); setClubForm({ name: club.name, address: club.address, level: club.level, lat: club.lat, lng: club.lng }); setIsClubFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '20px' }}>✎</button>
-                                        <button onClick={() => callAPI(`/api/admin/clubs/${club.id}`, { method: 'DELETE' }).then(fetchClubs)} style={{ opacity: 0.2, background: 'none', border: 'none' }}>🗑️</button>
                                     </div>
                                 </div>
                             ))}
@@ -206,14 +214,14 @@ const SuperAdminDashboard = ({ activeTab }) => {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'grid', gap: '15px' }}>
                         <button onClick={() => setIsManagerFormOpen(true)} style={{ background: 'rgba(57, 255, 20, 0.1)', border: '1px solid #39ff14', padding: '15px', borderRadius: '25px', color: '#39ff14', fontWeight: 'bold' }}>+ {t.assign}</button>
                         <div style={{ display: 'grid', gap: '15px' }}>
-                            {managers.map(m => (
+                            {(managers || []).map(m => (
                                 <div key={m.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '35px', border: m.status === 'blocked' ? '1px solid #ff444455' : '1px solid #fff1' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                         <h3 style={{ margin: 0, fontSize: '20px' }}>{m.username}</h3>
                                         <button onClick={() => { setEditingManager(m); setManagerForm({ username: m.username, password: '', status: m.status, clubId: m.ClubId }); setIsManagerFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '20px' }}>✎</button>
                                     </div>
                                     <span style={{ fontSize: '9px', background: '#fff1', color: '#39ff14', padding: '4px 12px', borderRadius: '8px' }}>🔑 {m.rawPassword || '---'}</span>
-                                    <p style={{ fontSize: '9px', opacity: 0.4, marginTop: '8px' }}>{m.clubName.toUpperCase()}</p>
+                                    <p style={{ fontSize: '9px', opacity: 0.4, marginTop: '8px' }}>{m.clubName || '---'}</p>
                                 </div>
                             ))}
                         </div>
@@ -221,7 +229,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
                 )}
             </AnimatePresence>
 
-            {/* SEPARATED LAG-FREE MODALS */}
+            {/* SEPARATED MODALS */}
             <AnimatePresence>
                 {isClubFormOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -255,7 +263,7 @@ const SuperAdminDashboard = ({ activeTab }) => {
                                 <input type="text" placeholder="Parol" value={managerForm.password} onChange={e => setManagerForm({ ...managerForm, password: e.target.value })} style={{ background: '#111', border: '1px solid #fff2', padding: '18px', borderRadius: '20px', color: '#fff' }} />
                                 <select value={managerForm.clubId} onChange={e => setManagerForm({ ...managerForm, clubId: e.target.value })} style={{ background: '#000', border: '1px solid #fff2', padding: '18px', borderRadius: '20px', color: '#fff' }}>
                                     <option value="">Klub...</option>
-                                    {clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    {(clubs || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                                 <button onClick={handleSaveManager} style={{ background: '#39ff14', color: '#000', border: 'none', padding: '22px', borderRadius: '20px', fontWeight: 'bold' }}>OK</button>
                                 <button onClick={() => setIsManagerFormOpen(false)} style={{ width: '100%', background: 'none', border: 'none', color: '#ff4444', marginTop: '10px' }}>{t.cancel}</button>

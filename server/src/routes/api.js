@@ -154,9 +154,9 @@ router.get('/clubs', async (req, res) => {
 
 router.post('/admin/clubs', auth, authorize('super_admin'), upload.single('image'), async (req, res) => {
     try {
-        const { name, address, level, priority } = req.body;
+        const { name, address, level, locationUrl } = req.body;
         const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-        const club = await Club.create({ name, address, image: imagePath, level: level || 'standard', priority: priority || 0 });
+        const club = await Club.create({ name, address, image: imagePath, level: level || 'standard', locationUrl: locationUrl || '' });
         res.json({ success: true, club });
     } catch (err) {
         res.status(400).json({ error: err.message });

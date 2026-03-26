@@ -1,220 +1,121 @@
 const express = require('express');
 const router = express.Router();
-const { Sequelize, Op } = require('sequelize');
-const { Club, User, Room, Computer, Session, Transaction, AuditLog, sequelize } = require('../database');
-const logger = require('../utils/logger');
+const jwt = require('jsonwebtoken');
+const { Club, User, Session, PC, Prize } = require('../database/models');
+const { Op } = require('sequelize');
 const multer = require('multer');
 const path = require('path');
-const jwt = require('jsonwebtoken');
-const { auth, authorize } = require('../middleware/auth');
+const fs = require('fs');
 
+// 🛡️ AUTH MIDDLEWARE
+const auth = (req, res, next) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ error: 'Auth failed' });
+        req.user = jwt.verify(token, process.env.JWT_SECRET || 'xgame_secret');
+        next();
+    } catch (e) { res.status(401).json({ error: 'Auth failed' }); }
+};
+
+// 📸 MULTER CONFIG
 const storage = multer.diskStorage({
-    destination: path.join(__dirname, '../../public/uploads/'),
+    destination: (req, file, cb) => {
+        const dir = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        cb(null, 'club_' + Date.now() + path.extname(file.originalname));
     }
 });
 const upload = multer({ storage });
 
-const generateToken = (user) => {
-    return jwt.sign(
-        { id: user.id, username: user.username, role: user.role, ClubId: user.ClubId },
-        process.env.JWT_SECRET || 'XGAME_SECRET_2026',
-        { expiresIn: '30d' }
-    );
-};
-
-// 🔐 LOGIN API
-router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+// 🏛️ ADMIN: CLUBS (Get All)
+router.get('/admin/clubs', auth, async (req, res) => {
     try {
-        // DEBUG LOGGING (Terminalda ko'rish uchun)
-        console.log('Login Attempt Received:', { username, password });
-
-        // SUPER ADMIN CHECK (123 / 123) - SUPER RELAXED FORCED
-        if (String(username) === '123' && String(password) === '123') {
-            console.log('Master Admin Login Success! 🥂');
-            const token = jwt.sign(
-                { id: 0, username: 'Master Admin', role: 'super_admin' },
-                process.env.JWT_SECRET || 'XGAME_SECRET_2026',
-                { expiresIn: '30d' }
-            );
-            return res.json({
-                success: true,
-                user: { id: 0, username: 'Master Admin', role: 'super_admin' },
-                token
-            });
-        }
-
-        // CLUB ADMIN (MANAGER) CHECK
-        const user = await User.findOne({ where: { username } });
-        if (user && await user.comparePassword(password)) {
-            const token = generateToken(user);
-            return res.json({ success: true, user, token });
-        } else {
-            return res.status(401).json({ success: false, message: 'Xato login yoki parol!' });
-        }
-    } catch (err) {
-        logger.error('Login Error:', err);
-        res.status(500).json({ error: 'Serverda xatolik yuz berdi.' });
-    }
-});
-
-// 🏢 PUBLIC API: CLUBS LIST
-router.get('/clubs', async (req, res) => {
-    try {
-        const clubs = await Club.findAll({ where: { status: 'active' } });
+        const clubs = await Club.findAll({ order: [['id', 'DESC']] });
         res.json(clubs);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/clubs/:id', async (req, res) => {
+// 🏛️ ADMIN: CLUBS (Create with IMAGE 📸)
+router.post('/admin/clubs', auth, upload.single('image'), async (req, res) => {
     try {
-        const club = await Club.findByPk(req.params.id, { include: [Room] });
-        res.json(club);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+        const { name, address, level, lat, lng } = req.body;
+        const imagePath = req.file ? `/uploads/${req.file.filename}` : '/uploads/default_club.png';
 
-// 🏠 ROOMS & PCS
-router.get('/rooms/:roomId/computers', async (req, res) => {
-    try {
-        const computers = await Computer.findAll({ where: { RoomId: req.params.roomId } });
-        res.json(computers);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ⚙️ MANAGER SETUP (Questions & Initial Config)
-router.post('/manager/setup', auth, async (req, res) => {
-    const { rooms } = req.body; // Array: [{ name, pcCount, price }]
-    const userId = req.user.id;
-    const t = await sequelize.transaction();
-
-    try {
-        const user = await User.findByPk(userId);
-        if (!user || !user.ClubId || user.role !== 'manager') throw new Error('Ruxsat yoq yoki klub egasi emassiz!');
-
-        // Delete existing setup to overwrite
-        await Room.destroy({ where: { ClubId: user.ClubId } }, { transaction: t });
-
-        for (const data of rooms) {
-            const room = await Room.create({
-                name: data.name,
-                ClubId: user.ClubId,
-                basePrice: data.price || 15000
-            }, { transaction: t });
-
-            for (let i = 1; i <= data.pcCount; i++) {
-                await Computer.create({
-                    name: `PC-${String(i).padStart(2, '0')}`,
-                    RoomId: room.id,
-                    status: 'free'
-                }, { transaction: t });
-            }
-        }
-
-        await t.commit();
-        res.json({ success: true, message: 'Klub muvaffaqiyatli sozlandi!' });
-    } catch (err) {
-        await t.rollback();
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// 📊 SUPER ADMIN MANAGEMENT
-router.get('/admin/stats', auth, authorize('super_admin'), async (req, res) => {
-    const totalClubs = await Club.count();
-    const totalUsers = await User.count();
-    res.json({ totalClubs, totalUsers });
-});
-
-router.get('/admin/clubs', auth, authorize('super_admin'), async (req, res) => {
-    const clubs = await Club.findAll();
-    res.json(clubs);
-});
-
-// 🏢 PUBLIC API: CLUBS LIST (Sorted by priority)
-router.get('/clubs', async (req, res) => {
-    try {
-        const clubs = await Club.findAll({
-            where: { status: 'active' },
-            order: [['priority', 'DESC']]
-        });
-        res.json(clubs);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.post('/admin/clubs', auth, authorize('super_admin'), upload.single('image'), async (req, res) => {
-    try {
-        const { name, address, level, locationUrl, lat, lng } = req.body;
-        const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-        const club = await Club.create({
-            name, address, image: imagePath,
-            level: level || 'standard',
-            locationUrl: locationUrl || '',
-            lat: parseFloat(lat) || 41.2995,
-            lng: parseFloat(lng) || 69.2401
-        });
+        const club = await Club.create({ name, address, level, lat, lng, image: imagePath });
         res.json({ success: true, club });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/admin/clubs/:id', auth, authorize('super_admin'), upload.single('image'), async (req, res) => {
+// 🏛️ ADMIN: CLUBS (Update with IMAGE 📸)
+router.put('/admin/clubs/:id', auth, upload.single('image'), async (req, res) => {
     try {
+        const { name, address, level, lat, lng, status } = req.body;
         const club = await Club.findByPk(req.params.id);
-        if (!club) return res.status(404).json({ error: 'Klub topilmadi!' });
+        if (!club) return res.status(404).json({ error: 'Not found' });
 
-        const updateData = { ...req.body };
+        const updateData = { name, address, level, lat, lng, status };
         if (req.file) updateData.image = `/uploads/${req.file.filename}`;
 
         await club.update(updateData);
-        res.json({ success: true, club });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/admin/clubs/:id', auth, authorize('super_admin'), async (req, res) => {
+// 👤 ADMIN: MANAGERS
+router.get('/admin/managers', auth, async (req, res) => {
     try {
-        const club = await Club.findByPk(req.params.id);
-        if (!club) return res.status(404).json({ error: 'Klub topilmadi!' });
-        await club.destroy();
-        res.json({ success: true, message: 'Klub o\'chirildi!' });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+        const managers = await User.findAll({
+            where: { role: 'manager' },
+            include: [{ model: Club, attributes: ['name'] }]
+        });
+        res.json(managers.map(m => ({
+            id: m.id,
+            username: m.username,
+            rawPassword: m.rawPassword,
+            status: m.status,
+            ClubId: m.ClubId,
+            clubName: m.Club?.name || '---'
+        })));
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/admin/stats', auth, authorize('super_admin'), async (req, res) => {
+router.post('/admin/managers', auth, async (req, res) => {
+    try {
+        const { username, password, clubId } = req.body;
+        await User.create({ username, password, rawPassword: password, role: 'manager', ClubId: clubId, status: 'active', telegramId: '0' });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/admin/managers/:id', auth, async (req, res) => {
+    try {
+        const { username, password, status, clubId } = req.body;
+        const manager = await User.findByPk(req.params.id);
+        const updateData = { username, status, ClubId: clubId };
+        if (password) { updateData.password = password; updateData.rawPassword = password; }
+        await manager.update(updateData);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 📊 ADMIN: STATS (Global Master View)
+router.get('/admin/stats', auth, async (req, res) => {
     try {
         const totalClubs = await Club.count();
         const totalManagers = await User.count({ where: { role: 'manager' } });
+        const activeUsersCount = 124; // Dummy active count
+        const todayRevenue = 4500000; // Dummy value
 
-        // BUGUNGI DAROMAD (Mocked for now, if transaction table exists, use it)
-        const todayRevenue = 1250000; // 1.25M UZS (Mocked UI placeholder)
-
-        // AKTIV FOYDALANUVCHILAR (Active sessions sum)
-        const activeUsers = 42; // Real-time pulse placeholder
-
-        // RECENT ACTIVITY LOGS
         const recentManagers = await User.findAll({
             where: { role: 'manager' },
             limit: 5,
-            order: [['lastActive', 'DESC']],
+            order: [['updatedAt', 'DESC']],
             attributes: ['username', 'lastActive']
         });
 
-        // AKTIV KLUBAR TARIXI (Registration History)
         const clubsHistory = await Club.findAll({
             attributes: ['name', 'createdAt'],
             order: [['createdAt', 'DESC']]
@@ -224,7 +125,7 @@ router.get('/admin/stats', auth, authorize('super_admin'), async (req, res) => {
             totalClubs,
             totalManagers,
             todayRevenue,
-            activeUsers,
+            activeUsers: activeUsersCount,
             load: 42,
             peakHours: [10, 20, 45, 80, 60, 40, 90, 100, 70, 50, 30, 15],
             recentActivity: recentManagers.map(m => ({
@@ -232,115 +133,21 @@ router.get('/admin/stats', auth, authorize('super_admin'), async (req, res) => {
                 action: 'Online Faollik 🟢',
                 time: m.lastActive
             })),
-            clubsHistory // BUNI QO'SHDIK ✨
+            clubsHistory
         });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/admin/managers', auth, authorize('super_admin'), async (req, res) => {
+// 🛡️ DASHBOARD LOGIN
+router.post('/login', async (req, res) => {
     try {
-        const managers = await User.findAll({
-            where: { role: 'manager' },
-            attributes: ['id', 'username', 'rawPassword', 'status', 'ClubId', 'lastLogin', 'lastActive', 'createdAt']
-        });
-        const clubs = await Club.findAll({ attributes: ['id', 'name'] });
+        const { username, password } = req.body;
+        const user = await User.findOne({ where: { username, role: 'super_admin' } });
+        if (!user || user.password !== password) return res.status(401).json({ error: 'Auth failed' });
 
-        const result = managers.map(m => {
-            const club = clubs.find(c => c.id === m.ClubId);
-            return {
-                ...m.toJSON(),
-                clubName: club ? club.name : 'Noma\'lum ❓'
-            };
-        });
-        res.json(result);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.post('/admin/managers', auth, authorize('super_admin'), async (req, res) => {
-    try {
-        const { username, password, clubId } = req.body;
-
-        // Login bandligini tekshirish
-        const existing = await User.findOne({ where: { username } });
-        if (existing) return res.status(400).json({ success: false, message: 'Bu login band! 🚫' });
-
-        const user = await User.create({
-            username,
-            password,
-            rawPassword: password, // SUPER ADMIN UCHUN KO'RINIB TURADI ✨
-            role: 'manager',
-            ClubId: clubId,
-            status: 'active',
-            telegramId: `M-${Date.now()}`
-        });
-
-        res.json({ success: true, user });
-    } catch (err) {
-        res.status(400).json({ success: false, error: err.message });
-    }
-});
-
-router.put('/admin/managers/:id', auth, authorize('super_admin'), async (req, res) => {
-    try {
-        const { username, password, clubId, status } = req.body;
-        const manager = await User.findByPk(req.params.id);
-        if (!manager || manager.role !== 'manager') return res.status(404).json({ error: 'Menejer topilmadi!' });
-
-        const updateData = { username, ClubId: clubId, status };
-        if (password) {
-            updateData.password = password;
-            updateData.rawPassword = password; // PAROL YANGILANSA, RAW NI HAM YANGILAYMIZ ✨
-        }
-
-        await manager.update(updateData);
-        res.json({ success: true, manager });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-router.post('/start-session', auth, async (req, res) => {
-    try {
-        const { computerId } = req.body;
-        const computer = await Computer.findByPk(computerId);
-        if (!computer || computer.status !== 'free') return res.status(400).json({ error: 'PC band!' });
-
-        computer.status = 'busy';
-        await computer.save();
-
-        const session = await Session.create({ ComputerId: computerId, UserId: req.user.id, status: 'active' });
-        const io = req.app.get('io');
-        if (io) io.to(computer.name ? computer.name : computer.id.toString()).emit('unlock');
-
-        res.json({ success: true, session });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.post('/stop-session', auth, async (req, res) => {
-    const { computerId } = req.body;
-    const computer = await Computer.findByPk(computerId);
-    if (!computer) return res.status(404).json({ error: 'PC topilmadi' });
-
-    computer.status = 'free';
-    await computer.save();
-
-    const session = await Session.findOne({ where: { ComputerId: computerId, status: 'active' } });
-    if (session) {
-        session.status = 'closed';
-        session.endTime = new Date();
-        await session.save();
-    }
-
-    const io = req.app.get('io');
-    if (io) io.to(computer.name).emit('lock');
-
-    res.json({ success: true });
+        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || 'xgame_secret');
+        res.json({ success: true, token });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

@@ -59,11 +59,11 @@ const Home = ({ onClubSelect }) => {
                             display: 'flex', flexDirection: 'column', height: '320px'
                         }}
                     >
-                        <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', height: '220px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '60px' }}>🏢</div>
+                        <div style={{ background: 'linear-gradient(135deg, #1e8e0d 0%, #39ff14 100%)', height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '60px' }}>🏢</div>
                         <div style={{ padding: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h3 style={{ margin: 0, fontSize: '18px' }}>{club.name}</h3>
-                                <div style={{ background: '#ff00ff22', color: '#ff00ff', padding: '5px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>⭐ FEATURED</div>
+                                <div style={{ background: '#39ff1422', color: '#39ff14', padding: '5px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>⭐ FEATURED</div>
                             </div>
                             <p style={{ margin: '5px 0 0', opacity: 0.6, fontSize: '12px' }}>{club.address}</p>
                         </div>

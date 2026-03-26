@@ -46,11 +46,11 @@ const App = () => {
       {/* 🏠 MAIN APPLICATION UI */}
       {view !== 'intro' && (
         <>
-          <header className="app-header" style={{ padding: '20px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(10,5,16,0.8)', backdropFilter: 'blur(20px)' }}>
+          <header className="app-header" style={{ padding: '20px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(5,5,5,0.8)', backdropFilter: 'blur(20px)' }}>
             <h1
               onMouseDown={startLongPress} onMouseUp={stopLongPress}
               onTouchStart={startLongPress} onTouchEnd={stopLongPress}
-              style={{ margin: 0, fontSize: '24px', fontWeight: '900', letterSpacing: '2px', cursor: 'grab' }}
+              style={{ margin: 0, fontSize: '24px', fontWeight: '900', letterSpacing: '4px', cursor: 'grab', color: '#fff', textShadow: '0 0 10px #39ff14' }}
             >
               X-GAME
             </h1>
@@ -63,9 +63,9 @@ const App = () => {
           </main>
 
           {/* 👤 NAVIGATION BAR (Optional) */}
-          <nav className="bottom-nav" style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100 }}>
-            <div onClick={() => setView('home')} style={{ fontSize: '20px', opacity: view === 'home' ? 1 : 0.4 }}>🏠 Home</div>
-            <div style={{ fontSize: '20px', opacity: 0.4 }}>👤 Profile</div>
+          <nav className="bottom-nav" style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.1)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100 }}>
+            <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none' }}>🏠 Home</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'rgba(255,255,255,0.3)' }}>👤 Profile</div>
           </nav>
         </>
       )}

@@ -50,7 +50,7 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
                     placeholder="Admin ID"
                     value={user} onChange={e => setUser(e.target.value)}
                     style={{
-                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.1)',
                         padding: '20px', borderRadius: '15px', color: '#fff', outline: 'none', fontSize: '16px'
                     }}
                 />
@@ -59,7 +59,7 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
                     placeholder="Password"
                     value={pass} onChange={e => setPass(e.target.value)}
                     style={{
-                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.1)',
                         padding: '20px', borderRadius: '15px', color: '#fff', outline: 'none', fontSize: '16px'
                     }}
                 />
@@ -69,9 +69,10 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
                     className="btn-brand"
                     disabled={loading}
                     style={{
-                        background: 'linear-gradient(90deg, #ff00ff 0%, #7000ff 100%)',
-                        border: 'none', borderRadius: '15px', padding: '20px', color: '#fff',
-                        fontWeight: 'bold', fontSize: '18px', marginTop: '20px'
+                        background: 'linear-gradient(90deg, #39ff14 0%, #1e8e0d 100%)',
+                        border: 'none', borderRadius: '15px', padding: '20px', color: '#000',
+                        fontWeight: 'bold', fontSize: '18px', marginTop: '20px',
+                        boxShadow: '0 8px 30px rgba(57, 255, 20, 0.2)'
                     }}
                 >
                     {loading ? 'KIRISH...' : 'KIRISH ⚡'}

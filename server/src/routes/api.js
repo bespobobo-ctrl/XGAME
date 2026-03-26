@@ -238,20 +238,39 @@ router.post('/admin/managers', auth, authorize('super_admin'), async (req, res) 
     }
 });
 
+router.put('/admin/managers/:id', auth, authorize('super_admin'), async (req, res) => {
+    try {
+        const { username, password, clubId } = req.body;
+        const manager = await User.findByPk(req.params.id);
+        if (!manager || manager.role !== 'manager') return res.status(404).json({ error: 'Menejer topilmadi!' });
+
+        const updateData = { username, ClubId: clubId };
+        if (password) updateData.password = password;
+
+        await manager.update(updateData);
+        res.json({ success: true, manager });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 router.post('/start-session', auth, async (req, res) => {
-    const { computerId } = req.body;
-    const computer = await Computer.findByPk(computerId);
-    if (!computer || computer.status !== 'free') return res.status(400).json({ error: 'PC band!' });
+    try {
+        const { computerId } = req.body;
+        const computer = await Computer.findByPk(computerId);
+        if (!computer || computer.status !== 'free') return res.status(400).json({ error: 'PC band!' });
 
-    computer.status = 'busy';
-    await computer.save();
+        computer.status = 'busy';
+        await computer.save();
 
-    const session = await Session.create({ ComputerId: computerId, UserId: req.user.id, status: 'active' });
+        const session = await Session.create({ ComputerId: computerId, UserId: req.user.id, status: 'active' });
+        const io = req.app.get('io');
+        if (io) io.to(computer.name ? computer.name : computer.id.toString()).emit('unlock');
 
-    const io = req.app.get('io');
-    if (io) io.to(computer.name).emit('unlock');
-
-    res.json({ success: true, session });
+        res.json({ success: true, session });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/stop-session', auth, async (req, res) => {

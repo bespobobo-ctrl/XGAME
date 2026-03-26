@@ -53,14 +53,16 @@ const App = () => {
       {/* 🏠 MAIN APPLICATION UI */}
       {view !== 'intro' && (
         <>
-          <header className="app-header" style={{ padding: '20px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(5,5,5,0.8)', backdropFilter: 'blur(20px)' }}>
-            <h1
+          <header className="app-header" style={{ padding: '25px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'linear-gradient(rgba(5,5,5,0.9), transparent)', backdropFilter: 'blur(5px)' }}>
+            <motion.h1
               onMouseDown={startLongPress} onMouseUp={stopLongPress}
               onTouchStart={startLongPress} onTouchEnd={stopLongPress}
-              style={{ margin: 0, fontSize: '24px', fontWeight: '900', letterSpacing: '4px', cursor: 'grab', color: '#fff', textShadow: '0 0 10px #39ff14' }}
+              animate={{ textShadow: ['0 0 10px #39ff14', '0 0 25px #39ff14', '0 0 10px #39ff14'] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              style={{ margin: 0, fontSize: '32px', fontWeight: '950', letterSpacing: '8px', cursor: 'grab', color: '#fff' }}
             >
-              {view === 'superAdmin' ? 'NEXUS CENTER' : 'X-GAME'}
-            </h1>
+              {view === 'superAdmin' ? 'NEXUS' : 'X-GAME'}
+            </motion.h1>
           </header>
 
           <main className="app-content">

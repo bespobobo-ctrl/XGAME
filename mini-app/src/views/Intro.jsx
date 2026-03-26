@@ -29,24 +29,6 @@ const slides = [
     }
 ];
 
-// 💎 REAL 3D EMERALD CRYSTAL COMPONENT (Professional Edition)
-const RealCrystal = ({ style, delay }) => (
-    <motion.img
-        src="/green-diamond.png"
-        animate={{
-            y: [0, -40, 0],
-            rotate: [0, 30, 0],
-            opacity: [0.6, 1, 0.6]
-        }}
-        transition={{ duration: 8 + delay, repeat: Infinity, ease: "easeInOut", delay }}
-        style={{
-            position: 'absolute', width: '100px', height: 'auto', zIndex: 5,
-            filter: 'drop-shadow(0 0 30px rgba(57, 255, 20, 0.4))',
-            pointerEvents: 'none', willChange: 'transform', ...style
-        }}
-    />
-);
-
 const Intro = ({ onFinish }) => {
     const [current, setCurrent] = useState(0);
     const [progress, setProgress] = useState(0);
@@ -57,84 +39,92 @@ const Intro = ({ onFinish }) => {
                 setCurrent(prev => prev + 1);
                 setProgress(0);
             } else {
-                // Stay on last or can auto-finish
+                // Can auto-finish if needed
             }
-        }, 6000); // 6 Secs for better readability
+        }, 5500);
 
         const progressTimer = setInterval(() => {
-            setProgress(prev => Math.min(prev + 0.8, 100)); // Smooth progress
+            setProgress(prev => Math.min(prev + 0.9, 100));
         }, 50);
 
         return () => { clearInterval(timer); clearInterval(progressTimer); };
     }, [current]);
 
     return (
-        <div className="intro-container-professional" style={{ background: '#050505', height: '100vh', width: '100vw', overflow: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 10000, fontFaimly: '"Outfit", sans-serif' }}>
+        <div className="intro-clean-premium" style={{ background: '#000', height: '100vh', width: '100vw', overflow: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 10000 }}>
 
-            {/* 📊 STORY BARS (Premium Styling) */}
-            <div style={{ position: 'absolute', top: '15px', left: '15px', right: '15px', display: 'flex', gap: '6px', zIndex: 50 }}>
+            {/* 📊 STORY PROGRESS (Tech style) */}
+            <div style={{ position: 'absolute', top: '15px', left: '20px', right: '20px', display: 'flex', gap: '5px', zIndex: 100 }}>
                 {slides.map((_, i) => (
-                    <div key={i} style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                    <div key={i} style={{ flex: 1, height: '2px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
                         <motion.div
                             animate={{ width: i < current ? '100%' : (i === current ? `${progress}%` : '0%') }}
-                            style={{ height: '100%', background: '#39ff14', boxShadow: '0 0 15px #39ff14' }}
+                            style={{ height: '100%', background: '#39ff14', boxShadow: '0 0 8px #39ff14' }}
                         />
                     </div>
                 ))}
             </div>
 
-            {/* 🌌 FULL-SCREEN HIGH-RES SCENES */}
+            {/* 🌌 CINEMATIC SCENES */}
             <AnimatePresence mode="wait">
                 <motion.div
                     key={current}
-                    initial={{ opacity: 0, scale: 1 }}
+                    initial={{ opacity: 0, scale: 1.05 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1.2, ease: "easeInOut" }}
+                    transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
                     style={{
                         position: 'absolute', width: '100%', height: '100%',
                         backgroundImage: `url(${slides[current].img})`,
-                        backgroundSize: 'cover', backgroundPosition: 'center',
-                        filter: 'contrast(1.1) brightness(0.9)' // Making it sharper
+                        backgroundSize: 'cover', backgroundPosition: 'center'
                     }}
                 >
-                    {/* BLACK GRADIENT FADE OUT - VERY PROFESSIONAL BLENDING */}
-                    <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '80%', background: 'linear-gradient(to top, #050505 0%, transparent 100%)' }} />
+                    {/* PROFESSIONAL BLACK BLENDING OVERLAY */}
+                    <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, #000 0%, #000000aa 30%, transparent 100%)' }} />
                 </motion.div>
             </AnimatePresence>
 
-            {/* 💎 REAL FLOATING 3D CRYSTALS (NO BACHKANA SVG!) */}
-            <RealCrystal style={{ top: '12%', left: '5%', width: '140px' }} delay={0} />
-            <RealCrystal style={{ bottom: '25%', right: '-5%', width: '160px' }} delay={1.5} />
-            <RealCrystal style={{ top: '40%', right: '10%', width: '80px', opacity: 0.4 }} delay={3} />
+            {/* 🔦 SOFT VOLUMETRIC LIGHT BEAMS (Instead of crystals) */}
+            <motion.div
+                animate={{ x: [-100, 100, -100], opacity: [0.1, 0.3, 0.1] }}
+                transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                style={{ position: 'absolute', top: 0, left: '20%', width: '100px', height: '100%', background: 'linear-gradient(to bottom, transparent, #39ff1433, transparent)', transform: 'skewX(-20deg)', filter: 'blur(100px)', pointerEvents: 'none' }}
+            />
+            <motion.div
+                animate={{ x: [100, -100, 100], opacity: [0.05, 0.2, 0.05] }}
+                transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+                style={{ position: 'absolute', top: 0, right: '10%', width: '150px', height: '100%', background: 'linear-gradient(to bottom, transparent, #39ff1422, transparent)', transform: 'skewX(15deg)', filter: 'blur(80px)', pointerEvents: 'none' }}
+            />
 
-            {/* 📜 CONTENT IN UZBEK */}
-            <div style={{ position: 'absolute', bottom: '60px', left: '30px', right: '30px', zIndex: 60 }}>
+            {/* 📝 CINEMATIC TEXT CONTENT */}
+            <div style={{ position: 'absolute', bottom: '60px', left: '40px', right: '40px', zIndex: 110 }}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={current}
-                        initial={{ y: 25, opacity: 0 }}
+                        initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -20, opacity: 0 }}
-                        transition={{ duration: 0.6 }}
+                        exit={{ y: -10, opacity: 0 }}
+                        transition={{ duration: 0.8 }}
                     >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                            <div style={{ height: '2px', width: '25px', background: '#39ff14', boxShadow: '0 0 10px #39ff14' }} />
-                            <span style={{ fontSize: '10px', color: '#39ff14', letterSpacing: '3px', fontWeight: 'bold' }}>NEXUS MARKAZI v2.0</span>
-                        </div>
+                        <motion.div
+                            style={{ fontSize: '12px', color: '#39ff14', letterSpacing: '6px', fontWeight: 'bold', marginBottom: '15px' }}
+                            initial={{ letterSpacing: '0px' }} animate={{ letterSpacing: '6px' }}
+                        >
+                            NEXUS 2.0
+                        </motion.div>
 
-                        <h1 style={{ fontSize: '46px', fontWeight: '900', color: '#fff', margin: '0 0 15px', letterSpacing: '1px', lineHeight: '1' }}>
+                        <h1 style={{ fontSize: '48px', fontWeight: '900', color: '#fff', margin: '0 0 20px', fontFamily: '"Outfit", sans-serif', letterSpacing: '1px', textShadow: '0 0 20px rgba(57,255,20,0.3)' }}>
                             {slides[current].title}
                         </h1>
 
-                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px', lineHeight: '1.6', maxWidth: '300px', marginBottom: '50px' }}>
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '18px', lineHeight: '1.6', maxWidth: '300px', marginBottom: '60px', fontWeight: '300' }}>
                             {slides[current].desc}
                         </p>
                     </motion.div>
                 </AnimatePresence>
 
-                {/* 🎬 ACTION BUTTONS */}
-                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                {/* 🚀 TECH BUTTONS */}
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
                     {current === slides.length - 1 ? (
                         <motion.button
                             whileHover={{ scale: 1.02 }}
@@ -144,24 +134,24 @@ const Intro = ({ onFinish }) => {
                                 flex: 4, background: 'linear-gradient(90deg, #39ff14 0%, #178309 100%)',
                                 border: 'none', borderRadius: '15px', padding: '22px',
                                 color: '#000', fontSize: '18px', fontWeight: '900',
-                                cursor: 'pointer', boxShadow: '0 15px 40px rgba(57, 255, 20, 0.4)',
-                                letterSpacing: '2px'
+                                cursor: 'pointer', boxShadow: '0 20px 50px rgba(57, 255, 20, 0.4)',
+                                letterSpacing: '3px'
                             }}
                         >
-                            O'YINNI BOSHLASH 🔥
+                            BOSHLASH 🔥
                         </motion.button>
                     ) : (
                         <>
                             <motion.button
-                                whileTap={{ scale: 0.9 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => setCurrent(prev => prev + 1)}
-                                style={{ flex: 1, background: 'rgba(57, 255, 20, 0.1)', border: '1px solid rgba(57, 255, 20, 0.3)', padding: '20px', borderRadius: '15px', color: '#39ff14', fontWeight: 'bold' }}
+                                style={{ flex: 1, background: 'rgba(57, 255, 20, 0.1)', border: '1px solid rgba(57, 255, 20, 0.4)', padding: '20px', borderRadius: '15px', color: '#39ff14', fontWeight: 'bold', fontSize: '14px' }}
                             >
                                 KEYINGISI →
                             </motion.button>
                             <button
                                 onClick={onFinish}
-                                style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', fontSize: '12px', letterSpacing: '1px' }}
+                                style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '12px', letterSpacing: '2px' }}
                             >
                                 O'TKAZIB YUBORISH
                             </button>
@@ -171,14 +161,14 @@ const Intro = ({ onFinish }) => {
             </div>
 
             <style>{`
-        .intro-container-professional::before {
+        body { background: #000; margin: 0; }
+        .intro-clean-premium::before {
           content: "";
           position: absolute;
           width: 100%; height: 100%;
-          background-image: radial-gradient(rgba(57, 255, 20, 0.05) 1.5px, transparent 1.5px);
-          background-size: 50px 50px;
-          opacity: 0.3;
-          z-index: 1;
+          background: radial-gradient(circle, transparent 20%, #000 80%);
+          z-index: 10;
+          pointer-events: none;
         }
       `}</style>
         </div>

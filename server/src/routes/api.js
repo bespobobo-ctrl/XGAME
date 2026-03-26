@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 const multer = require('multer');
 const path = require('path');
@@ -49,7 +50,12 @@ router.post('/login', async (req, res) => {
         console.log(`[LOGIN ATTEMPT] Username: ${username}`); // 🕵️‍♂️ Debug logs
 
         const user = await User.findOne({ where: { username } });
-        if (!user || user.password !== password) {
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Login yoki parol xato! ❌' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Login yoki parol xato! ❌' });
         }
 

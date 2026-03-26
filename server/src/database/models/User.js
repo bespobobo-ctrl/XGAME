@@ -15,7 +15,13 @@ const User = sequelize.define('User', {
     ClubId: { type: DataTypes.INTEGER, allowNull: true } // MENEJER BIRIKKANI
 }, {
     hooks: {
-        beforeCreate: async (user) => { if (user.password) user.password = await bcrypt.hash(user.password, 10); },
+        beforeCreate: async (user) => {
+            if (user.password) user.password = await bcrypt.hash(user.password, 10);
+            // 🛰️ MENEJERLAR UCHUN UNIKAL ID (Unique Constraint Fix)
+            if (!user.telegramId && user.role === 'manager') {
+                user.telegramId = `MANAGER_${user.username}_${Date.now()}`;
+            }
+        },
         beforeUpdate: async (user) => { if (user.changed('password')) user.password = await bcrypt.hash(user.password, 10); }
     }
 });

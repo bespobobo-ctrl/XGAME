@@ -97,7 +97,22 @@ const App = () => {
       )}
 
       <style>{`
-        body { margin: 0; background: #050505; -webkit-tap-highlight-color: transparent; }
+        body { 
+          margin: 0; 
+          background: #050505; 
+          -webkit-tap-highlight-color: transparent; 
+          overflow-x: hidden;
+          overflow-y: auto; 
+        }
+        .app-main { 
+          display: flex; 
+          flex-direction: column; 
+          min-height: 100vh; 
+        }
+        .app-content {
+          flex: 1;
+          overflow-y: auto;
+        }
         .btn-brand { transition: all 0.3s ease; }
         .glass-card { transition: all 0.3s ease; }
       `}</style>

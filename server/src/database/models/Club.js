@@ -16,17 +16,17 @@ const Club = sequelize.define('Club', {
     },
     status: {
         type: DataTypes.STRING,
-        defaultValue: 'active', // 'active' | 'blocked' | 'inactive'
+        defaultValue: 'active', // 'active' | 'blocked'
     },
-    isDeleted: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
+    level: {
+        type: DataTypes.STRING,
+        defaultValue: 'standard', // 'standard' | 'premium' | 'platinum'
     },
     priority: {
         type: DataTypes.INTEGER,
-        defaultValue: 0,
+        defaultValue: 0, // Higher is more important
     },
-    img: {
+    image: {
         type: DataTypes.STRING, // Main image
     },
     images: {

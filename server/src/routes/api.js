@@ -139,12 +139,48 @@ router.get('/admin/clubs', auth, authorize('super_admin'), async (req, res) => {
     res.json(clubs);
 });
 
+// 🏢 PUBLIC API: CLUBS LIST (Sorted by priority)
+router.get('/clubs', async (req, res) => {
+    try {
+        const clubs = await Club.findAll({
+            where: { status: 'active' },
+            order: [['priority', 'DESC']]
+        });
+        res.json(clubs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.post('/admin/clubs', auth, authorize('super_admin'), upload.single('image'), async (req, res) => {
     try {
-        const { name, address } = req.body;
+        const { name, address, level, priority } = req.body;
         const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-        const club = await Club.create({ name, address, image: imagePath });
+        const club = await Club.create({ name, address, image: imagePath, level: level || 'standard', priority: priority || 0 });
         res.json({ success: true, club });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+router.put('/admin/clubs/:id', auth, authorize('super_admin'), async (req, res) => {
+    try {
+        const { status, level, priority, name, address } = req.body;
+        const club = await Club.findByPk(req.params.id);
+        if (!club) return res.status(404).json({ error: 'Klub topilmadi!' });
+        await club.update({ status, level, priority, name, address });
+        res.json({ success: true, club });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+router.delete('/admin/clubs/:id', auth, authorize('super_admin'), async (req, res) => {
+    try {
+        const club = await Club.findByPk(req.params.id);
+        if (!club) return res.status(404).json({ error: 'Klub topilmadi!' });
+        await club.destroy();
+        res.json({ success: true, message: 'Klub o\'chirildi!' });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

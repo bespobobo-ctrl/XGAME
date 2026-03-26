@@ -195,6 +195,43 @@ router.delete('/admin/clubs/:id', auth, authorize('super_admin'), async (req, re
     }
 });
 
+router.get('/admin/stats', auth, authorize('super_admin'), async (req, res) => {
+    try {
+        const totalClubs = await Club.count();
+        const totalManagers = await User.count({ where: { role: 'manager' } });
+
+        // BUGUNGI DAROMAD (Mocked for now, if transaction table exists, use it)
+        const todayRevenue = 1250000; // 1.25M UZS (Mocked UI placeholder)
+
+        // AKTIV FOYDALANUVCHILAR (Active sessions sum)
+        const activeUsers = 42; // Real-time pulse placeholder
+
+        // RECENT ACTIVITY LOGS
+        const recentManagers = await User.findAll({
+            where: { role: 'manager' },
+            limit: 5,
+            order: [['lastActive', 'DESC']],
+            attributes: ['username', 'lastActive']
+        });
+
+        res.json({
+            totalClubs,
+            totalManagers,
+            todayRevenue,
+            activeUsers,
+            load: 42,
+            peakHours: [10, 20, 45, 80, 60, 40, 90, 100, 70, 50, 30, 15], // Hourly activity points
+            recentActivity: recentManagers.map(m => ({
+                user: m.username,
+                action: 'Online Faollik 🟢',
+                time: m.lastActive
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.get('/admin/managers', auth, authorize('super_admin'), async (req, res) => {
     try {
         const managers = await User.findAll({

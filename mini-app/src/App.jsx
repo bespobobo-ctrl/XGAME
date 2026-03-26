@@ -191,7 +191,7 @@ function App() {
               {slides.map((s, i) => (
                 <SwiperSlide key={i} style={{ position: 'relative' }}>
                   <img src={s.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                  <div style={{ position: absolute, inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
                     <h3 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#fff' }}>{s.title}</h3>
                     <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{s.desc}</p>
                   </div>

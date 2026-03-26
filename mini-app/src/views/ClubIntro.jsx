@@ -47,7 +47,7 @@ const ClubIntro = ({ club, onFinish, onBack }) => {
                     ))}
                 </div>
 
-                <button onClick={onBack} style={{ position: 'absolute', top: '70px', left: '30px', background: 'rgba(255,255,255,0.05)', border: '1px solid #fff1', color: '#fff', borderRadius: '15px', padding: '10px 20px', fontSize: '12px' }}>BACK</button>
+                <button onClick={onBack} style={{ position: 'absolute', top: '70px', left: '30px', background: 'rgba(255,255,255,0.05)', border: '1px solid #fff1', color: '#fff', borderRadius: '15px', padding: '10px 20px', fontSize: '12px' }}>⬅️ ORQAGA</button>
 
                 {/* 📝 CONTENT */}
                 <AnimatePresence mode="wait">
@@ -69,14 +69,14 @@ const ClubIntro = ({ club, onFinish, onBack }) => {
                         onClick={next}
                         style={{ background: 'linear-gradient(45deg, #39ff14, #00ff88)', border: 'none', padding: '22px', borderRadius: '25px', fontWeight: 'bold', color: '#000', fontSize: '14px', boxShadow: '0 10px 30px rgba(57,255,20,0.2)' }}
                     >
-                        {currentSlide === slides.length - 1 ? 'GET STARTED' : 'CONTINUE'}
+                        {currentSlide === slides.length - 1 ? 'BOSHLASH 🚀' : 'DAVOM ETISH ➡️'}
                     </motion.button>
                     <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={onFinish}
                         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #fff1', color: '#fff', padding: '22px', borderRadius: '25px', fontWeight: 'bold', fontSize: '14px' }}
                     >
-                        SKIP
+                        O'TKAZIB YUBORISH ⏭️
                     </motion.button>
                 </div>
 

@@ -6,3 +6,7 @@ dist/
 build/
 .DS_Store
 pc-agent/config.json
+archived/
+logs/
+data/
+public/uploads/

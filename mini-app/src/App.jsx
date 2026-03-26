@@ -340,6 +340,9 @@ function App() {
 
         .auth-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; color: #fff; margin-bottom: 10px; outline: none; }
       `}</style>
+      <div style={{ position: 'fixed', bottom: 10, width: '100%', textAlign: 'center', fontSize: '10px', color: '#ff4d4d', opacity: 0.7 }}>
+        Connected to: {API_URL} | v1.5.1
+      </div>
     </div>
   );
 }

@@ -133,6 +133,27 @@ router.put('/admin/clubs/:id', auth, upload.single('image'), async (req, res) =>
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// 🛠️ DELETE CLUB
+router.delete('/admin/clubs/:id', auth, async (req, res) => {
+    try {
+        const club = await Club.findByPk(req.params.id);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+        await club.destroy();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 🛠️ TOGGLE BLOCK CLUB
+router.patch('/admin/clubs/:id/block', auth, async (req, res) => {
+    try {
+        const club = await Club.findByPk(req.params.id);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+        club.status = club.status === 'active' ? 'blocked' : 'active';
+        await club.save();
+        res.json({ success: true, status: club.status });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/admin/stats', auth, async (req, res) => {
     try {
         const totalClubs = await Club.count();
@@ -158,8 +179,54 @@ router.get('/admin/managers', auth, async (req, res) => {
 router.post('/admin/managers', auth, async (req, res) => {
     try {
         const { username, password, clubId } = req.body;
-        await User.create({ username, password, rawPassword: password, role: 'manager', ClubId: clubId, status: 'active', telegramId: '0' });
+        // 🛡️ telegramId ni olib tashladik (model o'zi avtomatik generatsiya qiladi @User.js)
+        await User.create({
+            username,
+            password,
+            rawPassword: password,
+            role: 'manager',
+            ClubId: clubId,
+            status: 'active'
+        });
         res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 🛠️ UPDATE MANAGER
+router.put('/admin/managers/:id', auth, async (req, res) => {
+    try {
+        const { username, password, clubId, status } = req.body;
+        const user = await User.findByPk(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const updateData = { username, ClubId: clubId, status };
+        if (password) {
+            updateData.password = password;
+            updateData.rawPassword = password;
+        }
+        await user.update(updateData);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 🛠️ DELETE MANAGER
+router.delete('/admin/managers/:id', auth, async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        await user.destroy();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 🛠️ TOGGLE BLOCK MANAGER
+router.patch('/admin/managers/:id/block', auth, async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        user.status = user.status === 'active' ? 'blocked' : 'active';
+        await user.save();
+        res.json({ success: true, status: user.status });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

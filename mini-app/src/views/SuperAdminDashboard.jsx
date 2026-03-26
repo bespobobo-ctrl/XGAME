@@ -102,6 +102,28 @@ const SuperAdminDashboard = ({ activeTab }) => {
         if (res.success) { setIsManagerFormOpen(false); setEditingManager(null); callAPI('/api/admin/managers').then(setManagers); }
     };
 
+    const toggleBlockClub = async (id) => {
+        const res = await callAPI(`/api/admin/clubs/${id}/block`, { method: 'PATCH' });
+        if (res.success) callAPI('/api/admin/clubs').then(setClubs);
+    };
+
+    const deleteClub = async (id) => {
+        if (!window.confirm('Klubni o\'chirmoqchimisiz?')) return;
+        const res = await callAPI(`/api/admin/clubs/${id}`, { method: 'DELETE' });
+        if (res.success) callAPI('/api/admin/clubs').then(setClubs);
+    };
+
+    const toggleBlockManager = async (id) => {
+        const res = await callAPI(`/api/admin/managers/${id}/block`, { method: 'PATCH' });
+        if (res.success) callAPI('/api/admin/managers').then(setManagers);
+    };
+
+    const deleteManager = async (id) => {
+        if (!window.confirm('Menejerni o\'chirmoqchimisiz?')) return;
+        const res = await callAPI(`/api/admin/managers/${id}`, { method: 'DELETE' });
+        if (res.success) callAPI('/api/admin/managers').then(setManagers);
+    };
+
     // API_URL is now imported from '../api'
 
     return (
@@ -145,8 +167,10 @@ const SuperAdminDashboard = ({ activeTab }) => {
                                     <b style={{ opacity: club.status === 'blocked' ? 0.3 : 1 }}>{club.name}</b>
                                     <div style={{ fontSize: '8px', opacity: 0.3 }}>{club.address}</div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '15px' }}>
-                                    <button onClick={() => { setEditingClub(club); setClubForm({ name: club.name, address: club.address, level: club.level, lat: club.lat, lng: club.lng }); setIsClubFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '20px' }}>✎</button>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                    <button onClick={() => { setEditingClub(club); setClubForm({ name: club.name, address: club.address, level: club.level, lat: club.lat, lng: club.lng }); setIsClubFormOpen(true); }} style={{ color: '#aaa', background: 'none', border: 'none', fontSize: '18px' }}>✎</button>
+                                    <button onClick={() => toggleBlockClub(club.id)} style={{ color: club.status === 'blocked' ? '#ff4444' : '#39ff14', background: 'none', border: 'none', fontSize: '18px' }}>{club.status === 'blocked' ? '🔓' : '🔒'}</button>
+                                    <button onClick={() => deleteClub(club.id)} style={{ color: '#ff4444', background: 'none', border: 'none', fontSize: '18px' }}>🗑️</button>
                                 </div>
                             </div>
                         ))}
@@ -158,12 +182,20 @@ const SuperAdminDashboard = ({ activeTab }) => {
                         <button onClick={() => setIsManagerFormOpen(true)} style={{ background: '#39ff1411', border: '1px solid #39ff1444', padding: '18px', borderRadius: '25px', color: '#39ff14', fontWeight: 'bold' }}>+ {t.assign}</button>
                         {(managers || []).map(m => (
                             <div key={m.id} style={{ background: '#111', padding: '25px', borderRadius: '35px', border: m.status === 'blocked' ? '2px solid #ff4444' : '1px solid #222' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <b style={{ fontSize: '18px' }}>{m.username}</b>
-                                    <button onClick={() => { setEditingManager(m); setManagerForm({ username: m.username, password: '', status: m.status, clubId: m.ClubId }); setIsManagerFormOpen(true); }} style={{ color: '#39ff14', background: 'none', border: 'none', fontSize: '20px' }}>✎</button>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <b style={{ fontSize: '18px', opacity: m.status === 'blocked' ? 0.3 : 1 }}>{m.username}</b>
+                                        <div style={{ fontSize: '10px', color: '#39ff14', marginTop: '4px' }}>🏛️ {m.clubName}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <button onClick={() => { setEditingManager(m); setManagerForm({ username: m.username, password: '', status: m.status, clubId: m.ClubId }); setIsManagerFormOpen(true); }} style={{ color: '#aaa', background: 'none', border: 'none', fontSize: '18px' }}>✎</button>
+                                        <button onClick={() => toggleBlockManager(m.id)} style={{ color: m.status === 'blocked' ? '#ff4444' : '#39ff14', background: 'none', border: 'none', fontSize: '18px' }}>{m.status === 'blocked' ? '🔓' : '🔒'}</button>
+                                        <button onClick={() => deleteManager(m.id)} style={{ color: '#ff4444', background: 'none', border: 'none', fontSize: '18px' }}>🗑️</button>
+                                    </div>
                                 </div>
-                                <div style={{ marginTop: '12px' }}>
-                                    <span style={{ fontSize: '10px', background: '#fff1', padding: '6px 15px', borderRadius: '10px', color: '#39ff14', fontWeight: 'bold' }}>🔑 {m.rawPassword || '---'}</span>
+                                <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '10px', background: '#fff1', padding: '8px 15px', borderRadius: '12px', color: '#39ff14', fontWeight: 'bold' }}>🔑 {m.rawPassword || '---'}</span>
+                                    <span style={{ fontSize: '8px', color: m.status === 'blocked' ? '#ff4444' : '#39ff14', textTransform: 'uppercase', letterSpacing: '1px' }}>● {m.status}</span>
                                 </div>
                             </div>
                         ))}

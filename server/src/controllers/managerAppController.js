@@ -16,7 +16,7 @@ exports.getStats = async (req, res, next) => {
     const mStart = startOfMonth(now);
     const yStart = startOfYear(now);
 
-    const [totalPCs, busyPCs, latestSession, allTransactions, allSessions, allComputers] = await Promise.all([
+    const [totalPCs, busyPCs, latestSession, allTransactions, allSessions, allComputers, allRooms] = await Promise.all([
         Computer.count({ where: { ClubId: clubId } }),
         Computer.count({ where: { ClubId: clubId, status: 'busy' } }),
         Session.findOne({
@@ -28,9 +28,10 @@ exports.getStats = async (req, res, next) => {
         }),
         Session.findAll({
             where: { startTime: { [Op.gte]: yStart } },
-            include: [{ model: Computer, where: { ClubId: clubId }, include: [Room] }]
+            include: [{ model: Computer, where: { ClubId: clubId } }]
         }),
-        Computer.findAll({ where: { ClubId: clubId }, include: [Room] })
+        Computer.findAll({ where: { ClubId: clubId } }),
+        Room.findAll({ where: { ClubId: clubId } })
     ]);
 
     const freePCs = totalPCs - busyPCs;
@@ -49,6 +50,10 @@ exports.getStats = async (req, res, next) => {
     const hours = { day: 0, week: 0, month: 0, year: 0 };
     const pcStats = {};
 
+    // Create a map of Room ID to Price for fast dynamic session calculation
+    const roomsMap = {};
+    allRooms.forEach(r => roomsMap[r.id] = r.pricePerHour || 15000);
+
     allComputers.forEach(pc => {
         pcStats[pc.id] = { name: pc.name, roomId: pc.RoomId, hours: 0, revenue: 0, isBusy: pc.status === 'busy' };
     });
@@ -57,9 +62,9 @@ exports.getStats = async (req, res, next) => {
         let mins = s.totalMinutes || 0;
         let cost = s.totalCost || 0;
 
-        if (s.status === 'active') {
+        if (s.status === 'active' && s.Computer) {
             mins = Math.max(0, Math.floor((new Date() - new Date(s.startTime)) / 60000));
-            const pricePerHour = s.Computer?.Room?.pricePerHour || 15000;
+            const pricePerHour = roomsMap[s.Computer.RoomId] || 15000;
             cost = Math.floor((mins / 60) * pricePerHour);
         }
 

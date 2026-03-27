@@ -1,58 +1,57 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const jwt = require('jsonwebtoken');
-const config = require('../config/index');
 
-// 🛡️ CONTROLLERS (Senior Structure)
+// 🛡️ MIDDLEWARES
+const { auth, authorize } = require('../middlewares/auth');
+const upload = require('../middlewares/upload');
+const asyncHandler = require('../middlewares/asyncHandler');
+
+// 🎮 CONTROLLERS
 const authCtrl = require('../controllers/authController');
 const clubCtrl = require('../controllers/clubController');
 const managerCtrl = require('../controllers/managerController');
 const broadcastCtrl = require('../controllers/broadcastController');
 const statsCtrl = require('../controllers/statsController');
 
-// 📸 MULTER CONFIG (Image Uploads)
-const storage = multer.diskPath ? multer.diskPath : multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage });
+/**
+ * 🏁 PUBLIC ROUTES
+ */
+router.get('/health', (req, res) => res.status(200).send('API Healthy'));
+router.post('/login', asyncHandler(authCtrl.login));
+router.post('/register', asyncHandler(authCtrl.registerPlayer));
 
-// 🛡️ AUTH MIDDLEWARE
-const auth = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Auth required' });
-    try {
-        req.user = jwt.verify(token, config.JWT_SECRET);
-        next();
-    } catch { res.status(401).json({ error: 'Invalid token' }); }
-};
+/**
+ * 🏛️ CLUB ROUTES (Admin Protected)
+ */
+router.get('/clubs', asyncHandler(clubCtrl.getAllClubs));
+router.get('/admin/clubs', auth, authorize('super_admin'), asyncHandler(clubCtrl.getAllClubs));
+router.post('/admin/clubs', auth, authorize('super_admin'), upload.single('image'), asyncHandler(clubCtrl.createClub));
+router.put('/admin/clubs/:id', auth, authorize('super_admin'), upload.single('image'), asyncHandler(clubCtrl.updateClub));
+router.delete('/admin/clubs/:id', auth, authorize('super_admin'), asyncHandler(clubCtrl.deleteClub));
+router.patch('/admin/clubs/:id/block', auth, authorize('super_admin'), asyncHandler(clubCtrl.toggleBlock));
 
-// 🏁 PUBLIC ROUTES
-router.get('/ping', authCtrl.ping);
-router.post('/login', authCtrl.login);
-router.post('/register', authCtrl.registerPlayer);
+/**
+ * 👤 MANAGER ROUTES (Admin Protected)
+ */
+router.get('/admin/managers', auth, authorize('super_admin'), asyncHandler(managerCtrl.getAllManagers));
+router.post('/admin/managers', auth, authorize('super_admin'), asyncHandler(managerCtrl.createManager));
+router.put('/admin/managers/:id', auth, authorize('super_admin'), asyncHandler(managerCtrl.updateManager));
+router.delete('/admin/managers/:id', auth, authorize('super_admin'), asyncHandler(managerCtrl.deleteManager));
+router.patch('/admin/managers/:id/block', auth, authorize('super_admin'), asyncHandler(managerCtrl.toggleBlock));
 
-// 🏛️ CLUB ROUTES
-router.get('/clubs', clubCtrl.getAllClubs);
-router.get('/admin/clubs', auth, clubCtrl.getAllClubs);
-router.post('/admin/clubs', auth, upload.single('image'), clubCtrl.createClub);
-router.put('/admin/clubs/:id', auth, upload.single('image'), (req, res, next) => {
-    // PUT logic inside controller if needed, currently using basic structure
-    res.json({ success: true, message: 'Update manually handled in controller later' });
-});
-router.delete('/admin/clubs/:id', auth, clubCtrl.deleteClub);
-router.patch('/admin/clubs/:id/block', auth, clubCtrl.toggleBlock);
+/**
+ * 📊 DASHBOARD ROUTES
+ */
+router.get('/admin/stats', auth, authorize('super_admin'), asyncHandler(statsCtrl.getDashboardStats));
+router.post('/admin/broadcast', auth, authorize('super_admin'), asyncHandler(broadcastCtrl.sendBroadcast));
 
-// 👤 MANAGER ROUTES
-router.get('/admin/managers', auth, managerCtrl.getAllManagers);
-router.post('/admin/managers', auth, managerCtrl.createManager);
-router.put('/admin/managers/:id', auth, managerCtrl.updateManager);
-router.delete('/admin/managers/:id', auth, managerCtrl.deleteManager);
-router.patch('/admin/managers/:id/block', auth, managerCtrl.toggleBlock);
+const managerAppCtrl = require('../controllers/managerAppController');
 
-// 📊 STATS & BROADCAST
-router.get('/admin/stats', auth, statsCtrl.getDashboardStats);
-router.post('/admin/broadcast', auth, broadcastCtrl.sendBroadcast);
+/**
+ * 👤 MANAGER DASHBOARD (Mini-App)
+ */
+router.get('/manager/stats', auth, authorize('manager'), asyncHandler(managerAppCtrl.getStats));
+router.get('/manager/rooms', auth, authorize('manager'), asyncHandler(managerAppCtrl.getRooms));
+router.post('/manager/setup', auth, authorize('manager'), asyncHandler(managerAppCtrl.setup));
 
 module.exports = router;

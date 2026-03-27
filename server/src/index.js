@@ -1,81 +1,55 @@
-const express = require('express');
-const cors = require('cors');
 const http = require('http');
-const path = require('path');
 const { Server } = require('socket.io');
-
+const app = require('./app');
 const config = require('./config/index');
-const errorHandler = require('./middlewares/errorHandler');
-
 const { initializeDatabase } = require('./database/index');
 const { startBillingService } = require('./services/billingService');
 const { setupWebSockets } = require('./websocket/index');
+const User = require('./database/models/User');
 
-const apiRoutes = require('./routes/api');
-
-const app = express();
 const server = http.createServer(app);
 
-// Websocket ornatamiz (mini app ulansa bo'lishi u-n cors ni hammaga ochamiz)
+// 🔌 WEBSOCKETS (Centralized Management)
 const io = new Server(server, { cors: { origin: '*' } });
-app.set('io', io); // Marshrutlarda (routes) ishlatish imkoni
-
-app.use(cors());
-app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// API route'larni ulash
-app.use('/api', apiRoutes);
-
-// API route'lar kelajakda qo'shiladi
-app.get('/ping', (req, res) => {
-    res.json({ message: 'GameZone API is running! 🚀', status: 'OK' });
-});
-
-// 🌐 Mini App static fayllarni xizmat qilish (build qilingan dist papkasi)
-const miniAppPath = path.join(__dirname, '../../mini-app/dist');
-app.use(express.static(miniAppPath));
-
-// 🖼️ Yuklangan rasmlar (Uploads) xizmati
-const uploadsPath = path.join(__dirname, '../public/uploads');
-app.use('/uploads', express.static(uploadsPath));
-
-// SPA catch-all: API bo'lmagan barcha so'rovlarni index.html ga yo'naltirish
-app.get('*', (req, res) => {
-    res.sendFile(path.join(miniAppPath, 'index.html'));
-});
-
-const PORT = process.env.SERVER_PORT || 3001;
+app.set('io', io); // Makes IO accessible in route controllers via req.app.get('io')
 
 async function startServer() {
-    await initializeDatabase();
+    try {
+        console.log(`\n============== INITIALIZING GAMEZONE SERVER ==============`);
 
-    // 🛡️ Super Adminni tekshirish va yaratish
-    const User = require('./database/models/User');
-    const existingAdmin = await User.findOne({ where: { username: '123' } });
-    if (!existingAdmin) {
-        await User.create({
-            username: '123',
-            password: '123',
-            role: 'super_admin',
-            telegramId: '0' // Majburiy maydon to'ldirildi
+        // 1. Link Database
+        await initializeDatabase();
+
+        // 2. Ensure Super Admin exists
+        const existingAdmin = await User.findOne({ where: { username: config.SUPER_ADMIN_USER } });
+        if (!existingAdmin) {
+            await User.create({
+                username: config.SUPER_ADMIN_USER,
+                password: config.SUPER_ADMIN_PASS,
+                role: 'super_admin',
+                telegramId: '0'
+            });
+            console.log(`🛡️  Master Admin created: ${config.SUPER_ADMIN_USER} / ****`);
+        }
+
+        // 3. Connect WebSockets
+        setupWebSockets(io);
+
+        // 4. Start Internal Services (Billing, etc.)
+        startBillingService(io);
+
+        // 5. Start HTTP Server
+        const PORT = config.PORT || 3001;
+        server.listen(PORT, () => {
+            console.log(`🔥 Server running at: http://localhost:${PORT}`);
+            console.log(`📱 Frontend active: http://localhost:${PORT}`);
+            console.log(`==========================================================\n`);
         });
-        console.log('Master Admin yaratildi: 123 / 123 🛡️');
+
+    } catch (error) {
+        console.error('❌ CRITICAL SERVER ERROR:', error);
+        process.exit(1);
     }
-
-    // WebSockets ulash (Agentlarni eshitadi)
-    setupWebSockets(io);
-
-    // Taymer (Pul hisoblash)
-    startBillingService(io);
-
-    // Endi qanaqadir app.listen EMAS, balki http serverimiz.listen() chaqiriladi
-    server.listen(PORT, () => {
-        console.log(`\n========================================`);
-        console.log(`🔥 GameZone API (+Sockets) ishga tushdi: http://localhost:${PORT}`);
-        console.log(`📱 Mini App: http://localhost:${PORT}`);
-        console.log(`========================================\n`);
-    });
 }
 
 startServer();

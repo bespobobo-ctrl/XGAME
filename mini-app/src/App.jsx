@@ -9,15 +9,31 @@ import SuperAdminLogin from './views/SuperAdminLogin';
 import SuperAdminDashboard from './views/SuperAdminDashboard';
 import ManagerLogin from './views/ManagerLogin';
 import ManagerSetup from './views/ManagerSetup';
+import ManagerDashboard from './views/ManagerDashboard';
 import UserRegister from './views/UserRegister';
 
 const App = () => {
-  const [view, setView] = useState('intro'); // intro, home, superAdmin, managerSetup, clubIntro, userRegister
+  const [view, setView] = useState('intro'); // intro, home, superAdmin, managerDashboard, managerLogin, clubIntro, userRegister
   const [selectedClub, setSelectedClub] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); // dashboard, clubs, managers
+  const [managerTab, setManagerTab] = useState('stats'); // stats, rooms, settings
   const [user, setUser] = useState(null);
   const [showSuperLogin, setShowSuperLogin] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState(null);
+
+  // 🔄 SESSION RECOVERY (Senior Level Logic)
+  useEffect(() => {
+    const token = localStorage.getItem('x-token');
+    const savedUser = localStorage.getItem('x-user');
+    if (token && savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        if (userData.role === 'super_admin') setView('superAdmin');
+        else if (userData.role === 'manager') setView('managerDashboard');
+      } catch (e) { localStorage.clear(); }
+    }
+  }, []);
 
   // Hidden Super Admin Entry Logic (3s Long Press)
   const startLongPress = () => {
@@ -31,6 +47,7 @@ const App = () => {
   const handleSuperLogin = (data) => {
     setUser(data.user);
     localStorage.setItem('x-token', data.token);
+    localStorage.setItem('x-user', JSON.stringify(data.user));
     setView('superAdmin');
     setShowSuperLogin(false);
   };
@@ -38,12 +55,15 @@ const App = () => {
   const handleManagerLogin = (data) => {
     setUser(data.user);
     localStorage.setItem('x-token', data.token);
-    setView('managerSetup'); // Menejer paneli (Hozircha ManagerSetup, keyin bemalol kengaytiramiz)
+    localStorage.setItem('x-user', JSON.stringify(data.user));
+    // Check if manager needs setup or can go straight to dashboard
+    setView('managerDashboard');
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('x-token');
+    localStorage.removeItem('x-user');
     setView('home');
   };
 
@@ -63,17 +83,20 @@ const App = () => {
       {/* 🏠 MAIN APPLICATION UI */}
       {view !== 'intro' && (
         <>
-          <header className="app-header" style={{ padding: '35px 20px 0px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'linear-gradient(rgba(5,5,5,1), transparent)' }}>
-            <motion.h1
-              onMouseDown={startLongPress} onMouseUp={stopLongPress}
-              onTouchStart={startLongPress} onTouchEnd={stopLongPress}
-              animate={{ textShadow: ['0 0 10px #39ff14', '0 0 30px #39ff14', '0 0 10px #39ff14'] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              style={{ margin: 0, fontSize: '40px', fontWeight: '950', letterSpacing: '8px', cursor: 'grab', color: '#fff' }}
-            >
-              {view === 'superAdmin' ? 'NEXUS' : 'X-GAME'}
-            </motion.h1>
-          </header>
+          {/* HIDE HEADER ON DASHBOARDS FOR MORE SPACE */}
+          {view !== 'superAdmin' && view !== 'managerDashboard' && (
+            <header className="app-header" style={{ padding: '35px 20px 0px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'linear-gradient(rgba(5,5,5,1), transparent)' }}>
+              <motion.h1
+                onMouseDown={startLongPress} onMouseUp={stopLongPress}
+                onTouchStart={startLongPress} onTouchEnd={stopLongPress}
+                animate={{ textShadow: ['0 0 10px #39ff14', '0 0 30px #39ff14', '0 0 10px #39ff14'] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                style={{ margin: 0, fontSize: '40px', fontWeight: '950', letterSpacing: '8px', cursor: 'grab', color: '#fff' }}
+              >
+                {view === 'superAdmin' ? 'NEXUS' : 'X-GAME'}
+              </motion.h1>
+            </header>
+          )}
 
           <main className="app-content">
             {view === 'home' && (
@@ -98,7 +121,8 @@ const App = () => {
             )}
             {view === 'superAdmin' && <SuperAdminDashboard activeTab={adminTab} />}
             {view === 'managerLogin' && <ManagerLogin onLogin={handleManagerLogin} onBack={() => setView('home')} />}
-            {view === 'managerSetup' && <ManagerSetup onFinish={() => setView('home')} />}
+            {view === 'managerSetup' && <ManagerSetup onFinish={() => setView('managerDashboard')} />}
+            {view === 'managerDashboard' && <ManagerDashboard user={user} activeTab={managerTab} setActiveTab={setManagerTab} onLogout={logout} />}
           </main>
 
           {/* 👤 NAVIGATION BARS */}
@@ -114,16 +138,30 @@ const App = () => {
                 <div onClick={() => setAdminTab('managers')} style={{ fontSize: '14px', fontWeight: 'bold', color: adminTab === 'managers' ? '#39ff14' : '#fff' }}>👤 Menejer</div>
                 <div onClick={logout} style={{ fontSize: '14px', fontWeight: 'bold', color: '#ff4444' }}>🚪 Chiqish</div>
               </motion.nav>
-            ) : (
-              /* 🎮 USER/MANAGER NAVIGATION */
+            ) : view === 'managerDashboard' ? (
+              /* ⚙️ MANAGER NAVIGATION */
+              <motion.nav
+                initial={{ y: 100 }} animate={{ y: 0 }}
+                style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(112, 0, 255, 0.08)', border: '1px solid rgba(112, 0, 255, 0.2)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100, boxShadow: '0 0 30px rgba(112,0,255,0.1)' }}
+              >
+                <div onClick={() => setManagerTab('stats')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'stats' ? '#7000ff' : '#fff' }}>📊 Stat</div>
+                <div onClick={() => setManagerTab('rooms')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'rooms' ? '#7000ff' : '#fff' }}>🖥️ Xonalar</div>
+                <div onClick={() => setManagerTab('settings')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'settings' ? '#7000ff' : '#fff' }}>⚙️ Sozlamalar</div>
+              </motion.nav>
+            ) : (view === 'home' || view === 'clubIntro' || view === 'userRegister' || view === 'managerLogin') ? (
+              /* 🎮 USER NAVIGATION */
               <motion.nav
                 initial={{ y: 100 }} animate={{ y: 0 }}
                 style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.1)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100 }}
               >
                 <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none', transition: '0.3s' }}>🏠 Asosiy</div>
-                <div onClick={() => setView('managerLogin')} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: (view === 'managerLogin' || view === 'managerSetup') ? '#7000ff' : 'rgba(255,255,255,0.3)', textShadow: (view === 'managerLogin' || view === 'managerSetup') ? '0 0 15px #7000ff' : 'none', transition: '0.3s' }}>👤 Profil</div>
+                <div onClick={() => {
+                  if (user && user.role === 'manager') setView('managerDashboard');
+                  else if (user && user.role === 'super_admin') setView('superAdmin');
+                  else setView('managerLogin');
+                }} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: (view === 'managerLogin' || view === 'managerDashboard') ? '#7000ff' : 'rgba(255,255,255,0.3)', textShadow: (view === 'managerLogin' || view === 'managerDashboard') ? '0 0 15px #7000ff' : 'none', transition: '0.3s' }}>👤 Profil</div>
               </motion.nav>
-            )}
+            ) : null}
           </AnimatePresence>
         </>
       )}

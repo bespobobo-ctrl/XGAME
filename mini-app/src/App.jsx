@@ -145,7 +145,7 @@ const App = () => {
                 style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(112, 0, 255, 0.08)', border: '1px solid rgba(112, 0, 255, 0.2)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100, boxShadow: '0 0 30px rgba(112,0,255,0.1)' }}
               >
                 <div onClick={() => setManagerTab('stats')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'stats' ? '#7000ff' : '#fff' }}>📊 Stat</div>
-                <div onClick={() => setManagerTab('rooms')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'rooms' ? '#7000ff' : '#fff' }}>🖥️ Xonalar</div>
+                <div onClick={() => setManagerTab('rooms')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'rooms' ? '#7000ff' : '#fff' }}>🗺️ Xarita</div>
                 <div onClick={() => setManagerTab('settings')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'settings' ? '#7000ff' : '#fff' }}>⚙️ Sozlamalar</div>
               </motion.nav>
             ) : (view === 'home' || view === 'clubIntro' || view === 'userRegister' || view === 'managerLogin') ? (

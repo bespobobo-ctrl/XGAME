@@ -54,5 +54,6 @@ router.get('/manager/stats', auth, authorize('manager'), asyncHandler(managerApp
 router.get('/manager/rooms', auth, authorize('manager'), asyncHandler(managerAppCtrl.getRooms));
 router.post('/manager/setup', auth, authorize('manager'), asyncHandler(managerAppCtrl.setup));
 router.post('/manager/broadcast', auth, authorize('manager'), asyncHandler(managerAppCtrl.broadcast));
+router.post('/manager/pc/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.pcAction));
 
 module.exports = router;

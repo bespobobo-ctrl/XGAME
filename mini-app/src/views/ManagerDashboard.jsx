@@ -9,6 +9,26 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [isBroadcasting, setIsBroadcasting] = useState(false);
 
+    const [selectedPC, setSelectedPC] = useState(null);
+    const [actionLoading, setActionLoading] = useState(false);
+
+    const handleAction = async (action) => {
+        if (!selectedPC) return;
+        setActionLoading(true);
+        try {
+            await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
+                method: 'POST',
+                body: JSON.stringify({ action })
+            });
+            const r = await callAPI('/api/manager/rooms');
+            setRooms(r || []);
+            setSelectedPC(null);
+        } catch (e) {
+            alert('Xato: ' + e.message);
+        }
+        setActionLoading(false);
+    };
+
     const handleBroadcast = async () => {
         if (!broadcastMessage.trim()) return;
         setIsBroadcasting(true);
@@ -47,17 +67,37 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const renderPC = (pc, room) => {
         const isActive = pc.status === 'busy';
-        // Mock session data for UI demo (in real app, this comes from backend with PC)
-        const mockTimeLeft = isActive ? "01:24:10" : "00:00:00";
-        const progress = isActive ? 65 : 0;
+        let elapsedTime = "00:00:00";
+        let progress = 0;
+
+        if (isActive && pc.Sessions?.length > 0) {
+            const start = new Date(pc.Sessions[0].startTime);
+            const now = new Date();
+            const diffSeconds = Math.floor((now - start) / 1000);
+            const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (diffSeconds % 60).toString().padStart(2, '0');
+            elapsedTime = `${h}:${m}:${s}`;
+            progress = Math.min((diffSeconds / 3600) * 100, 100);
+        }
+
+        const getStatusColor = () => {
+            if (pc.status === 'free' || pc.status === 'available') return '#39ff14';
+            if (pc.status === 'busy') return '#ff00ff';
+            if (pc.status === 'reserved') return '#ffaa00';
+            if (pc.status === 'vip') return '#00ffff';
+            return '#444';
+        };
+        const color = getStatusColor();
 
         return (
             <motion.div
                 key={pc.id}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedPC(pc)}
                 style={{
                     background: '#0a0a0a',
-                    border: `1px solid ${isActive ? '#39ff1433' : '#222'}`,
+                    border: `1px solid ${isActive ? color + '33' : '#222'}`,
                     borderRadius: '20px',
                     padding: '15px',
                     display: 'flex',
@@ -65,27 +105,28 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    cursor: 'pointer'
                 }}
             >
                 {isActive && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        style={{ position: 'absolute', top: 0, left: 0, height: '2px', background: '#39ff14', width: `${progress}%`, boxShadow: '0 0 10px #39ff14' }}
+                        style={{ position: 'absolute', top: 0, left: 0, height: '2px', background: color, width: `${progress}%`, boxShadow: `0 0 10px ${color}` }}
                     />
                 )}
 
-                <span style={{ fontSize: '10px', fontWeight: '900', color: isActive ? '#39ff14' : '#666' }}>{pc.name}</span>
+                <span style={{ fontSize: '10px', fontWeight: '900', color: (isActive || pc.status !== 'free') ? color : '#666' }}>{pc.name}</span>
 
                 <div style={{ margin: '10px 0', fontSize: '14px', fontWeight: 'bold', color: isActive ? '#fff' : '#444' }}>
-                    {isActive ? mockTimeLeft : "FREE"}
+                    {isActive ? elapsedTime : pc.status.toUpperCase()}
                 </div>
 
                 <div style={{
                     width: '6px', height: '6px',
-                    background: pc.status === 'available' || pc.status === 'free' ? '#39ff14' : pc.status === 'busy' ? '#ff00ff' : '#444',
+                    background: color,
                     borderRadius: '50%',
-                    boxShadow: `0 0 10px ${pc.status === 'available' || pc.status === 'free' ? '#39ff14' : pc.status === 'busy' ? '#ff00ff' : '#000'}`
+                    boxShadow: `0 0 10px ${color}`
                 }} />
             </motion.div>
         );
@@ -214,11 +255,24 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                 {activeTab === 'rooms' && (
                     <motion.div key="rooms" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ padding: '20px' }}>
+
+                        <div style={{ margin: '0 0 20px', padding: '20px', background: 'linear-gradient(45deg, #111, #000)', borderRadius: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #7000ff33' }}>
+                            <div>
+                                <h2 style={{ fontSize: '20px', margin: 0, color: '#fff', letterSpacing: '2px' }}>KLUB XARITASI 🗺️</h2>
+                                <p style={{ fontSize: '10px', color: '#888', margin: '5px 0 0' }}>Jami xonalar: {rooms.length} ta</p>
+                            </div>
+                        </div>
+
                         {rooms.map(room => (
-                            <div key={room.id} style={{ marginBottom: '35px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '0 10px' }}>
-                                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#7000ff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
-                                    <span style={{ fontSize: '10px', opacity: 0.5 }}>{room.pricePerHour.toLocaleString()} UZS/h</span>
+                            <div key={room.id} style={{ marginBottom: '35px', background: '#050505', borderRadius: '30px', padding: '20px', border: '1px solid #111' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#7000ff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
+                                        <div style={{ fontSize: '10px', color: '#888', marginTop: '5px' }}>{room.Computers?.length} ta PC • Yoniq: <span style={{ color: '#ff00ff' }}>{room.Computers?.filter(c => c.status === 'busy').length}</span></div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#00ffff' }}>{room.pricePerHour.toLocaleString()} UZS/s</span>
+                                    </div>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '12px' }}>
                                     {room.Computers?.map(pc => renderPC(pc, room))}
@@ -249,6 +303,48 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 SAVE CHANGES
                             </button>
                         </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* PC ACTION MODAL */}
+            <AnimatePresence>
+                {selectedPC && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 999, display: 'flex', alignItems: 'flex-end' }}
+                        onClick={(e) => { if (e.target === e.currentTarget) setSelectedPC(null); }}
+                    >
+                        <motion.div
+                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25 }}
+                            style={{ background: '#111', width: '100%', padding: '30px', borderRadius: '40px 40px 0 0', borderTop: '1px solid #333' }}
+                        >
+                            <h2 style={{ fontSize: '24px', margin: '0 0 5px', textAlign: 'center' }}>{selectedPC.name} Boshqaruvi</h2>
+                            <p style={{ textAlign: 'center', color: '#888', fontSize: '12px', margin: '0 0 30px' }}>Hozirgi holat: <b style={{ color: selectedPC.status === 'busy' ? '#ff00ff' : '#39ff14' }}>{selectedPC.status.toUpperCase()}</b></p>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                {selectedPC.status !== 'busy' && (
+                                    <button onClick={() => handleAction('start')} disabled={actionLoading} style={{ background: '#39ff14', color: '#000', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
+                                        ⏳ VAQT OCHISH (START)
+                                    </button>
+                                )}
+                                {selectedPC.status === 'busy' && (
+                                    <button onClick={() => handleAction('stop')} disabled={actionLoading} style={{ background: '#ff4444', color: '#fff', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
+                                        🛑 VAQT TO'XTATISH
+                                    </button>
+                                )}
+                                <button onClick={() => handleAction('reserve')} disabled={actionLoading} style={{ background: '#ffaa00', color: '#000', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
+                                    🎫 BRON QILISH
+                                </button>
+                                <button onClick={() => handleAction('vip')} disabled={actionLoading} style={{ background: '#00ffff', color: '#000', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
+                                    💎 VIP QILISH
+                                </button>
+                                <button onClick={() => handleAction('free')} disabled={actionLoading} style={{ background: '#333', color: '#fff', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px', gridColumn: 'span 2' }}>
+                                    🧹 KOMPYUTERNI BO'SHATISH
+                                </button>
+                            </div>
+                            <button onClick={() => setSelectedPC(null)} style={{ width: '100%', padding: '15px', background: 'transparent', color: '#666', border: 'none', marginTop: '20px', fontSize: '14px' }}>YOPISH</button>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>

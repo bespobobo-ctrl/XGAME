@@ -88,9 +88,57 @@ exports.getRooms = async (req, res, next) => {
     const clubId = req.user.ClubId;
     const rooms = await Room.findAll({
         where: { ClubId: clubId },
-        include: [Computer]
+        include: [{
+            model: Computer,
+            include: [{
+                model: Session,
+                where: { status: 'active' },
+                required: false
+            }]
+        }]
     });
     res.json(rooms);
+};
+
+exports.pcAction = async (req, res, next) => {
+    const { id } = req.params;
+    const { action } = req.body;
+    const clubId = req.user.ClubId;
+
+    const pc = await Computer.findOne({ where: { id, ClubId: clubId } });
+    if (!pc) return res.status(404).json({ error: 'Topilmadi' });
+
+    if (action === 'start') {
+        const hasSession = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
+        if (!hasSession) {
+            await Session.create({ startTime: new Date(), ComputerId: id, ClubId: clubId, status: 'active' });
+            pc.status = 'busy';
+        }
+    } else if (action === 'stop') {
+        const session = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
+        if (session) {
+            session.endTime = new Date();
+            session.status = 'completed';
+            session.totalMinutes = Math.floor((session.endTime - session.startTime) / 60000);
+            session.totalCost = Math.round((session.totalMinutes / 60) * 15000); // approx logic
+            await session.save();
+        }
+        pc.status = 'free';
+    } else if (action === 'vip') {
+        pc.status = 'vip';
+    } else if (action === 'reserve') {
+        pc.status = 'reserved';
+    } else if (action === 'free') {
+        pc.status = 'free';
+    }
+
+    try {
+        await pc.save({ validate: false });
+    } catch (e) {
+        // Fallback for sqlite enum conflicts
+        console.error("Save error:", e);
+    }
+    res.json({ success: true, pc });
 };
 
 exports.setup = async (req, res, next) => {

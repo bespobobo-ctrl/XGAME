@@ -239,7 +239,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             <header style={{ padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(5,5,5,0.8)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 100 }}>
                 <div>
                     <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', letterSpacing: '1px' }}>{user.username.toUpperCase()}</h2>
-                    <span style={{ fontSize: '9px', color: '#7000ff', fontWeight: 'bold' }}>MANAGER NODE ACTIVE 🌐</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#39ff14', boxShadow: '0 0 8px #39ff14' }}></div>
+                        <span style={{ fontSize: '10px', color: '#888', fontWeight: 'bold' }}>{new Date(nowTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    </div>
                 </div>
                 <button onClick={onLogout} style={{ background: 'none', border: '1px solid #ff444433', color: '#ff4444', padding: '8px 15px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}>LOGOUT</button>
             </header>
@@ -480,6 +483,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                             const activeSession = selectedPC.Sessions?.[0];
                             const price = rooms.find(r => r.id === selectedPC.RoomId)?.pricePerHour || 15000;
+                            const pcPerformance = stats?.pcStats?.find(p => p.name === selectedPC.name);
 
                             if (selectedPC.status === 'busy' || selectedPC.status === 'paused') {
                                 if (activeSession) {
@@ -515,12 +519,28 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                 <span style={{ color: '#aaa', fontSize: '13px', fontWeight: '900', letterSpacing: '2px' }}>{selectedPC.status.toUpperCase()}</span>
                                             </div>
                                         </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ color: '#fff', fontSize: '18px', fontWeight: '900', fontFamily: 'monospace' }}>{new Date(nowTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                            <div style={{ color: '#39ff14', fontSize: '10px', fontWeight: 'bold', marginTop: '4px' }}>LIVE TIME</div>
+                                        </div>
                                         <button
                                             onClick={() => { setSelectedPC(null); setShowReservePicker(false); }}
                                             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '45px', height: '45px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                         >
                                             <X size={20} />
                                         </button>
+                                    </div>
+
+                                    {/* PC INFO HUD BAGDES */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ color: '#666', fontSize: '9px', fontWeight: 'bold' }}>BUGUN ISHLADI</div>
+                                            <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>{pcPerformance?.hours?.toFixed(1) || 0} soat</div>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ color: '#666', fontSize: '9px', fontWeight: 'bold' }}>BUGUN TOPDI</div>
+                                            <div style={{ color: '#39ff14', fontSize: '14px', fontWeight: 'bold' }}>{pcPerformance?.revenue?.toLocaleString() || 0} UZS</div>
+                                        </div>
                                     </div>
 
                                     {(selectedPC.status === 'busy' || selectedPC.status === 'paused') && (
@@ -554,7 +574,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                                     {!showReservePicker ? (
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                            {(selectedPC.status !== 'busy' && selectedPC.status !== 'paused') && (
+                                            {(selectedPC.status !== 'busy' && selectedPC.status !== 'paused' && selectedPC.status !== 'reserved') && (
                                                 <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                                                     <button onClick={() => handleAction('start', 30)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>30 DAQ</button>
                                                     <button onClick={() => handleAction('start', 60)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>1 SOAT</button>
@@ -593,7 +613,15 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                 </>
                                             )}
 
-                                            {selectedPC.status !== 'busy' && selectedPC.status !== 'paused' && (
+                                            {selectedPC.status === 'reserved' ? (
+                                                <button
+                                                    onClick={() => handleAction('cancel_reserve')} disabled={actionLoading}
+                                                    style={{ background: '#ff4444', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 68, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                >
+                                                    <Trash2 size={28} strokeWidth={2} />
+                                                    <span>BRONNI BEKOR QILISH</span>
+                                                </button>
+                                            ) : (selectedPC.status !== 'busy' && selectedPC.status !== 'paused') && (
                                                 <button
                                                     onClick={() => setShowReservePicker(true)} disabled={actionLoading}
                                                     style={{ background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(253, 160, 133, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
@@ -745,6 +773,24 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
+            {/* 🧭 PREMIUM BOTTOM NAV */}
+            <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-around', padding: '15px 10px 25px', zIndex: 1000, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>
+                {[
+                    { id: 'stats', label: 'STATISTIKA', icon: <ChevronRight size={20} style={{ transform: 'rotate(270deg)' }} /> },
+                    { id: 'rooms', label: 'XARITA', icon: <Monitor size={20} /> },
+                    { id: 'settings', label: 'SOZLAMALAR', icon: <Lock size={20} /> }
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => { setActiveTab(tab.id); setSelectedViewRoom(null); }}
+                        style={{ background: 'none', border: 'none', color: activeTab === tab.id ? '#fff' : '#444', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', transition: '0.3s' }}
+                    >
+                        <div style={{ color: activeTab === tab.id ? '#7000ff' : '#444', transition: '0.3s' }}>{tab.icon}</div>
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px' }}>{tab.label}</span>
+                        {activeTab === tab.id && <motion.div layoutId="nav-line" style={{ width: '15px', height: '2px', background: '#7000ff', borderRadius: '2px', marginTop: '3px' }} />}
+                    </button>
+                ))}
+            </nav>
         </div>
     );
 };

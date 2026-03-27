@@ -213,6 +213,11 @@ exports.pcAction = async (req, res, next) => {
                 await sess.save();
                 pc.status = 'busy';
             }
+        } else if (action === 'cancel_reserve') {
+            await Session.update({ status: 'completed', endTime: new Date() }, {
+                where: { ComputerId: id, status: 'paused', reserveTime: { [Op.ne]: null } }
+            });
+            pc.status = 'free';
         } else if (action === 'free') {
             // Stop any session on this PC
             await Session.update({ status: 'completed', endTime: new Date() }, {

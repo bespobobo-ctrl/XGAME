@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -30,6 +30,29 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             const r = await callAPI('/api/manager/rooms');
             setRooms(r || []);
             setShowEditRoom(null);
+        } catch (e) {
+            alert('Xato: ' + e.message);
+        }
+        setActionLoading(false);
+    };
+
+    const handleDeleteRoom = async () => {
+        if (!showEditRoom) return;
+        if (!window.confirm(`Haqiqatan ham "${showEditRoom.name}" xonasini va undagi barcha PC-larni o'chirib yubormoqchimisiz?`)) return;
+
+        setActionLoading(true);
+        try {
+            const res = await callAPI(`/api/manager/room/${showEditRoom.id}`, {
+                method: 'DELETE'
+            });
+            if (res.success) {
+                const r = await callAPI('/api/manager/rooms');
+                setRooms(r || []);
+                setShowEditRoom(null);
+                alert('Xona o\'chirildi');
+            } else {
+                alert(res.error || 'Xatolik yuz berdi');
+            }
         } catch (e) {
             alert('Xato: ' + e.message);
         }
@@ -502,19 +525,53 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     >
                         <motion.div
                             initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-                            style={{ background: '#111', width: '100%', maxWidth: '400px', padding: '30px', borderRadius: '30px', border: '1px solid #333' }}
+                            style={{ background: '#111', width: '100%', maxWidth: '400px', padding: '25px', borderRadius: '30px', border: '1px solid #333', maxHeight: '90vh', overflowY: 'auto' }}
                         >
-                            <h2 style={{ fontSize: '20px', margin: '0 0 20px', color: '#fff', textAlign: 'center' }}>⚙️ XONANI TAHRIRLASH</h2>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h2 style={{ fontSize: '18px', margin: 0, color: '#fff' }}>⚙️ XONANI SOZLASH</h2>
+                                <button onClick={handleDeleteRoom} style={{ background: '#ff444422', border: 'none', color: '#ff4444', padding: '10px', borderRadius: '12px', cursor: 'pointer' }}>
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
 
-                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>Xona nomi:</label>
-                            <input value={showEditRoom.name} onChange={e => setShowEditRoom({ ...showEditRoom, name: e.target.value })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '15px' }} />
+                            <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '5px' }}>XONA NOMI</label>
+                            <input value={showEditRoom.name} onChange={e => setShowEditRoom({ ...showEditRoom, name: e.target.value })} style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '12px', marginBottom: '15px', fontSize: '14px' }} />
 
-                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>Soatiga narxi (UZS):</label>
-                            <input type="number" value={showEditRoom.pricePerHour} onChange={e => setShowEditRoom({ ...showEditRoom, pricePerHour: parseInt(e.target.value) })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '15px' }} />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+                                <div>
+                                    <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '5px' }}>SOATIGA (UZS)</label>
+                                    <input type="number" value={showEditRoom.pricePerHour} onChange={e => setShowEditRoom({ ...showEditRoom, pricePerHour: parseInt(e.target.value) })} style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '12px', fontSize: '14px' }} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '5px' }}>PC SONI</label>
+                                    <input type="number" value={showEditRoom.pcCount} onChange={e => setShowEditRoom({ ...showEditRoom, pcCount: parseInt(e.target.value) })} style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '12px', fontSize: '14px' }} />
+                                </div>
+                            </div>
 
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button onClick={() => setShowEditRoom(null)} style={{ flex: 1, padding: '15px', background: '#222', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>BEKOR QILISH</button>
-                                <button onClick={handleEditRoom} disabled={actionLoading} style={{ flex: 1, padding: '15px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>{actionLoading ? '...' : 'SAQLASH'}</button>
+                            <div style={{ background: '#080808', padding: '15px', borderRadius: '20px', border: '1px solid #1a1a1a', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Lock size={14} color={showEditRoom.isLocked ? '#ff4444' : '#666'} />
+                                        <span style={{ fontSize: '12px', color: '#fff' }}>Vaqt bo'yicha qulflash</span>
+                                    </div>
+                                    <input type="checkbox" checked={showEditRoom.isLocked} onChange={e => setShowEditRoom({ ...showEditRoom, isLocked: e.target.checked })} />
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <div>
+                                        <label style={{ fontSize: '10px', color: '#666', marginBottom: '3px', display: 'block' }}>OCHILISH</label>
+                                        <input type="time" value={showEditRoom.openTime} onChange={e => setShowEditRoom({ ...showEditRoom, openTime: e.target.value })} style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #222', color: '#fff', borderRadius: '8px' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '10px', color: '#666', marginBottom: '3px', display: 'block' }}>YOPILISH</label>
+                                        <input type="time" value={showEditRoom.closeTime} onChange={e => setShowEditRoom({ ...showEditRoom, closeTime: e.target.value })} style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #222', color: '#fff', borderRadius: '8px' }} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button onClick={() => setShowEditRoom(null)} style={{ flex: 1, padding: '15px', background: '#222', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold', fontSize: '14px' }}>BEKOR</button>
+                                <button onClick={handleEditRoom} disabled={actionLoading} style={{ flex: 1, padding: '15px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold', fontSize: '14px' }}>{actionLoading ? '...' : 'SAQLASH'}</button>
                             </div>
                         </motion.div>
                     </motion.div>

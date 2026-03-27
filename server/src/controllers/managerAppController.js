@@ -16,9 +16,7 @@ exports.getStats = async (req, res, next) => {
     const mStart = startOfMonth(now);
     const yStart = startOfYear(now);
 
-    const [totalPCs, busyPCs, latestSession, allTransactions, allSessions, allComputers, allRooms] = await Promise.all([
-        Computer.count({ where: { ClubId: clubId } }),
-        Computer.count({ where: { ClubId: clubId, status: 'busy' } }),
+    const [latestSession, allTransactions, allSessions, allComputers, allRooms] = await Promise.all([
         Session.findOne({
             include: [{ model: Computer, where: { ClubId: clubId } }, { model: User, attributes: ['username', 'phone'] }],
             order: [['startTime', 'DESC']]
@@ -34,6 +32,16 @@ exports.getStats = async (req, res, next) => {
         Room.findAll({ where: { ClubId: clubId } })
     ]);
 
+    const totalPCsCount = await Computer.count({ where: { ClubId: clubId } }); // or just use allComputers.length below
+    const busyPCsCount = await Computer.count({ where: { ClubId: clubId, status: 'busy' } });
+
+    const allRoomIds = allRooms.map(r => r.id);
+    await Computer.update({ ClubId: clubId }, {
+        where: { ClubId: null, RoomId: { [Op.in]: allRoomIds } }
+    });
+
+    const totalPCs = allComputers.length;
+    const busyPCs = allComputers.filter(p => p.status === 'busy').length;
     const freePCs = totalPCs - busyPCs;
 
     const revenue = { day: 0, week: 0, month: 0, year: 0 };
@@ -74,9 +82,10 @@ exports.getStats = async (req, res, next) => {
         if (s.startTime >= wStart) { hours.week += h; flow.week++; }
         if (s.startTime >= dStart) { hours.day += h; flow.day++; }
 
-        if (!pcStats[s.ComputerId]) pcStats[s.ComputerId] = { name: s.Computer?.name || 'Unknown', roomId: s.Computer?.RoomId, hours: 0, revenue: 0 };
-        pcStats[s.ComputerId].hours += h;
-        pcStats[s.ComputerId].revenue += cost;
+        if (pcStats[s.ComputerId]) {
+            pcStats[s.ComputerId].hours += h;
+            pcStats[s.ComputerId].revenue += cost;
+        }
     });
 
     const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
@@ -202,17 +211,63 @@ exports.setup = async (req, res, next) => {
 
 exports.editRoom = async (req, res, next) => {
     const { id } = req.params;
-    const { name, pricePerHour, pcSpecs } = req.body;
+    const { name, pricePerHour, pcSpecs, pcCount, isLocked, openTime, closeTime } = req.body;
     const clubId = req.user.ClubId;
 
-    const Room = require('../database/models/Room');
-    const room = await Room.findOne({ where: { id, ClubId: clubId } });
+    const room = await Room.findOne({ where: { id, ClubId: clubId }, include: [Computer] });
     if (!room) return res.status(404).json({ error: 'Xona topilmadi' });
 
     if (name) room.name = name;
     if (pricePerHour) room.pricePerHour = pricePerHour;
     if (pcSpecs) room.pcSpecs = pcSpecs;
+    if (isLocked !== undefined) room.isLocked = isLocked;
+    if (openTime) room.openTime = openTime;
+    if (closeTime) room.closeTime = closeTime;
+
+    // Handle PC count changes
+    if (pcCount !== undefined && parseInt(pcCount) !== room.pcCount) {
+        const newCount = parseInt(pcCount);
+        const oldCount = room.pcCount;
+
+        if (newCount > oldCount) {
+            // Add PCs
+            for (let i = oldCount + 1; i <= newCount; i++) {
+                await Computer.create({
+                    name: `${i}-PC`,
+                    RoomId: room.id,
+                    ClubId: clubId,
+                    status: 'available'
+                });
+            }
+        } else if (newCount < oldCount) {
+            // Remove extra PCs (starting from the end)
+            // Note: Ideally check for active sessions first
+            const pcsToRemove = await Computer.findAll({
+                where: { RoomId: room.id },
+                order: [['id', 'DESC']],
+                limit: oldCount - newCount
+            });
+            for (const pc of pcsToRemove) {
+                await pc.destroy();
+            }
+        }
+        room.pcCount = newCount;
+    }
 
     await room.save();
     res.json({ success: true, room });
+};
+
+exports.deleteRoom = async (req, res, next) => {
+    const { id } = req.params;
+    const clubId = req.user.ClubId;
+
+    const room = await Room.findOne({ where: { id, ClubId: clubId } });
+    if (!room) return res.status(404).json({ error: 'Xona topilmadi' });
+
+    // Cascade delete computers
+    await Computer.destroy({ where: { RoomId: room.id } });
+    await room.destroy();
+
+    res.json({ success: true, message: 'Xona muvaffaqiyatli o`chirildi' });
 };

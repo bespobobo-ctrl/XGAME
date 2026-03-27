@@ -23,6 +23,18 @@ const Room = sequelize.define('Room', {
         type: DataTypes.INTEGER,
         defaultValue: 0,
     },
+    isLocked: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    openTime: {
+        type: DataTypes.STRING, // HH:mm
+        defaultValue: "00:00",
+    },
+    closeTime: {
+        type: DataTypes.STRING, // HH:mm
+        defaultValue: "23:59",
+    },
     ClubId: {
         type: DataTypes.INTEGER,
         allowNull: false

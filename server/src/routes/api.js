@@ -56,5 +56,6 @@ router.post('/manager/setup', auth, authorize('manager'), asyncHandler(managerAp
 router.post('/manager/broadcast', auth, authorize('manager'), asyncHandler(managerAppCtrl.broadcast));
 router.post('/manager/pc/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.pcAction));
 router.put('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.editRoom));
+router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.deleteRoom));
 
 module.exports = router;

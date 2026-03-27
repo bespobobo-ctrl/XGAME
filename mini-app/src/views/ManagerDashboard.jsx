@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -16,6 +16,25 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const [showAddRoom, setShowAddRoom] = useState(false);
     const [newRoom, setNewRoom] = useState({ name: '', pricePerHour: 15000, pcCount: 5, pcSpecs: 'M2, RTX 3060' });
+
+    const [showEditRoom, setShowEditRoom] = useState(null);
+
+    const handleEditRoom = async () => {
+        if (!showEditRoom.name) return alert('Xona nomi kerak');
+        setActionLoading(true);
+        try {
+            await callAPI(`/api/manager/room/${showEditRoom.id}`, {
+                method: 'PUT',
+                body: JSON.stringify(showEditRoom)
+            });
+            const r = await callAPI('/api/manager/rooms');
+            setRooms(r || []);
+            setShowEditRoom(null);
+        } catch (e) {
+            alert('Xato: ' + e.message);
+        }
+        setActionLoading(false);
+    };
 
     const handleAddRoom = async () => {
         if (!newRoom.name) return alert('Xona nomini kiriting!');
@@ -304,33 +323,46 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
                                     key={room.id}
+                                    style={{ marginBottom: '20px', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '15px 20px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '15px', cursor: 'pointer' }}
+                                    whileHover={{ scale: 1.01, border: '1px solid rgba(112,0,255,0.5)' }}
                                     onClick={() => setSelectedViewRoom(room)}
-                                    style={{ marginBottom: '20px', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '20px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                                    whileHover={{ scale: 1.02, border: '1px solid #7000ff' }}
                                 >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'linear-gradient(135deg, #7000ff, #39ff14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', boxShadow: '0 0 20px rgba(112,0,255,0.3)', color: '#fff' }}>
-                                            {room.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#fff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
-                                            <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                                                <span style={{ fontSize: '11px', background: '#222', padding: '4px 8px', borderRadius: '8px', color: '#aaa', display: 'flex', alignItems: 'center', gap: '4px' }}><Monitor size={12} /> {room.Computers?.length} PC</span>
-                                                <span style={{ fontSize: '11px', background: 'rgba(255,0,255,0.1)', color: '#ff00ff', padding: '4px 8px', borderRadius: '8px', border: '1px solid rgba(255,0,255,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}><MonitorPlay size={12} /> BANT: {room.Computers?.filter(c => c.status === 'busy').length}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '45px', height: '45px', borderRadius: '15px', background: 'linear-gradient(135deg, #7000ff, #39ff14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', margin: 0, boxShadow: '0 0 15px rgba(112,0,255,0.3)', color: '#fff' }}>
+                                                {room.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '900', color: '#fff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
+                                                <div style={{ display: 'flex', gap: '6px', marginTop: '5px', flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: '10px', background: '#222', padding: '3px 6px', borderRadius: '6px', color: '#aaa', display: 'flex', alignItems: 'center', gap: '3px' }}><Monitor size={10} /> {room.Computers?.length} PC</span>
+                                                    <span style={{ fontSize: '10px', background: 'rgba(255,0,255,0.1)', color: '#ff00ff', padding: '3px 6px', borderRadius: '6px', border: '1px solid rgba(255,0,255,0.2)', display: 'flex', alignItems: 'center', gap: '3px' }}><MonitorPlay size={10} /> BANT: {room.Computers?.filter(c => c.status === 'busy').length}</span>
+                                                </div>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setShowEditRoom(room); }}
+                                            style={{ background: '#222', border: 'none', color: '#fff', padding: '8px', width: '35px', height: '35px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                        >
+                                            <Pencil size={16} color="#888" />
+                                        </button>
                                     </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                            <div style={{ fontSize: '11px', color: '#aaa' }}>Bugungi holat:</div>
-                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#39ff14' }}>{roomHours.toFixed(1)} SOAT</div>
-                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#00ffff' }}>{roomRevenue.toLocaleString()} UZS</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#080808', padding: '12px 15px', borderRadius: '18px', border: '1px solid #1a1a1a' }}>
+                                        <div style={{ display: 'flex', gap: '20px' }}>
+                                            <div>
+                                                <div style={{ fontSize: '10px', color: '#666', marginBottom: '2px' }}>IsH VAQTI (Bugun)</div>
+                                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#39ff14' }}>{roomHours.toFixed(1)} SOAT</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '10px', color: '#666', marginBottom: '2px' }}>DAROMAD (Bugun)</div>
+                                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#00ffff' }}>{roomRevenue.toLocaleString()} UZS</div>
+                                            </div>
                                         </div>
-                                        <ChevronRight size={24} color="#7000ff" />
+                                        <ChevronRight size={20} color="#7000ff" />
                                     </div>
                                 </motion.div>
-                            )
+                            );
                         })}
                     </motion.div>
                 )}
@@ -453,8 +485,36 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <input value={newRoom.pcSpecs} onChange={e => setNewRoom({ ...newRoom, pcSpecs: e.target.value })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '25px' }} />
 
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <button onClick={() => setShowAddRoom(false)} style={{ flex: 1, padding: '15px', background: '#222', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>BEKOR QILISH</button>
-                                <button onClick={handleAddRoom} disabled={actionLoading} style={{ flex: 1, padding: '15px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>+{actionLoading ? '...' : 'QO\'SHISH'}</button>
+                                <button onClick={() => setShowAddRoom(false)} style={{ flex: 1, padding: '15px', background: '#222', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer' }}>BEKOR QILISH</button>
+                                <button onClick={handleAddRoom} disabled={actionLoading} style={{ flex: 1, padding: '15px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer' }}>+{actionLoading ? '...' : 'QO\'SHISH'}</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* EDIT ROOM MODAL */}
+            <AnimatePresence>
+                {showEditRoom && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+                            style={{ background: '#111', width: '100%', maxWidth: '400px', padding: '30px', borderRadius: '30px', border: '1px solid #333' }}
+                        >
+                            <h2 style={{ fontSize: '20px', margin: '0 0 20px', color: '#fff', textAlign: 'center' }}>⚙️ XONANI TAHRIRLASH</h2>
+
+                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>Xona nomi:</label>
+                            <input value={showEditRoom.name} onChange={e => setShowEditRoom({ ...showEditRoom, name: e.target.value })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '15px' }} />
+
+                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>Soatiga narxi (UZS):</label>
+                            <input type="number" value={showEditRoom.pricePerHour} onChange={e => setShowEditRoom({ ...showEditRoom, pricePerHour: parseInt(e.target.value) })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '15px' }} />
+
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                <button onClick={() => setShowEditRoom(null)} style={{ flex: 1, padding: '15px', background: '#222', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>BEKOR QILISH</button>
+                                <button onClick={handleEditRoom} disabled={actionLoading} style={{ flex: 1, padding: '15px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>{actionLoading ? '...' : 'SAQLASH'}</button>
                             </div>
                         </motion.div>
                     </motion.div>

@@ -194,3 +194,20 @@ exports.setup = async (req, res, next) => {
         next(err);
     }
 };
+
+exports.editRoom = async (req, res, next) => {
+    const { id } = req.params;
+    const { name, pricePerHour, pcSpecs } = req.body;
+    const clubId = req.user.ClubId;
+
+    const Room = require('../database/models/Room');
+    const room = await Room.findOne({ where: { id, ClubId: clubId } });
+    if (!room) return res.status(404).json({ error: 'Xona topilmadi' });
+
+    if (name) room.name = name;
+    if (pricePerHour) room.pricePerHour = pricePerHour;
+    if (pcSpecs) room.pcSpecs = pcSpecs;
+
+    await room.save();
+    res.json({ success: true, room });
+};

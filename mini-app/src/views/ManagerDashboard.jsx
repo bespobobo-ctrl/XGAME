@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -450,33 +450,68 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     >
                         <motion.div
                             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25 }}
-                            style={{ background: '#111', width: '100%', padding: '30px', borderRadius: '40px 40px 0 0', borderTop: '1px solid #333' }}
+                            style={{ background: 'linear-gradient(180deg, #16161a 0%, #0a0a0c 100%)', width: '100%', padding: '30px', borderRadius: '40px 40px 0 0', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -20px 50px rgba(0,0,0,0.8)' }}
                         >
-                            <h2 style={{ fontSize: '24px', margin: '0 0 5px', textAlign: 'center' }}>{selectedPC.name} Boshqaruvi</h2>
-                            <p style={{ textAlign: 'center', color: '#888', fontSize: '12px', margin: '0 0 30px' }}>Hozirgi holat: <b style={{ color: selectedPC.status === 'busy' ? '#ff00ff' : '#39ff14' }}>{selectedPC.status.toUpperCase()}</b></p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '26px', margin: '0 0 5px', color: '#fff', fontWeight: '900', letterSpacing: '1px' }}>{selectedPC.name} Boshqaruvi</h2>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: selectedPC.status === 'busy' ? '#ff0844' : selectedPC.status === 'vip' ? '#b224ef' : '#39ff14', boxShadow: `0 0 10px ${selectedPC.status === 'busy' ? '#ff0844' : selectedPC.status === 'vip' ? '#b224ef' : '#39ff14'}` }}></div>
+                                        <span style={{ color: '#aaa', fontSize: '13px', fontWeight: '600', letterSpacing: '1px' }}>{selectedPC.status.toUpperCase()}</span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedPC(null)}
+                                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '45px', height: '45px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                 {selectedPC.status !== 'busy' && (
-                                    <button onClick={() => handleAction('start')} disabled={actionLoading} style={{ background: '#39ff14', color: '#000', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
-                                        ⏳ VAQT OCHISH (START)
+                                    <button
+                                        onClick={() => handleAction('start')} disabled={actionLoading}
+                                        style={{ background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(79, 172, 254, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                    >
+                                        <Play size={28} fill="#fff" strokeWidth={1} />
+                                        <span>VAQT OCHISH</span>
                                     </button>
                                 )}
                                 {selectedPC.status === 'busy' && (
-                                    <button onClick={() => handleAction('stop')} disabled={actionLoading} style={{ background: '#ff4444', color: '#fff', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
-                                        🛑 VAQT TO'XTATISH
+                                    <button
+                                        onClick={() => handleAction('stop')} disabled={actionLoading}
+                                        style={{ background: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 8, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                    >
+                                        <Square size={28} fill="#fff" strokeWidth={1} />
+                                        <span>TO'XTATISH</span>
                                     </button>
                                 )}
-                                <button onClick={() => handleAction('reserve')} disabled={actionLoading} style={{ background: '#ffaa00', color: '#000', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
-                                    🎫 BRON QILISH
+
+                                <button
+                                    onClick={() => handleAction('reserve')} disabled={actionLoading}
+                                    style={{ background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(253, 160, 133, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                >
+                                    <Ticket size={28} strokeWidth={2} />
+                                    <span>BRON QILISH</span>
                                 </button>
-                                <button onClick={() => handleAction('vip')} disabled={actionLoading} style={{ background: '#00ffff', color: '#000', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px' }}>
-                                    💎 VIP QILISH
+
+                                <button
+                                    onClick={() => handleAction('vip')} disabled={actionLoading}
+                                    style={{ background: 'linear-gradient(135deg, #b224ef 0%, #7579ff 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(117, 121, 255, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                >
+                                    <Diamond size={28} fill="#fff" strokeWidth={1} />
+                                    <span>VIP REJIM</span>
                                 </button>
-                                <button onClick={() => handleAction('free')} disabled={actionLoading} style={{ background: '#333', color: '#fff', padding: '20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', fontSize: '14px', gridColumn: 'span 2' }}>
-                                    🧹 KOMPYUTERNI BO'SHATISH
+
+                                <button
+                                    onClick={() => handleAction('free')} disabled={actionLoading}
+                                    style={{ background: '#1a1a24', color: '#aaa', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', gridColumn: 'span 2', cursor: 'pointer', transition: '0.3s', opacity: actionLoading ? 0.6 : 1 }}
+                                >
+                                    <Brush size={18} />
+                                    <span>KOMPYUTERNI TOZALASH (FREE)</span>
                                 </button>
                             </div>
-                            <button onClick={() => setSelectedPC(null)} style={{ width: '100%', padding: '15px', background: 'transparent', color: '#666', border: 'none', marginTop: '20px', fontSize: '14px' }}>YOPISH</button>
                         </motion.div>
                     </motion.div>
                 )}

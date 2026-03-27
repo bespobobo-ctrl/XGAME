@@ -53,5 +53,6 @@ const managerAppCtrl = require('../controllers/managerAppController');
 router.get('/manager/stats', auth, authorize('manager'), asyncHandler(managerAppCtrl.getStats));
 router.get('/manager/rooms', auth, authorize('manager'), asyncHandler(managerAppCtrl.getRooms));
 router.post('/manager/setup', auth, authorize('manager'), asyncHandler(managerAppCtrl.setup));
+router.post('/manager/broadcast', auth, authorize('manager'), asyncHandler(managerAppCtrl.broadcast));
 
 module.exports = router;

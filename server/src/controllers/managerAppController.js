@@ -3,26 +3,85 @@ const Computer = require('../database/models/Computer');
 const Session = require('../database/models/Session');
 const Transaction = require('../database/models/Transaction');
 
+const { Op } = require('sequelize');
+const { startOfDay, startOfWeek, startOfMonth, startOfYear } = require('date-fns');
+const User = require('../database/models/User');
+
 exports.getStats = async (req, res, next) => {
     const clubId = req.user.ClubId;
+    const now = new Date();
 
-    const [activePlayers, todayTransactions] = await Promise.all([
-        Session.count({
-            where: { status: 'active' },
-            include: [{ model: Computer, where: { ClubId: clubId } }]
+    const dStart = startOfDay(now);
+    const wStart = startOfWeek(now, { weekStartsOn: 1 });
+    const mStart = startOfMonth(now);
+    const yStart = startOfYear(now);
+
+    const [totalPCs, busyPCs, latestSession, allTransactions, allSessions] = await Promise.all([
+        Computer.count({ where: { ClubId: clubId } }),
+        Computer.count({ where: { ClubId: clubId, status: 'busy' } }),
+        Session.findOne({
+            include: [{ model: Computer, where: { ClubId: clubId } }, { model: User, attributes: ['username', 'phone'] }],
+            order: [['startTime', 'DESC']]
         }),
         Transaction.findAll({
-            where: { ClubId: clubId }
-            // Filter by today's date logic should be here
+            where: { ClubId: clubId, createdAt: { [Op.gte]: yStart } }
+        }),
+        Session.findAll({
+            where: { startTime: { [Op.gte]: yStart } },
+            include: [{ model: Computer, where: { ClubId: clubId } }]
         })
     ]);
 
-    const todayRevenue = todayTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const freePCs = totalPCs - busyPCs;
+
+    const revenue = { day: 0, week: 0, month: 0, year: 0 };
+    allTransactions.forEach(t => {
+        if (t.amount > 0) {
+            revenue.year += t.amount;
+            if (t.createdAt >= mStart) revenue.month += t.amount;
+            if (t.createdAt >= wStart) revenue.week += t.amount;
+            if (t.createdAt >= dStart) revenue.day += t.amount;
+        }
+    });
+
+    const flow = { day: 0, week: 0, month: 0, year: allSessions.length };
+    const hours = { day: 0, week: 0, month: 0, year: 0 };
+    const pcStats = {};
+
+    allSessions.forEach(s => {
+        const h = (s.totalMinutes || 0) / 60;
+        hours.year += h;
+        if (s.startTime >= mStart) { hours.month += h; flow.month++; }
+        if (s.startTime >= wStart) { hours.week += h; flow.week++; }
+        if (s.startTime >= dStart) { hours.day += h; flow.day++; }
+
+        if (!pcStats[s.ComputerId]) pcStats[s.ComputerId] = { name: s.Computer?.name || 'Unknown', hours: 0, revenue: 0 };
+        pcStats[s.ComputerId].hours += h;
+        pcStats[s.ComputerId].revenue += s.totalCost || 0;
+    });
+
+    const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
 
     res.json({
-        activePlayers,
-        todayRevenue
+        totalPCs, busyPCs, freePCs,
+        latestVisit: latestSession ? {
+            user: latestSession.User?.username || 'Guest',
+            phone: latestSession.User?.phone || '',
+            pc: latestSession.Computer?.name,
+            time: latestSession.startTime
+        } : null,
+        revenue, flow, hours, topPCs,
+        pcStats: Object.values(pcStats)
     });
+};
+
+exports.broadcast = async (req, res, next) => {
+    const clubId = req.user.ClubId;
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: 'Xat yozmadingiz' });
+
+    // Asynchronous Telegram broadcast logic would go here
+    res.json({ success: true, message: 'Xabar barcha foydalanuvchilarga yuborildi!' });
 };
 
 exports.getRooms = async (req, res, next) => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -102,53 +103,53 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             progress = Math.min((diffSeconds / 3600) * 100, 100);
         }
 
-        const getStatusColor = () => {
-            if (pc.status === 'free' || pc.status === 'available') return '#39ff14';
-            if (pc.status === 'busy') return '#ff00ff';
-            if (pc.status === 'reserved') return '#ffaa00';
-            if (pc.status === 'vip') return '#00ffff';
-            return '#444';
+        const getStatusTheme = () => {
+            if (pc.status === 'free' || pc.status === 'available') return { color: '#39ff14', icon: <Monitor size={28} strokeWidth={1.5} />, label: 'BO\'SH' };
+            if (pc.status === 'busy') return { color: '#ff00ff', icon: <MonitorPlay size={28} strokeWidth={2} />, label: elapsedTime };
+            if (pc.status === 'reserved') return { color: '#ffaa00', icon: <CalendarClock size={28} strokeWidth={1.5} />, label: 'BRON' };
+            if (pc.status === 'vip') return { color: '#00ffff', icon: <Crown size={28} strokeWidth={1.5} />, label: 'VIP' };
+            return { color: '#444', icon: <PowerOff size={28} strokeWidth={1.5} />, label: 'O\'CHIQ' };
         };
-        const color = getStatusColor();
+        const { color, icon, label } = getStatusTheme();
 
         return (
             <motion.div
                 key={pc.id}
+                whileHover={{ scale: 1.05, boxShadow: `0 0 20px ${color}44` }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedPC(pc)}
                 style={{
-                    background: '#0a0a0a',
-                    border: `1px solid ${isActive ? color + '33' : '#222'}`,
+                    background: `linear-gradient(145deg, #111, #050505)`,
+                    border: `1px solid ${isActive ? color + '66' : '#222'}`,
+                    borderTop: `2px solid ${isActive ? color : '#333'}`,
                     borderRadius: '20px',
-                    padding: '15px',
+                    padding: '20px 10px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative',
                     overflow: 'hidden',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: isActive ? `0 10px 30px ${color}22` : 'none'
                 }}
             >
                 {isActive && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        style={{ position: 'absolute', top: 0, left: 0, height: '2px', background: color, width: `${progress}%`, boxShadow: `0 0 10px ${color}` }}
+                        style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', background: color, width: `${progress}%`, boxShadow: `0 0 15px ${color}` }}
                     />
                 )}
 
-                <span style={{ fontSize: '10px', fontWeight: '900', color: (isActive || pc.status !== 'free') ? color : '#666' }}>{pc.name}</span>
-
-                <div style={{ margin: '10px 0', fontSize: '14px', fontWeight: 'bold', color: isActive ? '#fff' : '#444' }}>
-                    {isActive ? elapsedTime : pc.status.toUpperCase()}
+                <div style={{ color: color, marginBottom: '10px', filter: `drop-shadow(0 0 8px ${color}66)` }}>
+                    {icon}
                 </div>
 
-                <div style={{
-                    width: '6px', height: '6px',
-                    background: color,
-                    borderRadius: '50%',
-                    boxShadow: `0 0 10px ${color}`
-                }} />
+                <span style={{ fontSize: '12px', fontWeight: '900', color: '#fff', letterSpacing: '1px' }}>{pc.name}</span>
+
+                <div style={{ margin: '8px 0 0', fontSize: '13px', fontWeight: 'bold', color: isActive ? color : '#666', background: isActive ? `${color}11` : 'transparent', padding: '4px 10px', borderRadius: '8px' }}>
+                    {label}
+                </div>
             </motion.div>
         );
     };
@@ -287,21 +288,36 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             </button>
                         </div>
 
-                        {rooms.map(room => (
-                            <div key={room.id} style={{ marginBottom: '35px', background: '#050505', borderRadius: '30px', padding: '20px', border: '1px solid #111' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <div>
-                                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#7000ff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
-                                        <div style={{ fontSize: '10px', color: '#888', marginTop: '5px' }}>{room.Computers?.length} ta PC • Yoniq: <span style={{ color: '#ff00ff' }}>{room.Computers?.filter(c => c.status === 'busy').length}</span></div>
+                        {rooms.map((room, index) => (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                key={room.id}
+                                style={{ marginBottom: '35px', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(20px)', borderRadius: '35px', padding: '25px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <div style={{ width: '50px', height: '50px', borderRadius: '15px', background: 'linear-gradient(135deg, #7000ff, #39ff14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', boxShadow: '0 0 20px rgba(112,0,255,0.3)', color: '#fff' }}>
+                                            {room.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
+                                            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                                                <span style={{ fontSize: '10px', background: '#222', padding: '4px 8px', borderRadius: '6px', color: '#aaa' }}>{room.Computers?.length} ta PC</span>
+                                                <span style={{ fontSize: '10px', background: 'rgba(255,0,255,0.1)', color: '#ff00ff', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(255,0,255,0.2)' }}>Yoniq: {room.Computers?.filter(c => c.status === 'busy').length}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#00ffff' }}>{room.pricePerHour.toLocaleString()} UZS/s</span>
+                                        <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px', fontWeight: 'bold' }}>SOATIGA</div>
+                                        <span style={{ fontSize: '18px', fontWeight: '900', color: '#00ffff', textShadow: '0 0 10px rgba(0,255,255,0.3)' }}>{room.pricePerHour.toLocaleString()} <span style={{ fontSize: '12px' }}>UZS</span></span>
                                     </div>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '12px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
                                     {room.Computers?.map(pc => renderPC(pc, room))}
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
                     </motion.div>
                 )}

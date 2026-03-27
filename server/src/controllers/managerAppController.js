@@ -49,11 +49,13 @@ exports.setup = async (req, res, next) => {
         for (const roomData of rooms) {
             const room = await Room.create({
                 name: roomData.name || 'Asosiy xona',
+                pcSpecs: roomData.pcSpecs || 'Standard Gaming PC',
+                pricePerHour: parseInt(roomData.pricePerHour) || 20000,
+                pcCount: parseInt(roomData.pcCount) || 0,
                 ClubId: clubId
             }, { transaction: t });
 
             const pcCount = parseInt(roomData.pcCount) || 0;
-            const price = parseInt(roomData.price) || 20000;
 
             for (let i = 1; i <= pcCount; i++) {
                 await Computer.create({

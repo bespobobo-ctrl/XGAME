@@ -17,6 +17,8 @@ Room.hasMany(Computer);
 Computer.belongsTo(Room);
 Club.hasMany(Computer);
 Computer.belongsTo(Club);
+Club.hasMany(Session);
+Session.belongsTo(Club);
 User.hasMany(Session);
 Session.belongsTo(User);
 Computer.hasMany(Session);

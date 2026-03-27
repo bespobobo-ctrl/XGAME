@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../config/database');
-const Club = require('./Club');
 
 const Computer = sequelize.define('Computer', {
     id: {
@@ -14,17 +13,21 @@ const Computer = sequelize.define('Computer', {
     },
     status: {
         type: DataTypes.ENUM('free', 'busy', 'offline', 'maintenance'),
-        defaultValue: 'offline', // Agent ulanmasa bu offline holatda turadi
-    },
-    pricePerHour: {
-        type: DataTypes.INTEGER,
-        defaultValue: 20000,
+        defaultValue: 'offline',
     },
     ipAddress: {
         type: DataTypes.STRING,
     },
     macAddress: {
         type: DataTypes.STRING,
+    },
+    ClubId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    RoomId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     }
 });
 

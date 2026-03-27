@@ -22,6 +22,10 @@ const Room = sequelize.define('Room', {
     pcCount: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
+    },
+    ClubId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     }
 });
 

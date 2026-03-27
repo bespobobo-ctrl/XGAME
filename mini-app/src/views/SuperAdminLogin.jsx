@@ -32,14 +32,15 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
                 body: JSON.stringify({ username: user, password: pass })
             });
 
-            if (data.success) {
+            if (data && data.success) {
                 onLogin(data);
             } else {
-                alert('Login yoki parol xato! ❌');
+                alert(data?.message || 'Login yoki parol xato! ❌');
+                setPass(''); // Parolni tozalash (Senior UX)
             }
         } catch (err) {
             console.error(err);
-            alert('Serverga bog\'lanishda xatolik yuz berdi. Iltimos, server va tunnelni tekshiring! 🚫');
+            alert(err.message || 'Serverga bog\'lanishda xatolik yuz berdi. 🚫');
         } finally {
             setLoading(false);
         }

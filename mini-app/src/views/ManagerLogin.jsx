@@ -14,18 +14,20 @@ const ManagerLogin = ({ onLogin, onBack }) => {
         try {
             const data = await callAPI('/api/login', {
                 method: 'POST',
-                body: JSON.stringify({ username: user, password: pass }) // bcrypt tekshiruvli xavfsiz marshrut
+                body: JSON.stringify({ username: user, password: pass })
             });
 
-            if (data.success && data.role === 'manager') {
+            if (data && data.success && data.user?.role === 'manager') {
                 onLogin(data);
-            } else if (data.success && data.role !== 'manager') {
-                alert('Siz menejer emassiz! ❌');
+            } else if (data && data.success && data.user?.role !== 'manager') {
+                alert('Siz menejer emassiz! ❌ (Ruxsat yo`q)');
+                setPass('');
             } else {
-                alert('Login yoki parol xato! ❌');
+                alert(data?.message || 'Login yoki parol xato! ❌');
+                setPass('');
             }
         } catch (err) {
-            alert('Tizimga ulanishda xatolik yuz berdi. 🚫');
+            alert(err.message || 'Tizimga ulanishda xatolik yuz berdi. 🚫');
         } finally {
             setLoading(false);
         }

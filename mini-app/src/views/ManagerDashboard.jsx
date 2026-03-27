@@ -271,6 +271,25 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             </div>
                         </div>
 
+                        {/* 📅 KUTILAYOTGAN BRONLAR */}
+                        <div style={{ background: '#111', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #ffaa0033' }}>
+                            <h4 style={{ margin: '0 0 15px', fontSize: '12px', color: '#ffaa00' }}>📅 KUTILAYOTGAN BRONLAR</h4>
+                            {stats?.upcomingReservations?.length > 0 ? (
+                                stats.upcomingReservations.map((res, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#0a0a0a', borderRadius: '15px', marginBottom: '8px', border: '1px solid #222' }}>
+                                        <div>
+                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>{res.pc}</div>
+                                            <div style={{ fontSize: '10px', color: '#888' }}>{res.user}</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '14px', color: '#ffaa00', fontWeight: 'bold' }}>{new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                            <div style={{ fontSize: '10px', color: '#666' }}>{new Date(res.time).toLocaleDateString()}</div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : <p style={{ margin: 0, fontSize: '12px', color: '#444', textAlign: 'center' }}>Bronlar yo'q</p>}
+                        </div>
+
                         {/* 👤 OXIRGI TASHRIF */}
                         <div style={{ background: 'linear-gradient(135deg, #7000ff33, #0a0a0a)', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #7000ff55' }}>
                             <h4 style={{ margin: '0 0 10px', fontSize: '12px', color: '#7000ff' }}>⏱️ OXIRGI MIJOZ</h4>

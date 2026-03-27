@@ -21,7 +21,7 @@ exports.getStats = async (req, res, next) => {
         const allRooms = await Room.findAll({ where: { ClubId: clubId } });
         const allRoomIds = allRooms.map(r => r.id);
 
-        const [latestSession, allTransactions, allSessions, allComputers] = await Promise.all([
+        const [latestSession, allTransactions, allSessions, allComputers, upcomingReservations] = await Promise.all([
             Session.findOne({
                 include: [
                     { model: Computer, where: { ClubId: clubId } },
@@ -38,20 +38,26 @@ exports.getStats = async (req, res, next) => {
                 where: { startTime: { [Op.gte]: yStart } },
                 include: [{ model: Computer, attributes: ['id', 'RoomId', 'name'], where: { ClubId: clubId } }]
             }),
-            Computer.findAll({ where: { ClubId: clubId }, raw: true })
+            Computer.findAll({ where: { ClubId: clubId }, raw: true }),
+            Session.findAll({
+                where: { status: 'paused', reserveTime: { [Op.ne]: null } },
+                include: [{ model: Computer, where: { ClubId: clubId } }, { model: User, attributes: ['username', 'phone'] }],
+                order: [['reserveTime', 'ASC']]
+            })
         ]);
 
         const totalPCs = allComputers.length;
-        const busyPCs = allComputers.filter(p => (p.status === 'busy' || p.status === 'vip' || p.status === 'reserved')).length;
+        const busyPCs = allComputers.filter(p => (p.status === 'busy' || p.status === 'vip' || p.status === 'reserved' || p.status === 'paused')).length;
         const freePCs = totalPCs - busyPCs;
 
         const revenue = { day: 0, week: 0, month: 0, year: 0 };
         allTransactions.forEach(t => {
+            const date = new Date(t.createdAt);
             if (t.amount > 0) {
                 revenue.year += t.amount;
-                if (t.createdAt >= mStart) revenue.month += t.amount;
-                if (t.createdAt >= wStart) revenue.week += t.amount;
-                if (t.createdAt >= dStart) revenue.day += t.amount;
+                if (date >= mStart) revenue.month += t.amount;
+                if (date >= wStart) revenue.week += t.amount;
+                if (date >= dStart) revenue.day += t.amount;
             }
         });
 
@@ -78,10 +84,11 @@ exports.getStats = async (req, res, next) => {
             }
 
             const h = mins / 60;
+            const sTime = new Date(s.startTime);
             hours.year += h;
-            if (s.startTime >= mStart) { hours.month += h; flow.month++; }
-            if (s.startTime >= wStart) { hours.week += h; flow.week++; }
-            if (s.startTime >= dStart) { hours.day += h; flow.day++; }
+            if (sTime >= mStart) { hours.month += h; flow.month++; }
+            if (sTime >= wStart) { hours.week += h; flow.week++; }
+            if (sTime >= dStart) { hours.day += h; flow.day++; }
 
             if (pcStats[s.ComputerId]) {
                 pcStats[s.ComputerId].hours += h;
@@ -93,6 +100,13 @@ exports.getStats = async (req, res, next) => {
 
         res.json({
             totalPCs, busyPCs, freePCs,
+            revenue, flow, hours, topPCs, pcStats: Object.values(pcStats),
+            upcomingReservations: upcomingReservations.map(r => ({
+                id: r.id,
+                pc: r.Computer?.name,
+                user: r.User?.username || 'Guest',
+                time: r.reserveTime
+            })),
             latestVisit: latestSession ? {
                 user: latestSession.User?.username || 'Guest',
                 phone: latestSession.User?.phone || '',

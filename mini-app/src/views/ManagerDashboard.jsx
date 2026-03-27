@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -12,6 +12,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const [selectedPC, setSelectedPC] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
+    const [selectedViewRoom, setSelectedViewRoom] = useState(null);
 
     const [showAddRoom, setShowAddRoom] = useState(false);
     const [newRoom, setNewRoom] = useState({ name: '', pricePerHour: 15000, pcCount: 5, pcSpecs: 'M2, RTX 3060' });
@@ -275,8 +276,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     </motion.div>
                 )}
 
-                {activeTab === 'rooms' && (
-                    <motion.div key="rooms" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ padding: '20px' }}>
+                {activeTab === 'rooms' && !selectedViewRoom && (
+                    <motion.div key="rooms-list" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ padding: '20px' }}>
 
                         <div style={{ margin: '0 0 20px', padding: '20px', background: 'linear-gradient(45deg, #111, #000)', borderRadius: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #7000ff33' }}>
                             <div>
@@ -288,37 +289,74 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             </button>
                         </div>
 
-                        {rooms.map((room, index) => (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                key={room.id}
-                                style={{ marginBottom: '35px', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(20px)', borderRadius: '35px', padding: '25px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
+                        {rooms.map((room, index) => {
+                            let roomRevenue = 0;
+                            let roomHours = 0;
+                            stats?.pcStats?.forEach(pcStat => {
+                                if (pcStat.roomId === room.id) {
+                                    roomRevenue += pcStat.revenue;
+                                    roomHours += pcStat.hours;
+                                }
+                            });
+                            return (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    key={room.id}
+                                    onClick={() => setSelectedViewRoom(room)}
+                                    style={{ marginBottom: '20px', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '20px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                                    whileHover={{ scale: 1.02, border: '1px solid #7000ff' }}
+                                >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        <div style={{ width: '50px', height: '50px', borderRadius: '15px', background: 'linear-gradient(135deg, #7000ff, #39ff14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', boxShadow: '0 0 20px rgba(112,0,255,0.3)', color: '#fff' }}>
+                                        <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'linear-gradient(135deg, #7000ff, #39ff14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', boxShadow: '0 0 20px rgba(112,0,255,0.3)', color: '#fff' }}>
                                             {room.name.charAt(0)}
                                         </div>
                                         <div>
-                                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
-                                            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-                                                <span style={{ fontSize: '10px', background: '#222', padding: '4px 8px', borderRadius: '6px', color: '#aaa' }}>{room.Computers?.length} ta PC</span>
-                                                <span style={{ fontSize: '10px', background: 'rgba(255,0,255,0.1)', color: '#ff00ff', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(255,0,255,0.2)' }}>Yoniq: {room.Computers?.filter(c => c.status === 'busy').length}</span>
+                                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#fff', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
+                                            <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                                                <span style={{ fontSize: '11px', background: '#222', padding: '4px 8px', borderRadius: '8px', color: '#aaa', display: 'flex', alignItems: 'center', gap: '4px' }}><Monitor size={12} /> {room.Computers?.length} PC</span>
+                                                <span style={{ fontSize: '11px', background: 'rgba(255,0,255,0.1)', color: '#ff00ff', padding: '4px 8px', borderRadius: '8px', border: '1px solid rgba(255,0,255,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}><MonitorPlay size={12} /> BANT: {room.Computers?.filter(c => c.status === 'busy').length}</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px', fontWeight: 'bold' }}>SOATIGA</div>
-                                        <span style={{ fontSize: '18px', fontWeight: '900', color: '#00ffff', textShadow: '0 0 10px rgba(0,255,255,0.3)' }}>{room.pricePerHour.toLocaleString()} <span style={{ fontSize: '12px' }}>UZS</span></span>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                            <div style={{ fontSize: '11px', color: '#aaa' }}>Bugungi holat:</div>
+                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#39ff14' }}>{roomHours.toFixed(1)} SOAT</div>
+                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#00ffff' }}>{roomRevenue.toLocaleString()} UZS</div>
+                                        </div>
+                                        <ChevronRight size={24} color="#7000ff" />
                                     </div>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
-                                    {room.Computers?.map(pc => renderPC(pc, room))}
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            )
+                        })}
+                    </motion.div>
+                )}
+
+                {activeTab === 'rooms' && selectedViewRoom && (
+                    <motion.div key="room-detail" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} style={{ padding: '20px' }}>
+
+                        <div style={{ marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <button onClick={() => {
+                                setSelectedViewRoom(null);
+                                // optional: refresh rooms dynamically
+                                callAPI('/api/manager/rooms').then(r => setRooms(r || []));
+                            }} style={{ width: '45px', height: '45px', borderRadius: '15px', background: '#111', border: '1px solid #333', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                <ArrowLeft size={24} />
+                            </button>
+                            <div>
+                                <h2 style={{ fontSize: '24px', margin: 0, color: '#fff', letterSpacing: '1px' }}>{selectedViewRoom.name.toUpperCase()}</h2>
+                                <p style={{ fontSize: '12px', color: '#00ffff', margin: '4px 0 0' }}>{selectedViewRoom.pricePerHour.toLocaleString()} UZS / SOATIGA</p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
+                            {/* ensure to find the latest computers from state just in case */}
+                            {(rooms.find(r => r.id === selectedViewRoom.id)?.Computers || selectedViewRoom.Computers)?.map(pc => renderPC(pc, selectedViewRoom))}
+                        </div>
+
                     </motion.div>
                 )}
 

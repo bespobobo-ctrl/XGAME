@@ -55,7 +55,7 @@ exports.getStats = async (req, res, next) => {
         if (s.startTime >= wStart) { hours.week += h; flow.week++; }
         if (s.startTime >= dStart) { hours.day += h; flow.day++; }
 
-        if (!pcStats[s.ComputerId]) pcStats[s.ComputerId] = { name: s.Computer?.name || 'Unknown', hours: 0, revenue: 0 };
+        if (!pcStats[s.ComputerId]) pcStats[s.ComputerId] = { name: s.Computer?.name || 'Unknown', roomId: s.Computer?.RoomId, hours: 0, revenue: 0 };
         pcStats[s.ComputerId].hours += h;
         pcStats[s.ComputerId].revenue += s.totalCost || 0;
     });

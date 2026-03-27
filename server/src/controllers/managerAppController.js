@@ -8,99 +8,109 @@ const { startOfDay, startOfWeek, startOfMonth, startOfYear } = require('date-fns
 const User = require('../database/models/User');
 
 exports.getStats = async (req, res, next) => {
-    const clubId = req.user.ClubId;
-    const now = new Date();
+    try {
+        const clubId = req.user.ClubId;
+        const now = new Date();
 
-    const dStart = startOfDay(now);
-    const wStart = startOfWeek(now, { weekStartsOn: 1 });
-    const mStart = startOfMonth(now);
-    const yStart = startOfYear(now);
+        const dStart = startOfDay(now);
+        const wStart = startOfWeek(now, { weekStartsOn: 1 });
+        const mStart = startOfMonth(now);
+        const yStart = startOfYear(now);
 
-    const [latestSession, allTransactions, allSessions, allComputers, allRooms] = await Promise.all([
-        Session.findOne({
-            include: [{ model: Computer, where: { ClubId: clubId } }, { model: User, attributes: ['username', 'phone'] }],
-            order: [['startTime', 'DESC']]
-        }),
-        Transaction.findAll({
-            where: { ClubId: clubId, createdAt: { [Op.gte]: yStart } }
-        }),
-        Session.findAll({
-            where: { startTime: { [Op.gte]: yStart } },
-            include: [{ model: Computer, where: { ClubId: clubId } }]
-        }),
-        Computer.findAll({ where: { ClubId: clubId } }),
-        Room.findAll({ where: { ClubId: clubId } })
-    ]);
+        // Fetch essential data
+        const allRooms = await Room.findAll({ where: { ClubId: clubId } });
+        const allRoomIds = allRooms.map(r => r.id);
 
-    const totalPCsCount = await Computer.count({ where: { ClubId: clubId } }); // or just use allComputers.length below
-    const busyPCsCount = await Computer.count({ where: { ClubId: clubId, status: 'busy' } });
-
-    const allRoomIds = allRooms.map(r => r.id);
-    await Computer.update({ ClubId: clubId }, {
-        where: { ClubId: null, RoomId: { [Op.in]: allRoomIds } }
-    });
-
-    const totalPCs = allComputers.length;
-    const busyPCs = allComputers.filter(p => p.status === 'busy').length;
-    const freePCs = totalPCs - busyPCs;
-
-    const revenue = { day: 0, week: 0, month: 0, year: 0 };
-    allTransactions.forEach(t => {
-        if (t.amount > 0) {
-            revenue.year += t.amount;
-            if (t.createdAt >= mStart) revenue.month += t.amount;
-            if (t.createdAt >= wStart) revenue.week += t.amount;
-            if (t.createdAt >= dStart) revenue.day += t.amount;
-        }
-    });
-
-    const flow = { day: 0, week: 0, month: 0, year: allSessions.length };
-    const hours = { day: 0, week: 0, month: 0, year: 0 };
-    const pcStats = {};
-
-    // Create a map of Room ID to Price for fast dynamic session calculation
-    const roomsMap = {};
-    allRooms.forEach(r => roomsMap[r.id] = r.pricePerHour || 15000);
-
-    allComputers.forEach(pc => {
-        pcStats[pc.id] = { name: pc.name, roomId: pc.RoomId, hours: 0, revenue: 0, isBusy: pc.status === 'busy' };
-    });
-
-    allSessions.forEach(s => {
-        let mins = s.totalMinutes || 0;
-        let cost = s.totalCost || 0;
-
-        if (s.status === 'active' && s.Computer) {
-            mins = Math.max(0, Math.floor((new Date() - new Date(s.startTime)) / 60000));
-            const pricePerHour = roomsMap[s.Computer.RoomId] || 15000;
-            cost = Math.floor((mins / 60) * pricePerHour);
+        // migration
+        if (allRoomIds.length > 0) {
+            await Computer.update({ ClubId: clubId }, {
+                where: { ClubId: null, RoomId: { [Op.in]: allRoomIds } }
+            });
         }
 
-        const h = mins / 60;
-        hours.year += h;
-        if (s.startTime >= mStart) { hours.month += h; flow.month++; }
-        if (s.startTime >= wStart) { hours.week += h; flow.week++; }
-        if (s.startTime >= dStart) { hours.day += h; flow.day++; }
+        const [latestSession, allTransactions, allSessions, allComputers] = await Promise.all([
+            Session.findOne({
+                include: [
+                    { model: Computer, where: { ClubId: clubId } },
+                    { model: User, attributes: ['username', 'phone'] }
+                ],
+                order: [['startTime', 'DESC']]
+            }),
+            Transaction.findAll({
+                where: { ClubId: clubId, createdAt: { [Op.gte]: yStart } }
+            }),
+            Session.findAll({
+                where: { startTime: { [Op.gte]: yStart } },
+                include: [{ model: Computer, where: { ClubId: clubId } }]
+            }),
+            Computer.findAll({ where: { ClubId: clubId } })
+        ]);
 
-        if (pcStats[s.ComputerId]) {
-            pcStats[s.ComputerId].hours += h;
-            pcStats[s.ComputerId].revenue += cost;
-        }
-    });
+        const totalPCs = allComputers.length;
+        const busyPCs = allComputers.filter(p => (p.status === 'busy' || p.status === 'vip' || p.status === 'reserved')).length;
+        const freePCs = totalPCs - busyPCs;
 
-    const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
+        const revenue = { day: 0, week: 0, month: 0, year: 0 };
+        allTransactions.forEach(t => {
+            if (t.amount > 0) {
+                revenue.year += t.amount;
+                if (t.createdAt >= mStart) revenue.month += t.amount;
+                if (t.createdAt >= wStart) revenue.week += t.amount;
+                if (t.createdAt >= dStart) revenue.day += t.amount;
+            }
+        });
 
-    res.json({
-        totalPCs, busyPCs, freePCs,
-        latestVisit: latestSession ? {
-            user: latestSession.User?.username || 'Guest',
-            phone: latestSession.User?.phone || '',
-            pc: latestSession.Computer?.name,
-            time: latestSession.startTime
-        } : null,
-        revenue, flow, hours, topPCs,
-        pcStats: Object.values(pcStats)
-    });
+        const flow = { day: 0, week: 0, month: 0, year: allSessions.length };
+        const hours = { day: 0, week: 0, month: 0, year: 0 };
+        const pcStats = {};
+
+        // Create a map of Room ID to Price for fast dynamic session calculation
+        const roomsMap = {};
+        allRooms.forEach(r => roomsMap[r.id] = r.pricePerHour || 15000);
+
+        allComputers.forEach(pc => {
+            pcStats[pc.id] = { name: pc.name, roomId: pc.RoomId, hours: 0, revenue: 0, isBusy: pc.status === 'busy' };
+        });
+
+        allSessions.forEach(s => {
+            let mins = s.totalMinutes || 0;
+            let cost = s.totalCost || 0;
+
+            if (s.status === 'active' && s.Computer) {
+                mins = Math.max(0, Math.floor((new Date() - new Date(s.startTime)) / 60000));
+                const pricePerHour = roomsMap[s.Computer.RoomId] || 15000;
+                cost = Math.floor((mins / 60) * pricePerHour);
+            }
+
+            const h = mins / 60;
+            hours.year += h;
+            if (s.startTime >= mStart) { hours.month += h; flow.month++; }
+            if (s.startTime >= wStart) { hours.week += h; flow.week++; }
+            if (s.startTime >= dStart) { hours.day += h; flow.day++; }
+
+            if (pcStats[s.ComputerId]) {
+                pcStats[s.ComputerId].hours += h;
+                pcStats[s.ComputerId].revenue += cost;
+            }
+        });
+
+        const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
+
+        res.json({
+            totalPCs, busyPCs, freePCs,
+            latestVisit: latestSession ? {
+                user: latestSession.User?.username || 'Guest',
+                phone: latestSession.User?.phone || '',
+                pc: latestSession.Computer?.name,
+                time: latestSession.startTime
+            } : null,
+            revenue, flow, hours, topPCs,
+            pcStats: Object.values(pcStats)
+        });
+    } catch (err) {
+        console.error("STATS ERROR:", err);
+        next(err);
+    }
 };
 
 exports.broadcast = async (req, res, next) => {
@@ -113,60 +123,79 @@ exports.broadcast = async (req, res, next) => {
 };
 
 exports.getRooms = async (req, res, next) => {
-    const clubId = req.user.ClubId;
-    const rooms = await Room.findAll({
-        where: { ClubId: clubId },
-        include: [{
-            model: Computer,
+    try {
+        const clubId = req.user.ClubId;
+        const rooms = await Room.findAll({
+            where: { ClubId: clubId },
             include: [{
-                model: Session,
-                where: { status: 'active' },
-                required: false
+                model: Computer,
+                include: [{
+                    model: Session,
+                    where: { status: 'active' },
+                    required: false
+                }]
             }]
-        }]
-    });
-    res.json(rooms);
+        });
+        res.json(rooms);
+    } catch (err) {
+        console.error("GET ROOMS ERROR:", err);
+        next(err);
+    }
 };
 
 exports.pcAction = async (req, res, next) => {
-    const { id } = req.params;
-    const { action } = req.body;
-    const clubId = req.user.ClubId;
-
-    const pc = await Computer.findOne({ where: { id, ClubId: clubId } });
-    if (!pc) return res.status(404).json({ error: 'Topilmadi' });
-
-    if (action === 'start') {
-        const hasSession = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
-        if (!hasSession) {
-            await Session.create({ startTime: new Date(), ComputerId: id, ClubId: clubId, status: 'active' });
-            pc.status = 'busy';
-        }
-    } else if (action === 'stop') {
-        const session = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
-        if (session) {
-            session.endTime = new Date();
-            session.status = 'completed';
-            session.totalMinutes = Math.floor((session.endTime - session.startTime) / 60000);
-            session.totalCost = Math.round((session.totalMinutes / 60) * 15000); // approx logic
-            await session.save();
-        }
-        pc.status = 'free';
-    } else if (action === 'vip') {
-        pc.status = 'vip';
-    } else if (action === 'reserve') {
-        pc.status = 'reserved';
-    } else if (action === 'free') {
-        pc.status = 'free';
-    }
-
     try {
-        await pc.save({ validate: false });
-    } catch (e) {
-        // Fallback for sqlite enum conflicts
-        console.error("Save error:", e);
+        const { id } = req.params;
+        const { action } = req.body;
+        const clubId = req.user.ClubId;
+
+        const pc = await Computer.findOne({ where: { id, ClubId: clubId } });
+        if (!pc) return res.status(404).json({ error: 'Topilmadi' });
+
+        if (action === 'start') {
+            const hasSession = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
+            if (!hasSession) {
+                await Session.create({ startTime: new Date(), ComputerId: id, ClubId: clubId, status: 'active' });
+                pc.status = 'busy';
+            }
+        } else if (action === 'stop') {
+            const session = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
+            if (session) {
+                session.endTime = new Date();
+                session.status = 'completed';
+                session.totalMinutes = Math.floor((session.endTime - session.startTime) / 60000);
+
+                // Fetch dynamic price from room
+                const room = await Room.findByPk(pc.RoomId);
+                const price = room ? room.pricePerHour : 15000;
+                session.totalCost = Math.round((session.totalMinutes / 60) * price);
+
+                await session.save();
+
+                // Log transaction
+                await Transaction.create({
+                    amount: session.totalCost,
+                    type: 'pc_payment',
+                    ClubId: clubId,
+                    UserId: session.UserId || null,
+                    description: `${pc.name} uchun to'lov`
+                });
+            }
+            pc.status = 'free';
+        } else if (action === 'vip') {
+            pc.status = 'vip';
+        } else if (action === 'reserve') {
+            pc.status = 'reserved';
+        } else if (action === 'free') {
+            pc.status = 'free';
+        }
+
+        await pc.save();
+        res.json({ success: true, pc });
+    } catch (err) {
+        console.error("PC ACTION ERROR:", err);
+        next(err);
     }
-    res.json({ success: true, pc });
 };
 
 exports.setup = async (req, res, next) => {

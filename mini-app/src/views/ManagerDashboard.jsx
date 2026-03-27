@@ -12,6 +12,27 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [selectedPC, setSelectedPC] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
 
+    const [showAddRoom, setShowAddRoom] = useState(false);
+    const [newRoom, setNewRoom] = useState({ name: '', pricePerHour: 15000, pcCount: 5, pcSpecs: 'M2, RTX 3060' });
+
+    const handleAddRoom = async () => {
+        if (!newRoom.name) return alert('Xona nomini kiriting!');
+        setActionLoading(true);
+        try {
+            await callAPI('/api/manager/setup', {
+                method: 'POST',
+                body: JSON.stringify({ rooms: [newRoom] })
+            });
+            const r = await callAPI('/api/manager/rooms');
+            setRooms(r || []);
+            setShowAddRoom(false);
+            setNewRoom({ name: '', pricePerHour: 15000, pcCount: 5, pcSpecs: 'M2, RTX 3060' });
+        } catch (e) {
+            alert('Xato: ' + e.message);
+        }
+        setActionLoading(false);
+    };
+
     const handleAction = async (action) => {
         if (!selectedPC) return;
         setActionLoading(true);
@@ -261,6 +282,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 <h2 style={{ fontSize: '20px', margin: 0, color: '#fff', letterSpacing: '2px' }}>KLUB XARITASI 🗺️</h2>
                                 <p style={{ fontSize: '10px', color: '#888', margin: '5px 0 0' }}>Jami xonalar: {rooms.length} ta</p>
                             </div>
+                            <button onClick={() => setShowAddRoom(true)} style={{ background: '#7000ff', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '15px', fontWeight: 'bold', fontSize: '12px', boxShadow: '0 0 15px rgba(112,0,255,0.4)', cursor: 'pointer' }}>
+                                + YANGI XONA
+                            </button>
                         </div>
 
                         {rooms.map(room => (
@@ -344,6 +368,40 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 </button>
                             </div>
                             <button onClick={() => setSelectedPC(null)} style={{ width: '100%', padding: '15px', background: 'transparent', color: '#666', border: 'none', marginTop: '20px', fontSize: '14px' }}>YOPISH</button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ADD ROOM MODAL */}
+            <AnimatePresence>
+                {showAddRoom && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+                            style={{ background: '#111', width: '100%', maxWidth: '400px', padding: '30px', borderRadius: '30px', border: '1px solid #333' }}
+                        >
+                            <h2 style={{ fontSize: '20px', margin: '0 0 20px', color: '#fff', textAlign: 'center' }}>+ YANGI XONA 🎮</h2>
+
+                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>Xona nomi (Masalan: VIP Xona):</label>
+                            <input value={newRoom.name} onChange={e => setNewRoom({ ...newRoom, name: e.target.value })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '15px' }} />
+
+                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>Soatiga narxi (UZS):</label>
+                            <input type="number" value={newRoom.pricePerHour} onChange={e => setNewRoom({ ...newRoom, pricePerHour: parseInt(e.target.value) })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '15px' }} />
+
+                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>Nechta PC joylashgan:</label>
+                            <input type="number" value={newRoom.pcCount} onChange={e => setNewRoom({ ...newRoom, pcCount: parseInt(e.target.value) })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '15px' }} />
+
+                            <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '5px' }}>PC parametrlari (Qisqacha):</label>
+                            <input value={newRoom.pcSpecs} onChange={e => setNewRoom({ ...newRoom, pcSpecs: e.target.value })} style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', borderRadius: '15px', marginBottom: '25px' }} />
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button onClick={() => setShowAddRoom(false)} style={{ flex: 1, padding: '15px', background: '#222', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>BEKOR QILISH</button>
+                                <button onClick={handleAddRoom} disabled={actionLoading} style={{ flex: 1, padding: '15px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold' }}>+{actionLoading ? '...' : 'QO\'SHISH'}</button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

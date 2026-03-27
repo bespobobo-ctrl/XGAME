@@ -194,9 +194,30 @@ exports.pcAction = async (req, res, next) => {
                 reserveTime: reserveTime || new Date()
             });
             pc.status = 'reserved';
+        } else if (action === 'pause') {
+            const sess = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
+            if (sess) {
+                sess.status = 'paused';
+                sess.pausedAt = new Date();
+                await sess.save();
+                pc.status = 'paused';
+            }
+        } else if (action === 'resume') {
+            const sess = await Session.findOne({ where: { ComputerId: id, status: 'paused', reserveTime: null } });
+            if (sess) {
+                const now = new Date();
+                const pauseDur = now - new Date(sess.pausedAt);
+                sess.startTime = new Date(new Date(sess.startTime).getTime() + pauseDur);
+                sess.status = 'active';
+                sess.pausedAt = null;
+                await sess.save();
+                pc.status = 'busy';
+            }
         } else if (action === 'free') {
-            // Also stop any paused/reserved sessions
-            await Session.update({ status: 'completed' }, { where: { ComputerId: id, status: 'paused' } });
+            // Stop any session on this PC
+            await Session.update({ status: 'completed', endTime: new Date() }, {
+                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } }
+            });
             pc.status = 'free';
         }
 

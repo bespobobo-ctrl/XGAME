@@ -28,6 +28,10 @@ const Session = sequelize.define('Session', {
         type: DataTypes.DATE,
         allowNull: true,
     },
+    pausedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
     totalCost: {
         type: DataTypes.INTEGER,
         defaultValue: 0,

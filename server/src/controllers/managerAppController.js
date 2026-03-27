@@ -16,7 +16,7 @@ exports.getStats = async (req, res, next) => {
     const mStart = startOfMonth(now);
     const yStart = startOfYear(now);
 
-    const [totalPCs, busyPCs, latestSession, allTransactions, allSessions] = await Promise.all([
+    const [totalPCs, busyPCs, latestSession, allTransactions, allSessions, allComputers] = await Promise.all([
         Computer.count({ where: { ClubId: clubId } }),
         Computer.count({ where: { ClubId: clubId, status: 'busy' } }),
         Session.findOne({
@@ -28,8 +28,9 @@ exports.getStats = async (req, res, next) => {
         }),
         Session.findAll({
             where: { startTime: { [Op.gte]: yStart } },
-            include: [{ model: Computer, where: { ClubId: clubId } }]
-        })
+            include: [{ model: Computer, where: { ClubId: clubId }, include: [Room] }]
+        }),
+        Computer.findAll({ where: { ClubId: clubId }, include: [Room] })
     ]);
 
     const freePCs = totalPCs - busyPCs;
@@ -48,8 +49,21 @@ exports.getStats = async (req, res, next) => {
     const hours = { day: 0, week: 0, month: 0, year: 0 };
     const pcStats = {};
 
+    allComputers.forEach(pc => {
+        pcStats[pc.id] = { name: pc.name, roomId: pc.RoomId, hours: 0, revenue: 0, isBusy: pc.status === 'busy' };
+    });
+
     allSessions.forEach(s => {
-        const h = (s.totalMinutes || 0) / 60;
+        let mins = s.totalMinutes || 0;
+        let cost = s.totalCost || 0;
+
+        if (s.status === 'active') {
+            mins = Math.max(0, Math.floor((new Date() - new Date(s.startTime)) / 60000));
+            const pricePerHour = s.Computer?.Room?.pricePerHour || 15000;
+            cost = Math.floor((mins / 60) * pricePerHour);
+        }
+
+        const h = mins / 60;
         hours.year += h;
         if (s.startTime >= mStart) { hours.month += h; flow.month++; }
         if (s.startTime >= wStart) { hours.week += h; flow.week++; }
@@ -57,7 +71,7 @@ exports.getStats = async (req, res, next) => {
 
         if (!pcStats[s.ComputerId]) pcStats[s.ComputerId] = { name: s.Computer?.name || 'Unknown', roomId: s.Computer?.RoomId, hours: 0, revenue: 0 };
         pcStats[s.ComputerId].hours += h;
-        pcStats[s.ComputerId].revenue += s.totalCost || 0;
+        pcStats[s.ComputerId].revenue += cost;
     });
 
     const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);

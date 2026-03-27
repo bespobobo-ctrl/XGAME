@@ -126,7 +126,7 @@ exports.getRooms = async (req, res, next) => {
                 model: Computer,
                 include: [{
                     model: Session,
-                    where: { status: 'active' },
+                    where: { status: { [Op.in]: ['active', 'paused'] } },
                     required: false
                 }]
             }]
@@ -141,7 +141,7 @@ exports.getRooms = async (req, res, next) => {
 exports.pcAction = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { action } = req.body;
+        const { action, expectedMinutes, reserveTime } = req.body;
         const clubId = req.user.ClubId;
 
         const pc = await Computer.findOne({ where: { id, ClubId: clubId } });
@@ -150,7 +150,13 @@ exports.pcAction = async (req, res, next) => {
         if (action === 'start') {
             const hasSession = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
             if (!hasSession) {
-                await Session.create({ startTime: new Date(), ComputerId: id, ClubId: clubId, status: 'active' });
+                await Session.create({
+                    startTime: new Date(),
+                    ComputerId: id,
+                    ClubId: clubId,
+                    status: 'active',
+                    expectedMinutes: expectedMinutes || null
+                });
                 pc.status = 'busy';
             }
         } else if (action === 'stop') {
@@ -173,15 +179,24 @@ exports.pcAction = async (req, res, next) => {
                     type: 'pc_payment',
                     ClubId: clubId,
                     UserId: session.UserId || null,
-                    description: `${pc.name} uchun to'lov`
+                    description: `${pc.name} uchun to'lov (${session.totalMinutes} daqiqa)`
                 });
             }
             pc.status = 'free';
         } else if (action === 'vip') {
             pc.status = 'vip';
         } else if (action === 'reserve') {
+            await Session.create({
+                startTime: new Date(),
+                ComputerId: id,
+                ClubId: clubId,
+                status: 'paused', // reserved state representation
+                reserveTime: reserveTime || new Date()
+            });
             pc.status = 'reserved';
         } else if (action === 'free') {
+            // Also stop any paused/reserved sessions
+            await Session.update({ status: 'completed' }, { where: { ComputerId: id, status: 'paused' } });
             pc.status = 'free';
         }
 

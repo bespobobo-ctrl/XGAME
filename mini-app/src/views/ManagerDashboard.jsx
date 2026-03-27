@@ -13,6 +13,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [selectedPC, setSelectedPC] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [selectedViewRoom, setSelectedViewRoom] = useState(null);
+    const [nowTime, setNowTime] = useState(Date.now());
+    const [reserveTimeInput, setReserveTimeInput] = useState('');
+    const [showReservePicker, setShowReservePicker] = useState(false);
 
     const [showAddRoom, setShowAddRoom] = useState(false);
     const [newRoom, setNewRoom] = useState({ name: '', pricePerHour: 15000, pcCount: 5, pcSpecs: 'M2, RTX 3060' });
@@ -77,17 +80,18 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         setActionLoading(false);
     };
 
-    const handleAction = async (action) => {
+    const handleAction = async (action, expectedMinutes = null, reserveTime = null) => {
         if (!selectedPC) return;
         setActionLoading(true);
         try {
             await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
                 method: 'POST',
-                body: JSON.stringify({ action })
+                body: JSON.stringify({ action, expectedMinutes, reserveTime })
             });
             const r = await callAPI('/api/manager/rooms');
             setRooms(r || []);
             setSelectedPC(null);
+            setShowReservePicker(false);
         } catch (e) {
             alert('Xato: ' + e.message);
         }
@@ -126,8 +130,12 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             }
         };
         fetchData();
-        const interval = setInterval(fetchData, 10000); // 10s update for real-time feel
-        return () => clearInterval(interval);
+        const dataInterval = setInterval(fetchData, 10000); // 10s update for real-time feel
+        const timerInterval = setInterval(() => setNowTime(Date.now()), 1000); // 1s live UI update
+        return () => {
+            clearInterval(dataInterval);
+            clearInterval(timerInterval);
+        };
     }, []);
 
     const renderPC = (pc, room) => {
@@ -148,8 +156,23 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
         const getStatusTheme = () => {
             if (pc.status === 'free' || pc.status === 'available') return { color: '#39ff14', icon: <Monitor size={28} strokeWidth={1.5} />, label: 'BO\'SH' };
-            if (pc.status === 'busy') return { color: '#ff00ff', icon: <MonitorPlay size={28} strokeWidth={2} />, label: elapsedTime };
-            if (pc.status === 'reserved') return { color: '#ffaa00', icon: <CalendarClock size={28} strokeWidth={1.5} />, label: 'BRON' };
+            if (pc.status === 'busy') {
+                let dynamicLabel = elapsedTime;
+                if (pc.Sessions?.[0]?.expectedMinutes) {
+                    const expectedEndsAt = new Date(new Date(pc.Sessions[0].startTime).getTime() + pc.Sessions[0].expectedMinutes * 60000);
+                    const now = new Date();
+                    if (now >= expectedEndsAt) dynamicLabel = "Vaqti tugadi!";
+                }
+                return { color: '#ff00ff', icon: <MonitorPlay size={28} strokeWidth={2} />, label: dynamicLabel };
+            }
+            if (pc.status === 'reserved') {
+                let reserveLabel = 'BRON';
+                if (pc.Sessions?.[0]?.reserveTime) {
+                    const rt = new Date(pc.Sessions[0].reserveTime);
+                    reserveLabel = `${rt.getHours().toString().padStart(2, '0')}:${rt.getMinutes().toString().padStart(2, '0')}`;
+                }
+                return { color: '#ffaa00', icon: <CalendarClock size={28} strokeWidth={1.5} />, label: reserveLabel };
+            }
             if (pc.status === 'vip') return { color: '#00ffff', icon: <Crown size={28} strokeWidth={1.5} />, label: 'VIP' };
             return { color: '#444', icon: <PowerOff size={28} strokeWidth={1.5} />, label: 'O\'CHIQ' };
         };
@@ -445,74 +468,128 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {selectedPC && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 999, display: 'flex', alignItems: 'flex-end' }}
-                        onClick={(e) => { if (e.target === e.currentTarget) setSelectedPC(null); }}
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(15px)', zIndex: 999, display: 'flex', alignItems: 'flex-end', overflowY: 'auto' }}
+                        onClick={(e) => { if (e.target === e.currentTarget) { setSelectedPC(null); setShowReservePicker(false); } }}
                     >
-                        <motion.div
-                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25 }}
-                            style={{ background: 'linear-gradient(180deg, #16161a 0%, #0a0a0c 100%)', width: '100%', padding: '30px', borderRadius: '40px 40px 0 0', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -20px 50px rgba(0,0,0,0.8)' }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                                <div>
-                                    <h2 style={{ fontSize: '26px', margin: '0 0 5px', color: '#fff', fontWeight: '900', letterSpacing: '1px' }}>{selectedPC.name} Boshqaruvi</h2>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: selectedPC.status === 'busy' ? '#ff0844' : selectedPC.status === 'vip' ? '#b224ef' : '#39ff14', boxShadow: `0 0 10px ${selectedPC.status === 'busy' ? '#ff0844' : selectedPC.status === 'vip' ? '#b224ef' : '#39ff14'}` }}></div>
-                                        <span style={{ color: '#aaa', fontSize: '13px', fontWeight: '600', letterSpacing: '1px' }}>{selectedPC.status.toUpperCase()}</span>
+                        {(() => {
+                            let currentCost = 0;
+                            let modalElapsedTime = '00:00:00';
+                            const price = rooms.find(r => r.id === selectedPC.RoomId)?.pricePerHour || 15000;
+                            if (selectedPC.status === 'busy' && selectedPC.Sessions?.[0]) {
+                                const start = new Date(selectedPC.Sessions[0].startTime);
+                                const diffSeconds = Math.max(0, Math.floor((nowTime - start) / 1000));
+                                const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
+                                const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
+                                const s = (diffSeconds % 60).toString().padStart(2, '0');
+                                modalElapsedTime = `${h}:${m}:${s}`;
+                                currentCost = Math.floor((diffSeconds / 3600) * price);
+                            }
+
+                            return (
+                                <motion.div
+                                    initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25 }}
+                                    style={{ background: 'linear-gradient(180deg, #16161a 0%, #0a0a0c 100%)', width: '100%', padding: '30px', borderRadius: '40px 40px 0 0', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -20px 50px rgba(0,0,0,0.8)', minHeight: '60vh' }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px' }}>
+                                        <div>
+                                            <h2 style={{ fontSize: '32px', margin: '0 0 5px', color: '#fff', fontWeight: '900', letterSpacing: '1px' }}>{selectedPC.name}</h2>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: selectedPC.status === 'busy' ? '#ff0844' : selectedPC.status === 'vip' ? '#b224ef' : '#39ff14', boxShadow: `0 0 10px ${selectedPC.status === 'busy' ? '#ff0844' : selectedPC.status === 'vip' ? '#b224ef' : '#39ff14'}` }}></div>
+                                                <span style={{ color: '#aaa', fontSize: '13px', fontWeight: '900', letterSpacing: '2px' }}>{selectedPC.status.toUpperCase()}</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => { setSelectedPC(null); setShowReservePicker(false); }}
+                                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '45px', height: '45px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                        >
+                                            <X size={20} />
+                                        </button>
                                     </div>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedPC(null)}
-                                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '45px', height: '45px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                {selectedPC.status !== 'busy' && (
-                                    <button
-                                        onClick={() => handleAction('start')} disabled={actionLoading}
-                                        style={{ background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(79, 172, 254, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
-                                    >
-                                        <Play size={28} fill="#fff" strokeWidth={1} />
-                                        <span>VAQT OCHISH</span>
-                                    </button>
-                                )}
-                                {selectedPC.status === 'busy' && (
-                                    <button
-                                        onClick={() => handleAction('stop')} disabled={actionLoading}
-                                        style={{ background: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 8, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
-                                    >
-                                        <Square size={28} fill="#fff" strokeWidth={1} />
-                                        <span>TO'XTATISH</span>
-                                    </button>
-                                )}
+                                    {selectedPC.status === 'busy' && (
+                                        <div style={{ display: 'flex', gap: '15px', marginBottom: '25px' }}>
+                                            <div style={{ flex: 1, background: 'rgba(255, 8, 68, 0.1)', border: '1px solid rgba(255, 8, 68, 0.3)', padding: '20px', borderRadius: '24px', textAlign: 'center' }}>
+                                                <div style={{ color: '#ff0844', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>VAQT O'TDI</div>
+                                                <div style={{ color: '#fff', fontSize: '24px', fontWeight: '900', fontFamily: 'monospace' }}>{modalElapsedTime}</div>
+                                            </div>
+                                            <div style={{ flex: 1, background: 'rgba(57, 255, 20, 0.1)', border: '1px solid rgba(57, 255, 20, 0.3)', padding: '20px', borderRadius: '24px', textAlign: 'center' }}>
+                                                <div style={{ color: '#39ff14', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>HISOB (UZS)</div>
+                                                <div style={{ color: '#fff', fontSize: '24px', fontWeight: '900' }}>{currentCost.toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    )}
 
-                                <button
-                                    onClick={() => handleAction('reserve')} disabled={actionLoading}
-                                    style={{ background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(253, 160, 133, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
-                                >
-                                    <Ticket size={28} strokeWidth={2} />
-                                    <span>BRON QILISH</span>
-                                </button>
+                                    {!showReservePicker ? (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            {selectedPC.status !== 'busy' && (
+                                                <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                                                    <button onClick={() => handleAction('start', 30)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>30 DAQ</button>
+                                                    <button onClick={() => handleAction('start', 60)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>1 SOAT</button>
+                                                    <button onClick={() => handleAction('start', 120)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>2 SOAT</button>
+                                                    <button onClick={() => handleAction('start', null)} disabled={actionLoading} style={{ background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', color: '#fff', padding: '15px 0', borderRadius: '16px', border: 'none', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', boxShadow: '0 5px 15px rgba(79,172,254,0.3)' }}>CHEKSIZ</button>
+                                                </div>
+                                            )}
 
-                                <button
-                                    onClick={() => handleAction('vip')} disabled={actionLoading}
-                                    style={{ background: 'linear-gradient(135deg, #b224ef 0%, #7579ff 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(117, 121, 255, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
-                                >
-                                    <Diamond size={28} fill="#fff" strokeWidth={1} />
-                                    <span>VIP REJIM</span>
-                                </button>
+                                            {selectedPC.status === 'busy' && (
+                                                <button
+                                                    onClick={() => handleAction('stop')} disabled={actionLoading}
+                                                    style={{ background: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 8, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                >
+                                                    <Square size={28} fill="#fff" strokeWidth={1} />
+                                                    <span>YAKUNLASH</span>
+                                                </button>
+                                            )}
 
-                                <button
-                                    onClick={() => handleAction('free')} disabled={actionLoading}
-                                    style={{ background: '#1a1a24', color: '#aaa', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', gridColumn: 'span 2', cursor: 'pointer', transition: '0.3s', opacity: actionLoading ? 0.6 : 1 }}
-                                >
-                                    <Brush size={18} />
-                                    <span>KOMPYUTERNI TOZALASH (FREE)</span>
-                                </button>
-                            </div>
-                        </motion.div>
+                                            {selectedPC.status !== 'busy' && (
+                                                <button
+                                                    onClick={() => setShowReservePicker(true)} disabled={actionLoading}
+                                                    style={{ background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(253, 160, 133, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                >
+                                                    <Ticket size={28} strokeWidth={2} />
+                                                    <span>BRON QILISH</span>
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => handleAction('vip')} disabled={actionLoading}
+                                                style={{ background: 'linear-gradient(135deg, #b224ef 0%, #7579ff 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(117, 121, 255, 0.3)', gridColumn: selectedPC.status === 'busy' ? 'span 1' : 'auto', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                            >
+                                                <Diamond size={28} fill="#fff" strokeWidth={1} />
+                                                <span>VIP REJIM</span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleAction('free')} disabled={actionLoading}
+                                                style={{ background: '#1a1a24', color: '#aaa', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', gridColumn: 'span 2', cursor: 'pointer', transition: '0.3s', opacity: actionLoading ? 0.6 : 1 }}
+                                            >
+                                                <Brush size={18} />
+                                                <span>KOMPYUTERNI TOZALASH (FREE)</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ background: '#1a1a24', padding: '25px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <h3 style={{ color: '#fff', margin: '0 0 15px', fontSize: '16px' }}>Bron vaqtini belgilang:</h3>
+                                            <input
+                                                type="datetime-local"
+                                                value={reserveTimeInput}
+                                                onChange={e => setReserveTimeInput(e.target.value)}
+                                                style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff', fontSize: '16px', marginBottom: '20px' }}
+                                            />
+                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                <button onClick={() => setShowReservePicker(false)} style={{ flex: 1, padding: '15px', background: '#333', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>BEKOR</button>
+                                                <button
+                                                    onClick={() => handleAction('reserve', null, reserveTimeInput)}
+                                                    disabled={actionLoading || !reserveTimeInput}
+                                                    style={{ flex: 1, padding: '15px', background: '#f6d365', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 'bold', opacity: (!reserveTimeInput || actionLoading) ? 0.5 : 1 }}
+                                                >
+                                                    SAQLASH
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            );
+                        })()}
                     </motion.div>
                 )}
             </AnimatePresence>

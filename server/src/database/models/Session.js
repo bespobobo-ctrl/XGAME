@@ -20,6 +20,14 @@ const Session = sequelize.define('Session', {
         type: DataTypes.INTEGER,
         defaultValue: 0,
     },
+    expectedMinutes: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
+    reserveTime: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
     totalCost: {
         type: DataTypes.INTEGER,
         defaultValue: 0,

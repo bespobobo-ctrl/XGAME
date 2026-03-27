@@ -21,13 +21,6 @@ exports.getStats = async (req, res, next) => {
         const allRooms = await Room.findAll({ where: { ClubId: clubId } });
         const allRoomIds = allRooms.map(r => r.id);
 
-        // migration
-        if (allRoomIds.length > 0) {
-            await Computer.update({ ClubId: clubId }, {
-                where: { ClubId: null, RoomId: { [Op.in]: allRoomIds } }
-            });
-        }
-
         const [latestSession, allTransactions, allSessions, allComputers] = await Promise.all([
             Session.findOne({
                 include: [
@@ -37,13 +30,15 @@ exports.getStats = async (req, res, next) => {
                 order: [['startTime', 'DESC']]
             }),
             Transaction.findAll({
-                where: { ClubId: clubId, createdAt: { [Op.gte]: yStart } }
+                where: { ClubId: clubId, createdAt: { [Op.gte]: yStart } },
+                attributes: ['amount', 'createdAt'],
+                raw: true
             }),
             Session.findAll({
                 where: { startTime: { [Op.gte]: yStart } },
-                include: [{ model: Computer, where: { ClubId: clubId } }]
+                include: [{ model: Computer, attributes: ['id', 'RoomId', 'name'], where: { ClubId: clubId } }]
             }),
-            Computer.findAll({ where: { ClubId: clubId } })
+            Computer.findAll({ where: { ClubId: clubId }, raw: true })
         ]);
 
         const totalPCs = allComputers.length;

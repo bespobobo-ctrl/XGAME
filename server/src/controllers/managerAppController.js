@@ -257,10 +257,18 @@ exports.pcAction = async (req, res, next) => {
                 pc.status = 'busy';
             }
         } else if (action === 'cancel_reserve') {
-            await Session.update({ status: 'completed', endTime: new Date() }, {
+            console.log("CANCELLING RESERVE FOR PC:", id);
+            const rSess = await Session.findOne({
                 where: { ComputerId: id, status: 'paused', reserveTime: { [Op.ne]: null } }
             });
+            if (rSess) {
+                rSess.status = 'completed';
+                rSess.endTime = new Date();
+                await rSess.save();
+                console.log("RESERVATION SESSION CLOSED");
+            }
             pc.status = 'free';
+            await pc.save();
         } else if (action === 'free') {
             // Stop any session on this PC
             await Session.update({ status: 'completed', endTime: new Date() }, {

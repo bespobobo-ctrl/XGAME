@@ -66,10 +66,17 @@ exports.getStats = async (req, res, next) => {
             let mins = s.totalMinutes || 0;
             let cost = s.totalCost || 0;
 
-            if (s.status === 'active' && s.Computer) {
-                mins = Math.max(0, Math.floor((new Date() - new Date(s.startTime)) / 60000));
-                const pricePerHour = roomsMap[s.Computer.RoomId] || 15000;
-                cost = Math.floor((mins / 60) * pricePerHour);
+            if (s.Computer) {
+                if (s.status === 'active') {
+                    mins = Math.max(0, Math.floor((new Date() - new Date(s.startTime)) / 60000));
+                } else if (s.status === 'paused' && s.pausedAt) {
+                    mins = Math.max(0, Math.floor((new Date(s.pausedAt) - new Date(s.startTime)) / 60000));
+                }
+
+                if (s.status === 'active' || (s.status === 'paused' && s.pausedAt)) {
+                    const pricePerHour = roomsMap[s.Computer.RoomId] || 15000;
+                    cost = Math.floor((mins / 60) * pricePerHour);
+                }
             }
 
             const h = mins / 60;

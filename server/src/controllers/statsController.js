@@ -5,13 +5,20 @@ const { startOfDay } = require('date-fns');
 
 exports.getDashboardStats = async (req, res, next) => {
     try {
-        const dStart = startOfDay(new Date());
+        // O'zbekiston (UTC+5) bo'yicha kun boshlanishini hisoblash
+        const tashkentOffset = 5 * 60 * 60 * 1000;
+        const now = new Date();
+        const tashkentNow = new Date(now.getTime() + tashkentOffset);
+        tashkentNow.setUTCHours(0, 0, 0, 0);
+        const dStartTashkentInUTC = new Date(tashkentNow.getTime() - tashkentOffset);
 
         const [totalClubs, totalManagers, activeSessions, todayRevenue, clubsHistory] = await Promise.all([
             Club.count(),
             User.count({ where: { role: 'manager' } }),
             Session.count({ where: { status: 'active' } }),
-            Transaction.sum('amount', { where: { createdAt: { [Op.gte]: dStart } } }),
+            Transaction.sum('amount', {
+                where: { createdAt: { [Op.gte]: dStartTashkentInUTC } }
+            }),
             Club.findAll({
                 attributes: ['name', 'createdAt', 'status'],
                 limit: 5,

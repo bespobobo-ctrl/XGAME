@@ -1,5 +1,4 @@
 const { Room, Computer, Session, Transaction, Club, User } = require('../database');
-
 const { Op } = require('sequelize');
 const { startOfDay, startOfWeek, startOfMonth, startOfYear } = require('date-fns');
 
@@ -7,13 +6,11 @@ exports.getStats = async (req, res, next) => {
     try {
         const clubId = req.user.ClubId;
         const now = new Date();
-
         const dStart = startOfDay(now);
-        const wStart = startOfWeek(now, { weekStartsOn: 1 });
+        const wStart = startOfWeek(now);
         const mStart = startOfMonth(now);
         const yStart = startOfYear(now);
 
-        // Fetch essential data
         const allRooms = await Room.findAll({ where: { ClubId: clubId } });
         const allRoomIds = allRooms.map(r => r.id);
 
@@ -29,98 +26,65 @@ exports.getStats = async (req, res, next) => {
             }),
             Transaction.findAll({
                 where: { ClubId: clubId, createdAt: { [Op.gte]: yStart } },
-                attributes: ['amount', 'createdAt'],
-                raw: true
+                order: [['createdAt', 'DESC']]
             }),
             Session.findAll({
-                where: { startTime: { [Op.gte]: yStart } },
-                include: [{ model: Computer, attributes: ['id', 'RoomId', 'name'], where: { ClubId: clubId } }]
+                include: [{ model: Computer, where: { ClubId: clubId } }],
+                where: {
+                    startTime: { [Op.gte]: yStart },
+                    status: 'completed'
+                }
             }),
-            Computer.findAll({ where: { ClubId: clubId }, raw: true }),
+            Computer.findAll({ where: { RoomId: { [Op.in]: allRoomIds } } }),
             Session.findAll({
-                where: { status: 'paused', reserveTime: { [Op.ne]: null } },
-                include: [
-                    { model: Computer, where: { ClubId: clubId }, include: [{ model: Room, attributes: ['name'] }] },
-                    { model: User, attributes: ['username', 'phone'] }
-                ],
+                include: [{ model: Computer, where: { ClubId: clubId }, include: [Room] }, { model: User }],
+                where: { status: { [Op.in]: ['active', 'paused'] }, reserveTime: { [Op.ne]: null } },
                 order: [['reserveTime', 'ASC']]
             }),
-            Club.findByPk(clubId, { attributes: ['name'], raw: true })
+            Club.findByPk(clubId)
         ]);
 
         const totalPCs = allComputers.length;
-        const busyPCs = allComputers.filter(p => (['busy', 'vip', 'reserved', 'paused'].includes(p.status))).length;
-        const freePCs = totalPCs - busyPCs;
+        const busyPCs = allComputers.filter(c => c.status === 'busy').length;
+        const freePCs = allComputers.filter(c => c.status === 'free' || c.status === 'available').length;
 
-        const revenue = { day: 0, week: 0, month: 0, year: 0 };
-        const flow = { day: 0, week: 0, month: 0, year: allSessions.length };
-        const hours = { day: 0, week: 0, month: 0, year: 0 };
         const pcStats = {};
+        allComputers.forEach(pc => { pcStats[pc.id] = { name: pc.name, id: pc.id, hours: 0, revenue: 0 }; });
 
-        const roomsMap = {};
-        allRooms.forEach(r => roomsMap[r.id] = r.pricePerHour || 15000);
-
-        allComputers.forEach(pc => {
-            pcStats[pc.id] = { name: pc.name, roomId: pc.RoomId, hours: 0, revenue: 0, isBusy: pc.status === 'busy' };
-        });
+        const flow = { day: 0, week: 0, month: 0, year: 0 };
+        const hours = { day: 0, week: 0, month: 0, year: 0 };
 
         allSessions.forEach(s => {
-            let mins = s.totalMinutes || 0;
-            let cost = s.totalCost || 0;
-
-            if (s.Computer) {
-                if (s.status === 'active') {
-                    mins = Math.max(0, Math.floor((new Date() - new Date(s.startTime)) / 60000));
-                } else if (s.status === 'paused' && s.pausedAt && !s.reserveTime) {
-                    mins = Math.max(0, Math.floor((new Date(s.pausedAt) - new Date(s.startTime)) / 60000));
-                }
-
-                if (s.status === 'active' || (s.status === 'paused' && s.pausedAt && !s.reserveTime)) {
-                    const pricePerHour = roomsMap[s.Computer.RoomId] || 15000;
-                    cost = Math.floor((mins / 60) * pricePerHour);
-                }
-            }
-
-            const h = mins / 60;
+            const h = (s.totalMinutes || 0) / 60;
+            const cost = s.totalCost || 0;
+            const pcId = s.ComputerId;
             const sTime = new Date(s.startTime);
 
-            // Daily stats (What the dashboard actually displays as "KUNLIK")
-            if (sTime >= dStart) {
-                hours.day += h; flow.day++;
-                revenue.day += cost;
-
-                if (pcStats[s.ComputerId]) {
-                    pcStats[s.ComputerId].hours += h;
-                    pcStats[s.ComputerId].revenue += cost;
-                }
+            if (pcStats[pcId]) {
+                pcStats[pcId].hours += h;
+                pcStats[pcId].revenue += cost;
             }
 
-            // Other accumulation
-            hours.year += h;
-            revenue.year += cost;
-
-            if (sTime >= mStart) {
-                hours.month += h; flow.month++;
-                revenue.month += cost;
-            }
-            if (sTime >= wStart) {
-                hours.week += h; flow.week++;
-                revenue.week += cost;
-            }
+            flow.year++; hours.year += h;
+            if (sTime >= mStart) { hours.month += h; flow.month++; }
+            if (sTime >= wStart) { hours.week += h; flow.week++; }
+            if (sTime >= dStart) { hours.day += h; flow.day++; }
         });
 
-        // Also add other completed transactions that are not necessarily PC session payments
-        allTransactions.forEach(t => {
-            if (t.type !== 'pc_payment') {
-                const date = new Date(t.createdAt);
-                if (t.amount > 0) {
-                    revenue.year += t.amount;
-                    if (date >= mStart) revenue.month += t.amount;
-                    if (date >= wStart) revenue.week += t.amount;
-                    if (date >= dStart) revenue.day += t.amount;
-                }
-            }
-        });
+        // Accurate Daily Revenue for Uzbekistan (GMT+5)
+        const tashkentOffset = 5 * 60 * 60 * 1000;
+        const tashkentNow = new Date(new Date().getTime() + tashkentOffset);
+        tashkentNow.setUTCHours(0, 0, 0, 0);
+        const dStartTashkentInUTC = new Date(tashkentNow.getTime() - tashkentOffset);
+
+        const revenue = {
+            day: allTransactions
+                .filter(t => new Date(t.createdAt) >= dStartTashkentInUTC)
+                .reduce((sum, t) => sum + t.amount, 0),
+            week: allTransactions.filter(t => new Date(t.createdAt) >= wStart).reduce((sum, t) => sum + t.amount, 0),
+            month: allTransactions.filter(t => new Date(t.createdAt) >= mStart).reduce((sum, t) => sum + t.amount, 0),
+            year: allTransactions.reduce((sum, t) => sum + t.amount, 0)
+        };
 
         const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
 
@@ -152,26 +116,19 @@ exports.getStats = async (req, res, next) => {
 };
 
 exports.broadcast = async (req, res, next) => {
-    const clubId = req.user.ClubId;
-    const { message } = req.body;
-    if (!message) return res.status(400).json({ error: 'Xat yozmadingiz' });
-
     try {
-        const club = await Club.findByPk(clubId, { attributes: ['name'] });
+        const clubId = req.user.ClubId;
+        const { message } = req.body;
+        if (!message) return res.status(400).json({ error: 'Xat yozmadingiz' });
 
-        // Fetch all users belonging to this club with valid telegramId
+        const club = await Club.findByPk(clubId, { attributes: ['name'] });
         const users = await User.findAll({
-            where: {
-                ClubId: clubId,
-                telegramId: { [Op.ne]: null },
-                status: 'active'
-            },
+            where: { ClubId: clubId, telegramId: { [Op.ne]: null }, status: 'active' },
             attributes: ['telegramId'],
             raw: true
         });
 
         const telegramIds = users.filter(u => u.telegramId && !u.telegramId.startsWith('MANAGER_')).map(u => u.telegramId);
-
         const { broadcastMessage } = require('../utils/bot');
         broadcastMessage(telegramIds, `<b>📣 ${club?.name || 'GAME ZONE'} HABARI</b>\n\n${message}`);
 
@@ -191,19 +148,17 @@ exports.getRooms = async (req, res, next) => {
                 include: [{
                     model: Session,
                     where: { status: { [Op.in]: ['active', 'paused'] } },
-                    required: false,
-                    separate: false, // Don't use separate if we want to sort via order
+                    required: false
                 }]
             }],
             order: [
                 ['id', 'ASC'],
                 [Computer, 'name', 'ASC'],
-                [Computer, Session, 'startTime', 'DESC'] // Most recent session first
+                [Computer, Session, 'startTime', 'DESC']
             ]
         });
         res.json(rooms);
     } catch (err) {
-        console.error("GET ROOMS ERROR:", err);
         next(err);
     }
 };
@@ -218,29 +173,20 @@ exports.pcAction = async (req, res, next) => {
         if (!pc) return res.status(404).json({ error: 'Topilmadi' });
 
         if (action === 'start') {
-            // First, look for a reservation or paused session that matches this computer
             const existingSess = await Session.findOne({
-                where: {
-                    ComputerId: id,
-                    status: { [Op.in]: ['active', 'paused'] }
-                },
+                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } },
                 order: [['startTime', 'DESC']]
             });
 
-            if (existingSess) {
-                if (existingSess.status === 'paused') {
-                    // Activate a reservation OR resume a regular pause
-                    existingSess.status = 'active';
-                    existingSess.startTime = new Date(); // Reset start time for a fresh play session from now
-                    existingSess.reserveTime = null;
-                    existingSess.pausedAt = null;
-                    if (expectedMinutes) existingSess.expectedMinutes = expectedMinutes;
-                    await existingSess.save();
-                    pc.status = 'busy';
-                }
-                // If already active, it's just a duplicate request, nothing to do
-            } else {
-                // No existing active/paused session, create a brand new one
+            if (existingSess && existingSess.status === 'paused') {
+                existingSess.status = 'active';
+                existingSess.startTime = new Date();
+                existingSess.reserveTime = null;
+                existingSess.pausedAt = null;
+                if (expectedMinutes) existingSess.expectedMinutes = expectedMinutes;
+                await existingSess.save();
+                pc.status = 'busy';
+            } else if (!existingSess) {
                 await Session.create({
                     startTime: new Date(),
                     ComputerId: id,
@@ -252,59 +198,42 @@ exports.pcAction = async (req, res, next) => {
             }
         } else if (action === 'stop') {
             const session = await Session.findOne({
-                where: {
-                    ComputerId: id,
-                    status: { [Op.in]: ['active', 'paused'] },
-                    reserveTime: null // Bron qilingan lekin hali boshlanmagan sessiyani stop orqali to'xtatib bo'lmaydi (bezoar bo'ladi)
-                }
+                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] }, reserveTime: null }
             });
             if (session) {
                 session.endTime = new Date();
                 session.status = 'completed';
-
-                // If it was paused, usage stopped at pausedAt
                 if (session.pausedAt) {
                     session.totalMinutes = Math.max(0, Math.floor((new Date(session.pausedAt) - new Date(session.startTime)) / 60000));
                 } else {
                     session.totalMinutes = Math.max(0, Math.floor((session.endTime - session.startTime) / 60000));
                 }
-
-                // Fetch dynamic price from room
                 const room = await Room.findByPk(pc.RoomId);
                 const price = room ? room.pricePerHour : 15000;
                 session.totalCost = Math.round((session.totalMinutes / 60) * price);
-
                 await session.save();
 
-                // Log transaction
                 await Transaction.create({
                     amount: session.totalCost,
                     type: 'pc_payment',
                     ClubId: clubId,
                     UserId: session.UserId || null,
-                    description: `${pc.name} uchun to'lov (${session.totalMinutes} daqiqa)`
+                    description: `${pc.name} to'lovi (${session.totalMinutes} daq)`
                 });
             }
             pc.status = 'free';
-        } else if (action === 'vip') {
-            pc.status = 'vip';
         } else if (action === 'reserve') {
             let rDate = new Date();
-            if (reserveTime && typeof reserveTime === 'string' && reserveTime.includes(':')) {
+            if (reserveTime && reserveTime.includes(':')) {
                 const [h, m] = reserveTime.split(':');
                 rDate.setHours(parseInt(h), parseInt(m), 0, 0);
-
-                // Agar belgilangan vaqt bugun o'tib ketgan bo'lsa, ertaga uchun bron deb tushunamiz
-                if (rDate < new Date()) {
-                    rDate.setDate(rDate.getDate() + 1);
-                }
+                if (rDate < new Date()) rDate.setDate(rDate.getDate() + 1);
             }
-            // Create a placeholder session for this reservation
             await Session.create({
                 startTime: new Date(),
                 ComputerId: id,
                 ClubId: clubId,
-                status: 'paused', // reserved state representation
+                status: 'paused',
                 reserveTime: rDate
             });
             pc.status = 'reserved';
@@ -317,16 +246,9 @@ exports.pcAction = async (req, res, next) => {
                 pc.status = 'paused';
             }
         } else if (action === 'resume') {
-            const sess = await Session.findOne({
-                where: {
-                    ComputerId: id,
-                    status: 'paused',
-                    reserveTime: null // Do not resume a reservation as active via 'resume' action, use 'start' instead
-                }
-            });
+            const sess = await Session.findOne({ where: { ComputerId: id, status: 'paused', reserveTime: null } });
             if (sess) {
-                const now = new Date();
-                const pauseDur = now - new Date(sess.pausedAt);
+                const pauseDur = new Date() - new Date(sess.pausedAt);
                 sess.startTime = new Date(new Date(sess.startTime).getTime() + pauseDur);
                 sess.status = 'active';
                 sess.pausedAt = null;
@@ -335,18 +257,18 @@ exports.pcAction = async (req, res, next) => {
             }
         } else if (action === 'cancel_reserve') {
             const resSess = await Session.findOne({
-                where: { ComputerId: id, status: 'paused', reserveTime: { [Op.ne]: null } }
+                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] }, reserveTime: { [Op.ne]: null } },
+                order: [['id', 'DESC']]
             });
             if (resSess) {
                 resSess.status = 'completed';
+                resSess.endTime = new Date();
                 await resSess.save();
             }
-            const hasOngoing = await Session.findOne({ where: { ComputerId: id, status: 'active' } });
+            const hasOngoing = await Session.findOne({ where: { ComputerId: id, status: 'active', reserveTime: null } });
             if (!hasOngoing) pc.status = 'free';
         } else if (action === 'free') {
-            const sessionsToClose = await Session.findAll({
-                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } }
-            });
+            const sessionsToClose = await Session.findAll({ where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } } });
             for (const s of sessionsToClose) {
                 s.status = 'completed';
                 s.endTime = new Date();
@@ -354,13 +276,9 @@ exports.pcAction = async (req, res, next) => {
             }
             pc.status = 'free';
         }
-
         await pc.save();
-
-        // Return fresh PC status
         res.json({ success: true, pc });
     } catch (err) {
-        console.error("PC ACTION ERROR:", err);
         next(err);
     }
 };
@@ -368,37 +286,23 @@ exports.pcAction = async (req, res, next) => {
 exports.setup = async (req, res, next) => {
     const clubId = req.user.ClubId;
     const { rooms } = req.body;
-
-    if (!clubId) return res.status(400).json({ error: 'Foydalanuvchi klubga ulanmagan' });
-    if (!rooms || !Array.isArray(rooms)) return res.status(400).json({ error: 'Xonalar ma`lumotlari noto`g`ri' });
-
-    // Markazlashgan tranzaksiya (Senior approach)
-    const sequelize = require('../database/index').sequelize;
+    const { sequelize } = require('../database');
     const t = await sequelize.transaction();
-
     try {
         for (const roomData of rooms) {
             const room = await Room.create({
-                name: roomData.name || 'Asosiy xona',
-                pcSpecs: roomData.pcSpecs || 'Standard Gaming PC',
-                pricePerHour: parseInt(roomData.pricePerHour) || 20000,
+                name: roomData.name || 'Room',
+                pcSpecs: roomData.pcSpecs || 'Standard',
+                pricePerHour: parseInt(roomData.pricePerHour) || 15000,
                 pcCount: parseInt(roomData.pcCount) || 0,
                 ClubId: clubId
             }, { transaction: t });
-
-            const pcCount = parseInt(roomData.pcCount) || 0;
-
-            for (let i = 1; i <= pcCount; i++) {
-                await Computer.create({
-                    name: `${i}-PC`,
-                    RoomId: room.id,
-                    ClubId: clubId,
-                    status: 'available'
-                }, { transaction: t });
+            for (let i = 1; i <= room.pcCount; i++) {
+                await Computer.create({ name: `${i}-PC`, RoomId: room.id, ClubId: clubId, status: 'available' }, { transaction: t });
             }
         }
         await t.commit();
-        res.json({ success: true, message: 'Klub infratuzilmasi muvaffaqiyatli yaratildi!' });
+        res.json({ success: true, message: 'Done' });
     } catch (err) {
         await t.rollback();
         next(err);
@@ -407,63 +311,43 @@ exports.setup = async (req, res, next) => {
 
 exports.editRoom = async (req, res, next) => {
     const { id } = req.params;
-    const { name, pricePerHour, pcSpecs, pcCount, isLocked, openTime, closeTime } = req.body;
+    const { name, pricePerHour, pcCount } = req.body;
     const clubId = req.user.ClubId;
-
-    const room = await Room.findOne({ where: { id, ClubId: clubId }, include: [Computer] });
-    if (!room) return res.status(404).json({ error: 'Xona topilmadi' });
-
-    if (name) room.name = name;
-    if (pricePerHour) room.pricePerHour = pricePerHour;
-    if (pcSpecs) room.pcSpecs = pcSpecs;
-    if (isLocked !== undefined) room.isLocked = isLocked;
-    if (openTime) room.openTime = openTime;
-    if (closeTime) room.closeTime = closeTime;
-
-    // Handle PC count changes
-    if (pcCount !== undefined && parseInt(pcCount) !== room.pcCount) {
-        const newCount = parseInt(pcCount);
-        const oldCount = room.pcCount;
-
-        if (newCount > oldCount) {
-            // Add PCs
-            for (let i = oldCount + 1; i <= newCount; i++) {
-                await Computer.create({
-                    name: `${i}-PC`,
-                    RoomId: room.id,
-                    ClubId: clubId,
-                    status: 'available'
-                });
+    try {
+        const room = await Room.findOne({ where: { id, ClubId: clubId } });
+        if (!room) return res.status(404).json({ error: 'Not found' });
+        if (name) room.name = name;
+        if (pricePerHour) room.pricePerHour = pricePerHour;
+        if (pcCount !== undefined) {
+            const newCount = parseInt(pcCount);
+            const oldCount = room.pcCount;
+            if (newCount > oldCount) {
+                for (let i = oldCount + 1; i <= newCount; i++) {
+                    await Computer.create({ name: `${i}-PC`, RoomId: room.id, ClubId: clubId, status: 'available' });
+                }
+            } else if (newCount < oldCount) {
+                const pcsToRemove = await Computer.findAll({ where: { RoomId: room.id }, order: [['id', 'DESC']], limit: oldCount - newCount });
+                for (const pc of pcsToRemove) await pc.destroy();
             }
-        } else if (newCount < oldCount) {
-            // Remove extra PCs (starting from the end)
-            // Note: Ideally check for active sessions first
-            const pcsToRemove = await Computer.findAll({
-                where: { RoomId: room.id },
-                order: [['id', 'DESC']],
-                limit: oldCount - newCount
-            });
-            for (const pc of pcsToRemove) {
-                await pc.destroy();
-            }
+            room.pcCount = newCount;
         }
-        room.pcCount = newCount;
+        await room.save();
+        res.json({ success: true, room });
+    } catch (err) {
+        next(err);
     }
-
-    await room.save();
-    res.json({ success: true, room });
 };
 
 exports.deleteRoom = async (req, res, next) => {
     const { id } = req.params;
     const clubId = req.user.ClubId;
-
-    const room = await Room.findOne({ where: { id, ClubId: clubId } });
-    if (!room) return res.status(404).json({ error: 'Xona topilmadi' });
-
-    // Cascade delete computers
-    await Computer.destroy({ where: { RoomId: room.id } });
-    await room.destroy();
-
-    res.json({ success: true, message: 'Xona muvaffaqiyatli o`chirildi' });
+    try {
+        const room = await Room.findOne({ where: { id, ClubId: clubId } });
+        if (!room) return res.status(404).json({ error: 'Not found' });
+        await Computer.destroy({ where: { RoomId: room.id } });
+        await room.destroy();
+        res.json({ success: true });
+    } catch (err) {
+        next(err);
+    }
 };

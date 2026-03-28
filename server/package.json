@@ -15,6 +15,7 @@
         "express": "^4.19.2",
         "jsonwebtoken": "^9.0.3",
         "multer": "^2.1.1",
+        "node-telegram-bot-api": "^0.67.0",
         "sequelize": "^6.37.3",
         "socket.io": "^4.8.3",
         "sqlite3": "^5.1.7"

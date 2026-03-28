@@ -2,10 +2,11 @@ const Room = require('../database/models/Room');
 const Computer = require('../database/models/Computer');
 const Session = require('../database/models/Session');
 const Transaction = require('../database/models/Transaction');
+const Club = require('../database/models/Club');
+const User = require('../database/models/User');
 
 const { Op } = require('sequelize');
 const { startOfDay, startOfWeek, startOfMonth, startOfYear } = require('date-fns');
-const User = require('../database/models/User');
 
 exports.getStats = async (req, res, next) => {
     try {
@@ -21,7 +22,6 @@ exports.getStats = async (req, res, next) => {
         const allRooms = await Room.findAll({ where: { ClubId: clubId } });
         const allRoomIds = allRooms.map(r => r.id);
 
-        const Club = require('../database/models/Club');
         const [latestSession, allTransactions, allSessions, allComputers, upcomingReservations, club] = await Promise.all([
             Session.findOne({
                 include: [

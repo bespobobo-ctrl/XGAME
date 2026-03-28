@@ -21,7 +21,8 @@ exports.getStats = async (req, res, next) => {
         const allRooms = await Room.findAll({ where: { ClubId: clubId } });
         const allRoomIds = allRooms.map(r => r.id);
 
-        const [latestSession, allTransactions, allSessions, allComputers, upcomingReservations] = await Promise.all([
+        const Club = require('../database/models/Club');
+        const [latestSession, allTransactions, allSessions, allComputers, upcomingReservations, club] = await Promise.all([
             Session.findOne({
                 include: [
                     { model: Computer, where: { ClubId: clubId } },
@@ -41,13 +42,17 @@ exports.getStats = async (req, res, next) => {
             Computer.findAll({ where: { ClubId: clubId }, raw: true }),
             Session.findAll({
                 where: { status: 'paused', reserveTime: { [Op.ne]: null } },
-                include: [{ model: Computer, where: { ClubId: clubId } }, { model: User, attributes: ['username', 'phone'] }],
+                include: [
+                    { model: Computer, where: { ClubId: clubId }, include: [{ model: Room, attributes: ['name'] }] },
+                    { model: User, attributes: ['username', 'phone'] }
+                ],
                 order: [['reserveTime', 'ASC']]
-            })
+            }),
+            Club.findByPk(clubId, { attributes: ['name'], raw: true })
         ]);
 
         const totalPCs = allComputers.length;
-        const busyPCs = allComputers.filter(p => (p.status === 'busy' || p.status === 'vip' || p.status === 'reserved' || p.status === 'paused')).length;
+        const busyPCs = allComputers.filter(p => (['busy', 'vip', 'reserved', 'paused'].includes(p.status))).length;
         const freePCs = totalPCs - busyPCs;
 
         const revenue = { day: 0, week: 0, month: 0, year: 0 };
@@ -65,7 +70,6 @@ exports.getStats = async (req, res, next) => {
         const hours = { day: 0, week: 0, month: 0, year: 0 };
         const pcStats = {};
 
-        // Create a map of Room ID to Price for fast dynamic session calculation
         const roomsMap = {};
         allRooms.forEach(r => roomsMap[r.id] = r.pricePerHour || 15000);
 
@@ -100,10 +104,11 @@ exports.getStats = async (req, res, next) => {
 
         res.json({
             totalPCs, busyPCs, freePCs,
-            revenue, flow, hours, topPCs, pcStats: Object.values(pcStats),
+            clubName: club?.name || 'GAME CLUB',
             upcomingReservations: upcomingReservations.map(r => ({
                 id: r.id,
                 pc: r.Computer?.name,
+                room: r.Computer?.Room?.name || 'Unknown',
                 user: r.User?.username || 'Guest',
                 time: r.reserveTime
             })),
@@ -112,9 +117,7 @@ exports.getStats = async (req, res, next) => {
                 phone: latestSession.User?.phone || '',
                 pc: latestSession.Computer?.name,
                 time: latestSession.startTime
-            } : null,
-            revenue, flow, hours, topPCs,
-            pcStats: Object.values(pcStats)
+            } : null
         });
     } catch (err) {
         console.error("STATS ERROR:", err);

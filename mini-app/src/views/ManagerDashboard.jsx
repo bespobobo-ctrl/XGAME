@@ -169,7 +169,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 let reserveLabel = 'BRON';
                 if (pc.Sessions?.[0]?.reserveTime) {
                     const rt = new Date(pc.Sessions[0].reserveTime);
-                    reserveLabel = `${rt.getHours().toString().padStart(2, '0')}:${rt.getMinutes().toString().padStart(2, '0')}`;
+                    reserveLabel = `🕒 ${rt.getHours().toString().padStart(2, '0')}:${rt.getMinutes().toString().padStart(2, '0')}`;
                 }
                 return { color: '#ffaa00', icon: <CalendarClock size={28} strokeWidth={1.5} />, label: reserveLabel };
             }
@@ -238,10 +238,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             {/* 💎 PREMIUM HEADER */}
             <header style={{ padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(5,5,5,0.8)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 100 }}>
                 <div>
-                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', letterSpacing: '1px' }}>{user.username.toUpperCase()}</h2>
+                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', letterSpacing: '1px' }}>{(stats?.clubName || 'GAME ZONE').toUpperCase()}</h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#39ff14', boxShadow: '0 0 8px #39ff14' }}></div>
-                        <span style={{ fontSize: '10px', color: '#888', fontWeight: 'bold' }}>{new Date(nowTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        <span style={{ fontSize: '10px', color: '#888', fontWeight: 'bold' }}>{user.username.toUpperCase()} (ADMIN)</span>
                     </div>
                 </div>
                 <button onClick={onLogout} style={{ background: 'none', border: '1px solid #ff444433', color: '#ff4444', padding: '8px 15px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}>LOGOUT</button>
@@ -278,8 +278,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 stats.upcomingReservations.map((res, i) => (
                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#0a0a0a', borderRadius: '15px', marginBottom: '8px', border: '1px solid #222' }}>
                                         <div>
-                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>{res.pc}</div>
-                                            <div style={{ fontSize: '10px', color: '#888' }}>{res.user}</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>[{res.room}] {res.pc}</div>
+                                            <div style={{ fontSize: '10px', color: '#888' }}>MIJOZ: {res.user}</div>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
                                             <div style={{ fontSize: '14px', color: '#ffaa00', fontWeight: 'bold' }}>{new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>

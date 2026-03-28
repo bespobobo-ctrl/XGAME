@@ -88,8 +88,12 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 method: 'POST',
                 body: JSON.stringify({ action, expectedMinutes, reserveTime })
             });
-            const r = await callAPI('/api/manager/rooms');
-            setRooms(r || []);
+            const [resRooms, resStats] = await Promise.all([
+                callAPI('/api/manager/rooms'),
+                callAPI('/api/manager/stats')
+            ]);
+            setRooms(resRooms || []);
+            setStats(resStats);
             setSelectedPC(null);
             setShowReservePicker(false);
         } catch (e) {
@@ -186,8 +190,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 onClick={() => setSelectedPC(pc)}
                 style={{
                     background: `linear-gradient(145deg, #111, #050505)`,
-                    border: `1px solid ${isActive ? color + '66' : '#222'}`,
-                    borderTop: `2px solid ${isActive ? color : '#333'}`,
+                    border: `1px solid ${(isActive || pc.status === 'reserved') ? color + '66' : '#222'}`,
+                    borderTop: `2px solid ${(isActive || pc.status === 'reserved') ? color : '#333'}`,
                     borderRadius: '20px',
                     padding: '20px 10px',
                     display: 'flex',
@@ -197,7 +201,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     position: 'relative',
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    boxShadow: isActive ? `0 10px 30px ${color}22` : 'none'
+                    boxShadow: (isActive || pc.status === 'reserved') ? `0 10px 30px ${color}22` : 'none'
                 }}
             >
                 {isActive && (
@@ -672,10 +676,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                         <div style={{ background: '#1a1a24', padding: '25px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                             <h3 style={{ color: '#fff', margin: '0 0 15px', fontSize: '16px' }}>Bron vaqtini belgilang:</h3>
                                             <input
-                                                type="datetime-local"
+                                                type="time"
                                                 value={reserveTimeInput}
                                                 onChange={e => setReserveTimeInput(e.target.value)}
-                                                style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff', fontSize: '16px', marginBottom: '20px' }}
+                                                style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff', fontSize: '24px', textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}
                                             />
                                             <div style={{ display: 'flex', gap: '10px' }}>
                                                 <button onClick={() => setShowReservePicker(false)} style={{ flex: 1, padding: '15px', background: '#333', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>BEKOR</button>

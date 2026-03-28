@@ -203,12 +203,19 @@ exports.pcAction = async (req, res, next) => {
         } else if (action === 'vip') {
             pc.status = 'vip';
         } else if (action === 'reserve') {
+            let rDate = new Date();
+            if (reserveTime && typeof reserveTime === 'string' && reserveTime.includes(':')) {
+                const [h, m] = reserveTime.split(':');
+                rDate.setHours(parseInt(h), parseInt(m), 0, 0);
+                // IF reservation time is in the past for today, assume they mean tomorrow?
+                // Actually user said they only need time for today's reservations.
+            }
             await Session.create({
                 startTime: new Date(),
                 ComputerId: id,
                 ClubId: clubId,
                 status: 'paused', // reserved state representation
-                reserveTime: reserveTime || new Date()
+                reserveTime: rDate
             });
             pc.status = 'reserved';
         } else if (action === 'pause') {

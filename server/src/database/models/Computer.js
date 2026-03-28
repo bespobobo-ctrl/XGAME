@@ -12,7 +12,7 @@ const Computer = sequelize.define('Computer', {
         allowNull: false,
     },
     status: {
-        type: DataTypes.ENUM('free', 'busy', 'offline', 'maintenance', 'reserved', 'vip', 'paused'),
+        type: DataTypes.ENUM('free', 'busy', 'offline', 'maintenance', 'reserved', 'vip', 'paused', 'available'),
         defaultValue: 'free',
     },
     ipAddress: {

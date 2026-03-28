@@ -147,10 +147,14 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         let elapsedTime = "00:00:00";
         let progress = 0;
 
-        if (isActive && pc.Sessions?.length > 0) {
-            const start = new Date(pc.Sessions[0].startTime);
+        const activeSession = pc.Sessions?.find(s => s.status === 'active' || (s.status === 'paused' && !s.reserveTime));
+        const reservation = pc.Sessions?.find(s => s.status === 'paused' && s.reserveTime);
+
+        if (activeSession) {
+            const start = new Date(activeSession.startTime);
             const now = new Date();
-            const diffSeconds = Math.floor((now - start) / 1000);
+            const effectiveNow = activeSession.status === 'paused' ? new Date(activeSession.pausedAt) : nowTime;
+            const diffSeconds = Math.max(0, Math.floor((effectiveNow - start) / 1000));
             const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
             const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
             const s = (diffSeconds % 60).toString().padStart(2, '0');
@@ -162,17 +166,19 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             if (pc.status === 'free' || pc.status === 'available') return { color: '#39ff14', icon: <Monitor size={28} strokeWidth={1.5} />, label: 'BO\'SH' };
             if (pc.status === 'busy') {
                 let dynamicLabel = elapsedTime;
-                if (pc.Sessions?.[0]?.expectedMinutes) {
-                    const expectedEndsAt = new Date(new Date(pc.Sessions[0].startTime).getTime() + pc.Sessions[0].expectedMinutes * 60000);
+                if (activeSession?.expectedMinutes) {
+                    const expectedEndsAt = new Date(new Date(activeSession.startTime).getTime() + activeSession.expectedMinutes * 60000);
                     const now = new Date();
                     if (now >= expectedEndsAt) dynamicLabel = "Vaqti tugadi!";
                 }
                 return { color: '#ff00ff', icon: <MonitorPlay size={28} strokeWidth={2} />, label: dynamicLabel };
             }
-            if (pc.status === 'reserved') {
+            if (pc.status === 'paused') return { color: '#ffee32', icon: <Clock size={28} strokeWidth={1.5} />, label: `PAUZA (${elapsedTime})` };
+
+            if (pc.status === 'reserved' || (reservation && pc.status !== 'busy')) {
                 let reserveLabel = 'BRON';
-                if (pc.Sessions?.[0]?.reserveTime) {
-                    const rt = new Date(pc.Sessions[0].reserveTime);
+                if (reservation?.reserveTime) {
+                    const rt = new Date(reservation.reserveTime);
                     reserveLabel = `🕒 ${rt.getHours().toString().padStart(2, '0')}:${rt.getMinutes().toString().padStart(2, '0')}`;
                 }
                 return { color: '#ffaa00', icon: <CalendarClock size={28} strokeWidth={1.5} />, label: reserveLabel };
@@ -244,8 +250,12 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 <div>
                     <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', letterSpacing: '1px' }}>{(stats?.clubName || 'GAME ZONE').toUpperCase()}</h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#39ff14', boxShadow: '0 0 8px #39ff14' }}></div>
-                        <span style={{ fontSize: '10px', color: '#888', fontWeight: 'bold' }}>{user.username.toUpperCase()} (ADMIN)</span>
+                        <motion.div
+                            animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                            transition={{ repeat: Infinity, duration: 2 }}
+                            style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#39ff14', boxShadow: '0 0 8px #39ff14' }}
+                        ></motion.div>
+                        <span style={{ fontSize: '10px', color: '#888', fontWeight: 'bold' }}>{user.username.toUpperCase()} (ONLINE)</span>
                     </div>
                 </div>
                 <button onClick={onLogout} style={{ background: 'none', border: '1px solid #ff444433', color: '#ff4444', padding: '8px 15px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}>LOGOUT</button>
@@ -295,20 +305,30 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                         </div>
 
                         {/* 👤 OXIRGI TASHRIF */}
-                        <div style={{ background: 'linear-gradient(135deg, #7000ff33, #0a0a0a)', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #7000ff55' }}>
-                            <h4 style={{ margin: '0 0 10px', fontSize: '12px', color: '#7000ff' }}>⏱️ OXIRGI MIJOZ</h4>
-                            {stats?.latestVisit ? (
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <div>
-                                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{stats.latestVisit.user}</div>
-                                        <div style={{ fontSize: '10px', color: '#888' }}>{stats.latestVisit.phone}</div>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '16px', color: '#39ff14' }}>{stats.latestVisit.pc}</div>
-                                        <div style={{ fontSize: '10px', color: '#888' }}>{new Date(stats.latestVisit.time).toLocaleTimeString()}</div>
-                                    </div>
+                        <div style={{ background: 'linear-gradient(135deg, #1a1a24, #0a0a0c)', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid rgba(112,0,255,0.2)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                <h4 style={{ margin: 0, fontSize: '12px', color: '#7000ff', letterSpacing: '1px' }}>⏱️ OXIRGI TASHRIFLAR</h4>
+                                <div style={{ fontSize: '10px', color: '#444' }}>TOP-5</div>
+                            </div>
+                            {stats?.recentSessions?.length > 0 ? (
+                                <div style={{ display: 'grid', gap: '10px' }}>
+                                    {stats.recentSessions.map((s, i) => (
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👤</div>
+                                                <div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>{s.user}</div>
+                                                    <div style={{ fontSize: '10px', color: '#666' }}>{s.pc} • {s.duration} daqiqa</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: '13px', color: '#39ff14', fontWeight: 'bold' }}>+{s.cost?.toLocaleString()}</div>
+                                                <div style={{ fontSize: '9px', color: '#444' }}>{new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ) : <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Hali tashriflar yo'q</p>}
+                            ) : <p style={{ margin: 0, fontSize: '12px', color: '#666', textAlign: 'center', padding: '10px' }}>Hali tashriflar yo'q</p>}
                         </div>
 
                         {/* 📈 KUNLIK BATAFSIL (PC HOURS & REVENUE) */}
@@ -504,7 +524,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             let expectedDuration = 'Cheksiz';
                             let endsAtTime = '--:--';
 
-                            const activeSession = selectedPC.Sessions?.[0];
+                            const activeSession = selectedPC.Sessions?.find(s => s.status === 'active' || (s.status === 'paused' && !s.reserveTime));
+                            const reservation = selectedPC.Sessions?.find(s => s.status === 'paused' && s.reserveTime);
                             const price = rooms.find(r => r.id === selectedPC.RoomId)?.pricePerHour || 15000;
                             const pcPerformance = stats?.pcStats?.find(p => p.name === selectedPC.name);
 
@@ -597,12 +618,12 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                                     {!showReservePicker ? (
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                            {(selectedPC.status !== 'busy' && selectedPC.status !== 'paused' && selectedPC.status !== 'reserved') && (
+                                            {(selectedPC.status !== 'busy' && selectedPC.status !== 'paused') && (
                                                 <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-                                                    <button onClick={() => handleAction('start', 30)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>30 DAQ</button>
-                                                    <button onClick={() => handleAction('start', 60)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>1 SOAT</button>
-                                                    <button onClick={() => handleAction('start', 120)} disabled={actionLoading} style={{ background: '#1a1a24', color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>2 SOAT</button>
-                                                    <button onClick={() => handleAction('start', null)} disabled={actionLoading} style={{ background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', color: '#fff', padding: '15px 0', borderRadius: '16px', border: 'none', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', boxShadow: '0 5px 15px rgba(79,172,254,0.3)' }}>CHEKSIZ</button>
+                                                    <button onClick={() => handleAction('start', 30)} disabled={actionLoading} style={{ background: (selectedPC.status === 'reserved' ? '#7000ff' : '#1a1a24'), color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{selectedPC.status === 'reserved' ? 'OK (30)' : '30 DAQ'}</button>
+                                                    <button onClick={() => handleAction('start', 60)} disabled={actionLoading} style={{ background: (selectedPC.status === 'reserved' ? '#7000ff' : '#1a1a24'), color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{selectedPC.status === 'reserved' ? 'OK (1S)' : '1 SOAT'}</button>
+                                                    <button onClick={() => handleAction('start', 120)} disabled={actionLoading} style={{ background: (selectedPC.status === 'reserved' ? '#7000ff' : '#1a1a24'), color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{selectedPC.status === 'reserved' ? 'OK (2S)' : '2 SOAT'}</button>
+                                                    <button onClick={() => handleAction('start', null)} disabled={actionLoading} style={{ background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', color: '#fff', padding: '15px 0', borderRadius: '16px', border: 'none', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', boxShadow: '0 5px 15px rgba(79,172,254,0.3)' }}>{selectedPC.status === 'reserved' ? 'GO!' : 'CHEKSIZ'}</button>
                                                 </div>
                                             )}
 
@@ -636,10 +657,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                 </>
                                             )}
 
-                                            {selectedPC.status === 'reserved' ? (
+                                            {(selectedPC.status === 'reserved' || reservation) ? (
                                                 <button
                                                     onClick={() => handleAction('cancel_reserve')} disabled={actionLoading}
-                                                    style={{ background: '#ff4444', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 68, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                    style={{ background: '#ff4444', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 68, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1, gridColumn: (selectedPC.status === 'busy') ? 'span 2' : 'auto' }}
                                                 >
                                                     <Trash2 size={28} strokeWidth={2} />
                                                     <span>BRONNI BEKOR QILISH</span>
@@ -797,23 +818,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             </AnimatePresence>
 
             {/* 🧭 PREMIUM BOTTOM NAV */}
-            <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-around', padding: '15px 10px 25px', zIndex: 1000, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>
-                {[
-                    { id: 'stats', label: 'STATISTIKA', icon: <ChevronRight size={20} style={{ transform: 'rotate(270deg)' }} /> },
-                    { id: 'rooms', label: 'XARITA', icon: <Monitor size={20} /> },
-                    { id: 'settings', label: 'SOZLAMALAR', icon: <Lock size={20} /> }
-                ].map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => { setActiveTab(tab.id); setSelectedViewRoom(null); }}
-                        style={{ background: 'none', border: 'none', color: activeTab === tab.id ? '#fff' : '#444', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', transition: '0.3s' }}
-                    >
-                        <div style={{ color: activeTab === tab.id ? '#7000ff' : '#444', transition: '0.3s' }}>{tab.icon}</div>
-                        <span style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px' }}>{tab.label}</span>
-                        {activeTab === tab.id && <motion.div layoutId="nav-line" style={{ width: '15px', height: '2px', background: '#7000ff', borderRadius: '2px', marginTop: '3px' }} />}
-                    </button>
-                ))}
-            </nav>
+            {/* Shared Nav handled by App.jsx */}
         </div>
     );
 };

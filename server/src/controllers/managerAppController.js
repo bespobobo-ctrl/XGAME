@@ -1,9 +1,4 @@
-const Room = require('../database/models/Room');
-const Computer = require('../database/models/Computer');
-const Session = require('../database/models/Session');
-const Transaction = require('../database/models/Transaction');
-const Club = require('../database/models/Club');
-const User = require('../database/models/User');
+const { Room, Computer, Session, Transaction, Club, User } = require('../database');
 
 const { Op } = require('sequelize');
 const { startOfDay, startOfWeek, startOfMonth, startOfYear } = require('date-fns');

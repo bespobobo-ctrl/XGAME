@@ -1,5 +1,9 @@
 const Club = require('../database/models/Club');
 const User = require('../database/models/User');
+const Room = require('../database/models/Room');
+const Computer = require('../database/models/Computer');
+const Session = require('../database/models/Session');
+const Transaction = require('../database/models/Transaction');
 
 exports.getAllClubs = async (req, res, next) => {
     const clubs = await Club.findAll({ order: [['id', 'DESC']] });
@@ -44,9 +48,29 @@ exports.deleteClub = async (req, res, next) => {
     const club = await Club.findByPk(clubId);
     if (!club) return res.status(404).json({ error: 'Club not found' });
 
-    await User.update({ ClubId: null }, { where: { ClubId: clubId } });
+    // 🧹 KLUBNI O'CHIRISHDAN OLDIN UNGA BOG'LIQ HAMMA NARSANI TOZALASH
+    // 1. Menegerlarni o'chirish
+    await User.destroy({ where: { ClubId: clubId, role: 'manager' } });
+
+    // 2. Xonalarni o'chirish
+    await Room.destroy({ where: { ClubId: clubId } });
+
+    // 3. Kompyuterlarni o'chirish
+    await Computer.destroy({ where: { ClubId: clubId } });
+
+    // 4. Sessiyalarni o'chirish
+    await Session.destroy({ where: { ClubId: clubId } });
+
+    // 5. Tranzaksiyalarni o'chirish
+    await Transaction.destroy({ where: { ClubId: clubId } });
+
+    // 6. Xaridorlarni klubdan ozod qilish (ular o'chmaydi, faqat klubi null bo'ladi)
+    await User.update({ ClubId: null }, { where: { ClubId: clubId, role: 'customer' } });
+
+    // 7. Va nihoyat klubni o'zini o'chirish
     await club.destroy();
-    res.json({ success: true });
+
+    res.json({ success: true, message: 'Klub va unga tegishli barcha maʼlumotlar tozalandi.' });
 };
 
 exports.toggleBlock = async (req, res, next) => {

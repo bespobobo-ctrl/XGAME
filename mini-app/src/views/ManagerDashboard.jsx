@@ -84,18 +84,24 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         if (!selectedPC) return;
         setActionLoading(true);
         try {
-            await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
+            const res = await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
                 method: 'POST',
                 body: JSON.stringify({ action, expectedMinutes, reserveTime })
             });
-            const [resRooms, resStats] = await Promise.all([
-                callAPI('/api/manager/rooms'),
-                callAPI('/api/manager/stats')
-            ]);
-            setRooms(resRooms || []);
-            setStats(resStats);
-            setSelectedPC(null);
-            setShowReservePicker(false);
+
+            if (res.success) {
+                if (res.message) alert(res.message);
+                const [resRooms, resStats] = await Promise.all([
+                    callAPI('/api/manager/rooms'),
+                    callAPI('/api/manager/stats')
+                ]);
+                setRooms(Array.isArray(resRooms) ? resRooms : []);
+                setStats(resStats && !resStats.error ? resStats : null);
+                setSelectedPC(null);
+                setShowReservePicker(false);
+            } else {
+                alert('Xatolik: ' + (res.error || res.message || 'Noma\'lum xato'));
+            }
         } catch (e) {
             alert('Xato: ' + e.message);
         }
@@ -125,8 +131,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     callAPI('/api/manager/stats'),
                     callAPI('/api/manager/rooms')
                 ]);
-                setStats(s);
-                setRooms(r || []);
+                setStats(s && !s.error ? s : null);
+                setRooms(Array.isArray(r) ? r : []);
             } catch (err) {
                 console.error("Dashboard error:", err);
             } finally {
@@ -400,7 +406,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             </button>
                         </div>
 
-                        {rooms.map((room, index) => {
+                        {Array.isArray(rooms) && rooms.map((room, index) => {
                             let roomRevenue = 0;
                             let roomHours = 0;
                             stats?.pcStats?.forEach(pcStat => {

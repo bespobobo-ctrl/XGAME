@@ -170,7 +170,7 @@ exports.pcAction = async (req, res, next) => {
         const clubId = req.user.ClubId;
 
         const pc = await Computer.findOne({ where: { id, ClubId: clubId } });
-        if (!pc) return res.status(404).json({ error: 'Topilmadi' });
+        if (!pc) return res.status(404).json({ error: 'Kompyuter topilmadi' });
 
         if (action === 'start') {
             const existingSess = await Session.findOne({
@@ -178,15 +178,19 @@ exports.pcAction = async (req, res, next) => {
                 order: [['startTime', 'DESC']]
             });
 
-            if (existingSess && existingSess.status === 'paused') {
+            if (existingSess) {
+                // Agar pauza yoki bronda bo'lsa, davom ettiramiz
                 existingSess.status = 'active';
-                existingSess.startTime = new Date();
-                existingSess.reserveTime = null;
+                if (existingSess.reserveTime) {
+                    existingSess.startTime = new Date();
+                    existingSess.reserveTime = null;
+                }
                 existingSess.pausedAt = null;
                 if (expectedMinutes) existingSess.expectedMinutes = expectedMinutes;
                 await existingSess.save();
                 pc.status = 'busy';
-            } else if (!existingSess) {
+            } else {
+                // Yangi sessiya ochish
                 await Session.create({
                     startTime: new Date(),
                     ComputerId: id,
@@ -197,29 +201,37 @@ exports.pcAction = async (req, res, next) => {
                 pc.status = 'busy';
             }
         } else if (action === 'stop') {
-            const session = await Session.findOne({
-                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] }, reserveTime: null }
+            const sessions = await Session.findAll({
+                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } }
             });
-            if (session) {
-                session.endTime = new Date();
-                session.status = 'completed';
-                if (session.pausedAt) {
-                    session.totalMinutes = Math.max(0, Math.floor((new Date(session.pausedAt) - new Date(session.startTime)) / 60000));
+
+            for (const sess of sessions) {
+                sess.endTime = new Date();
+                sess.status = 'completed';
+
+                // Vaqtni hisoblash (pauzani inobatga olgan holda)
+                if (sess.pausedAt && !sess.reserveTime) {
+                    sess.totalMinutes = Math.max(0, Math.floor((new Date(sess.pausedAt) - new Date(sess.startTime)) / 60000));
+                } else if (!sess.reserveTime) {
+                    sess.totalMinutes = Math.max(0, Math.floor((sess.endTime - sess.startTime) / 60000));
                 } else {
-                    session.totalMinutes = Math.max(0, Math.floor((session.endTime - session.startTime) / 60000));
+                    sess.totalMinutes = 0; // Bron qilingan lekin boshlanmagan bo'lsa
                 }
+
                 const room = await Room.findByPk(pc.RoomId);
                 const price = room ? room.pricePerHour : 15000;
-                session.totalCost = Math.round((session.totalMinutes / 60) * price);
-                await session.save();
+                sess.totalCost = Math.round((sess.totalMinutes / 60) * price);
+                await sess.save();
 
-                await Transaction.create({
-                    amount: session.totalCost,
-                    type: 'pc_payment',
-                    ClubId: clubId,
-                    UserId: session.UserId || null,
-                    description: `${pc.name} to'lovi (${session.totalMinutes} daq)`
-                });
+                if (sess.totalCost > 0) {
+                    await Transaction.create({
+                        amount: sess.totalCost,
+                        type: 'pc_payment',
+                        ClubId: clubId,
+                        UserId: sess.UserId || null,
+                        description: `${pc.name} o'yini tugatildi (${sess.totalMinutes} daqiqa)`
+                    });
+                }
             }
             pc.status = 'free';
         } else if (action === 'reserve') {
@@ -248,37 +260,65 @@ exports.pcAction = async (req, res, next) => {
         } else if (action === 'resume') {
             const sess = await Session.findOne({ where: { ComputerId: id, status: 'paused', reserveTime: null } });
             if (sess) {
-                const pauseDur = new Date() - new Date(sess.pausedAt);
-                sess.startTime = new Date(new Date(sess.startTime).getTime() + pauseDur);
+                if (sess.pausedAt) {
+                    const pauseDur = new Date() - new Date(sess.pausedAt);
+                    sess.startTime = new Date(new Date(sess.startTime).getTime() + pauseDur);
+                }
                 sess.status = 'active';
                 sess.pausedAt = null;
                 await sess.save();
                 pc.status = 'busy';
             }
         } else if (action === 'cancel_reserve') {
-            const resSess = await Session.findOne({
-                where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] }, reserveTime: { [Op.ne]: null } },
-                order: [['id', 'DESC']]
-            });
-            if (resSess) {
-                resSess.status = 'completed';
-                resSess.endTime = new Date();
-                await resSess.save();
-            }
+            await Session.update(
+                { status: 'completed', endTime: new Date() },
+                { where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] }, reserveTime: { [Op.ne]: null } } }
+            );
             const hasOngoing = await Session.findOne({ where: { ComputerId: id, status: 'active', reserveTime: null } });
             if (!hasOngoing) pc.status = 'free';
+        } else if (action === 'vip') {
+            // VIP bo'lganda barcha ochiq sessiyalarni yopamiz
+            await Session.update(
+                { status: 'completed', endTime: new Date() },
+                { where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } } }
+            );
+            pc.status = 'vip';
         } else if (action === 'free') {
-            const sessionsToClose = await Session.findAll({ where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } } });
-            for (const s of sessionsToClose) {
-                s.status = 'completed';
-                s.endTime = new Date();
-                await s.save();
-            }
+            // Majburiy tozalash
+            await Session.update(
+                { status: 'completed', endTime: new Date() },
+                { where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } } }
+            );
             pc.status = 'free';
         }
+
         await pc.save();
-        res.json({ success: true, pc });
+
+        // 📢 REAL-TIME YANGILASH (Agar Socket.io ulangan bo'lsa)
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('pc-status-updated', { pcId: pc.id, clubId: pc.ClubId, status: pc.status });
+            io.emit('stats-updated', { clubId: pc.ClubId });
+        }
+
+        const actionMessages = {
+            start: 'Vaqt muvaffaqiyatli ochildi! ▶️',
+            stop: 'Vaqt to\'xtatildi va hisob-kitob qilindi! 🧾',
+            reserve: 'Bron muvaffaqiyatli amalga oshirildi! 📅',
+            cancel_reserve: 'Bron bekor qilindi! ❌',
+            pause: 'Vaqt vaqtincha to\'xtatildi (Pauza)! ⏸️',
+            resume: 'Vaqt qayta tiklandi! ▶️',
+            vip: 'VIP rejim yoqildi! 💎',
+            free: 'Kompyuter tozalandi! 🧹'
+        };
+
+        res.json({
+            success: true,
+            message: actionMessages[action] || 'Amal muvaffaqiyatli bajarildi!',
+            pc
+        });
     } catch (err) {
+        console.error("PC ACTION ERROR:", err);
         next(err);
     }
 };

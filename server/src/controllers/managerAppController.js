@@ -127,7 +127,9 @@ exports.getStats = async (req, res, next) => {
                 phone: latestSession.User?.phone || '',
                 pc: latestSession.Computer?.name,
                 time: latestSession.startTime
-            } : null
+            } : null,
+            revenue, flow, hours, topPCs,
+            pcStats: Object.values(pcStats)
         });
     } catch (err) {
         console.error("STATS ERROR:", err);

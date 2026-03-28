@@ -56,16 +56,6 @@ exports.getStats = async (req, res, next) => {
         const freePCs = totalPCs - busyPCs;
 
         const revenue = { day: 0, week: 0, month: 0, year: 0 };
-        allTransactions.forEach(t => {
-            const date = new Date(t.createdAt);
-            if (t.amount > 0) {
-                revenue.year += t.amount;
-                if (date >= mStart) revenue.month += t.amount;
-                if (date >= wStart) revenue.week += t.amount;
-                if (date >= dStart) revenue.day += t.amount;
-            }
-        });
-
         const flow = { day: 0, week: 0, month: 0, year: allSessions.length };
         const hours = { day: 0, week: 0, month: 0, year: 0 };
         const pcStats = {};
@@ -89,14 +79,39 @@ exports.getStats = async (req, res, next) => {
 
             const h = mins / 60;
             const sTime = new Date(s.startTime);
+
             hours.year += h;
-            if (sTime >= mStart) { hours.month += h; flow.month++; }
-            if (sTime >= wStart) { hours.week += h; flow.week++; }
-            if (sTime >= dStart) { hours.day += h; flow.day++; }
+            revenue.year += cost;
+
+            if (sTime >= mStart) {
+                hours.month += h; flow.month++;
+                revenue.month += cost;
+            }
+            if (sTime >= wStart) {
+                hours.week += h; flow.week++;
+                revenue.week += cost;
+            }
+            if (sTime >= dStart) {
+                hours.day += h; flow.day++;
+                revenue.day += cost;
+            }
 
             if (pcStats[s.ComputerId]) {
                 pcStats[s.ComputerId].hours += h;
                 pcStats[s.ComputerId].revenue += cost;
+            }
+        });
+
+        // Also add other completed transactions that are not necessarily PC session payments
+        allTransactions.forEach(t => {
+            if (t.type !== 'pc_payment') {
+                const date = new Date(t.createdAt);
+                if (t.amount > 0) {
+                    revenue.year += t.amount;
+                    if (date >= mStart) revenue.month += t.amount;
+                    if (date >= wStart) revenue.week += t.amount;
+                    if (date >= dStart) revenue.day += t.amount;
+                }
             }
         });
 

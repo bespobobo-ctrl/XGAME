@@ -47,6 +47,10 @@ const Session = sequelize.define('Session', {
     guestPhone: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    notifiedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
     }
 });
 

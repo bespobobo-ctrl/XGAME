@@ -77,8 +77,64 @@ async function runBillingCycle(io) {
 
         logger.info(`⏱️ Billing Cycle OK: ${activeSessions.length} sessions processed.`);
 
+        // 🧪 BRONLARNI TEKSHIRISH (10 daqiqa qolganda xabar berish)
+        await checkUpcomingReservations(io);
+
     } catch (err) {
         logger.error('❌ Global Billing Error:', err);
+    }
+}
+
+/**
+ * 📅 BRONLARNI TEKSHIRISH VA TELEGRAMDA XABAR BERISH
+ */
+async function checkUpcomingReservations(io) {
+    const { broadcastMessage } = require('../utils/bot');
+    const now = new Date();
+    const tenMinsLater = new Date(now.getTime() + 11 * 60000); // 11 daqiqa ichida
+
+    const reservations = await Session.findAll({
+        where: {
+            status: 'paused',
+            reserveTime: { [Op.between]: [now, tenMinsLater] },
+            notifiedAt: null // Faqat bir marta xabar berish
+        },
+        include: [
+            { model: Computer, include: [Room] },
+            { model: User }
+        ]
+    });
+
+    for (const res of reservations) {
+        const clubId = res.ClubId;
+        const pcName = res.Computer?.name || 'Noma\'lum PC';
+        const guestName = res.User?.username || res.guestName || 'Mehmon';
+        const guestPhone = res.User?.phone || res.guestPhone || 'Tel topilmadi';
+        const rTime = new Date(res.reserveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const managers = await User.findAll({ where: { ClubId: clubId, role: 'manager' } });
+        const managerTgIds = managers.map(m => m.telegramId).filter(id => id && !id.startsWith('MANAGER_'));
+
+        const msg = `📅 <b>BRON ESALATMASI!</b>\n\n` +
+            `🖥 <b>PC:</b> ${pcName}\n` +
+            `👤 <b>Mijoz:</b> ${guestName}\n` +
+            `📞 <b>Telefon:</b> ${guestPhone}\n` +
+            `⏰ <b>Vaqt:</b> ${rTime}\n\n` +
+            `<i>Mijozga telefon qilib kelishini takidlang!</i>`;
+
+        // Telegramga yuborish
+        if (managerTgIds.length > 0) {
+            await broadcastMessage(managerTgIds, msg);
+        }
+
+        // Dashboardga yuborish (Socket)
+        if (io) {
+            io.emit('upcoming-alert', { pcName, guestName, guestPhone, rTime });
+        }
+
+        res.notifiedAt = new Date();
+        await res.save();
+        logger.info(`🔔 Alert sent for reservation ${res.id} (${pcName})`);
     }
 }
 

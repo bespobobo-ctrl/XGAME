@@ -69,6 +69,7 @@ exports.getStats = async (req, res, next) => {
         const totalPCs = allComputers.length;
         const busyPCs = allComputers.filter(c => c.status === 'busy').length;
         const freePCs = allComputers.filter(c => c.status === 'free').length;
+        const reservedPCs = allComputers.filter(c => c.status === 'reserved').length;
 
         const pcStats = {};
         allComputers.forEach(pc => {
@@ -146,7 +147,7 @@ exports.getStats = async (req, res, next) => {
         const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
 
         res.json({
-            totalPCs, busyPCs, freePCs,
+            totalPCs, busyPCs, freePCs, reservedPCs,
             clubName: club?.name || 'GAME CLUB',
             upcomingReservations: upcomingReservations.map(r => ({
                 id: r.id,
@@ -414,6 +415,13 @@ async function handleFree(pc, id) {
     pc.status = 'free';
 }
 
+/**
+ * PC ni qo'lda band qilish (Lock)
+ */
+async function handleLock(pc) {
+    pc.status = 'busy';
+}
+
 // Action handlers map
 const actionHandlers = {
     start: handleStart,
@@ -424,6 +432,7 @@ const actionHandlers = {
     cancel_reserve: handleCancelReserve,
     vip: handleVip,
     free: handleFree,
+    lock: handleLock,
 };
 
 const actionMessages = {
@@ -434,7 +443,8 @@ const actionMessages = {
     pause: "Vaqt vaqtincha to'xtatildi (Pauza)! ⏸️",
     resume: 'Vaqt qayta tiklandi! ▶️',
     vip: 'VIP rejim yoqildi! 💎',
-    free: 'Kompyuter tozalandi! 🧹'
+    free: 'Kompyuter tozalandi! 🧹',
+    lock: 'Kompyuter band holatiga o\'tkazildi! 🔒'
 };
 
 /**

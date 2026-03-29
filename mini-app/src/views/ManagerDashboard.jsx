@@ -277,43 +277,78 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {activeTab === 'stats' && (
                     <motion.div key="stats" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ padding: '20px' }}>
 
-                        {/* 📋 ASOSIY STATISTIKA (Tepadagi 4 ta blok) */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                            <div style={{ background: '#111', padding: '15px', borderRadius: '20px', border: '1px solid #222' }}>
-                                <p style={{ margin: 0, fontSize: '10px', color: '#888' }}>KUNLIK DAROMAD</p>
-                                <h3 style={{ margin: '5px 0 0', fontSize: '18px', color: '#39ff14' }}>{stats?.revenue?.day?.toLocaleString() || 0} UZS</h3>
+                        {/* 📋 ASOSIY STATISTIKA (5 ta blok) */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>DAROMAD</p>
+                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#39ff14' }}>{stats?.revenue?.day?.toLocaleString()}</h3>
                             </div>
-                            <div style={{ background: '#111', padding: '15px', borderRadius: '20px', border: '1px solid #222' }}>
-                                <p style={{ margin: 0, fontSize: '10px', color: '#888' }}>JAMI KOMPYUTERLAR</p>
-                                <h3 style={{ margin: '5px 0 0', fontSize: '18px', color: '#fff' }}>{stats?.totalPCs || 0} ta</h3>
+                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>JAMI</p>
+                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#fff' }}>{stats?.totalPCs} ta</h3>
                             </div>
-                            <div style={{ background: '#111', padding: '15px', borderRadius: '20px', border: '1px solid #222' }}>
-                                <p style={{ margin: 0, fontSize: '10px', color: '#888' }}>BAND KOMPYUTERLAR</p>
-                                <h3 style={{ margin: '5px 0 0', fontSize: '18px', color: '#ff4444' }}>{stats?.busyPCs || 0} ta</h3>
+                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>BAND</p>
+                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#ff4444' }}>{stats?.busyPCs} ta</h3>
                             </div>
-                            <div style={{ background: '#111', padding: '15px', borderRadius: '20px', border: '1px solid #222' }}>
-                                <p style={{ margin: 0, fontSize: '10px', color: '#888' }}>BO'SH KOMPYUTERLAR</p>
-                                <h3 style={{ margin: '5px 0 0', fontSize: '18px', color: '#7000ff' }}>{stats?.freePCs || 0} ta</h3>
+                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #ffaa0044', textAlign: 'center' }}>
+                                <p style={{ margin: 0, fontSize: '9px', color: '#ffaa00' }}>BRON</p>
+                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#ffaa00' }}>{stats?.reservedPCs || 0} ta</h3>
+                            </div>
+                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>BO'SH</p>
+                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#7000ff' }}>{stats?.freePCs} ta</h3>
                             </div>
                         </div>
 
                         {/* 📅 KUTILAYOTGAN BRONLAR */}
                         <div style={{ background: '#111', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #ffaa0033' }}>
-                            <h4 style={{ margin: '0 0 15px', fontSize: '12px', color: '#ffaa00' }}>📅 KUTILAYOTGAN BRONLAR</h4>
+                            <h4 style={{ margin: '0 0 15px', fontSize: '10px', color: '#ffaa00', letterSpacing: '1px' }}>📅 REZERV QILINGANLAR ({stats?.reservedPCs || 0})</h4>
                             {stats?.upcomingReservations?.length > 0 ? (
                                 stats.upcomingReservations.map((res, i) => (
                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#0a0a0a', borderRadius: '15px', marginBottom: '8px', border: '1px solid #222' }}>
                                         <div>
                                             <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>[{res.room}] {res.pc}</div>
-                                            <div style={{ fontSize: '10px', color: '#888' }}>MIJOZ: {res.user} {res.phone ? `(${res.phone})` : ''}</div>
+                                            <div style={{ fontSize: '10px', color: '#888' }}>MIJOZ: {res.user}</div>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '14px', color: '#ffaa00', fontWeight: 'bold' }}>{new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                            <div style={{ fontSize: '10px', color: '#666' }}>{new Date(res.time).toLocaleDateString()}</div>
+                                            <div style={{ fontSize: '13px', color: '#ffaa00', fontWeight: 'bold' }}>{new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                         </div>
                                     </div>
                                 ))
                             ) : <p style={{ margin: 0, fontSize: '12px', color: '#444', textAlign: 'center' }}>Bronlar yo'q</p>}
+                        </div>
+
+                        {/* 🔴 BAND KO'RINKI HLORDA */}
+                        <div style={{ background: '#111', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #ff444433' }}>
+                            <h4 style={{ margin: '0 0 15px', fontSize: '10px', color: '#ff4444', letterSpacing: '1px' }}>🔴 HOZIR BAND PC-LAR ({stats?.busyPCs || 0})</h4>
+                            {rooms.flatMap(r => r.Computers).filter(c => c.status === 'busy').length > 0 ? (
+                                rooms.flatMap(r => r.Computers).filter(c => c.status === 'busy').map((pc, i) => {
+                                    const room = rooms.find(rm => rm.id === pc.RoomId);
+                                    return (
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#0a0a0a', borderRadius: '15px', marginBottom: '8px', border: '1px solid #222' }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>[{room?.name}] {pc.name}</div>
+                                            <div style={{ fontSize: '12px', color: '#ff4444' }}>O'YINDA 🎮</div>
+                                        </div>
+                                    );
+                                })
+                            ) : <p style={{ margin: 0, fontSize: '12px', color: '#444', textAlign: 'center' }}>Bandlar yo'q</p>}
+                        </div>
+
+                        {/* 🏆 PC REYTINGI */}
+                        <div style={{ background: '#111', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #222' }}>
+                            <h4 style={{ margin: '0 0 10px', fontSize: '10px', color: '#888' }}>📊 PC REYTINGI (BUGUN)</h4>
+                            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                {stats?.pcStats?.map((pc, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #222' }}>
+                                        <div style={{ fontSize: '13px' }}>{pc.name}</div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <b style={{ fontSize: '12px', color: '#39ff14' }}>{pc.hours.toFixed(1)} s</b>
+                                            <div style={{ fontSize: '10px', color: '#888' }}>{pc.revenue.toLocaleString()} u</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* 👤 OXIRGI TASHRIF */}
@@ -697,30 +732,42 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                 </button>
                                             )}
 
-                                            <button
-                                                onClick={() => handleAction('free')} disabled={actionLoading}
-                                                style={{ background: '#1a1a24', color: '#aaa', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', gridColumn: 'span 2', cursor: 'pointer', transition: '0.3s', opacity: actionLoading ? 0.6 : 1 }}
-                                            >
-                                                <Brush size={18} />
-                                                <span>KOMPYUTERNI TOZALASH (FREE)</span>
-                                            </button>
+                                            {(selectedPC.status === 'free' || selectedPC.status === 'vip') && (
+                                                <button
+                                                    onClick={() => handleAction('lock')} disabled={actionLoading}
+                                                    style={{ background: '#222', color: '#ff4444', padding: '20px', borderRadius: '24px', border: '1px solid #444', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                >
+                                                    <Lock size={28} strokeWidth={2} />
+                                                    <span>BAND QILISH</span>
+                                                </button>
+                                            )}
+
+                                            {selectedPC.status === 'busy' && (
+                                                <button
+                                                    onClick={() => handleAction('free')} disabled={actionLoading}
+                                                    style={{ background: '#222', color: '#39ff14', padding: '20px', borderRadius: '24px', border: '1px solid #444', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1, gridColumn: 'span 2' }}
+                                                >
+                                                    <Monitor size={28} strokeWidth={1} />
+                                                    <span>KOMPYUTERNI TOZALASH (FREE)</span>
+                                                </button>
+                                            )}
                                         </div>
                                     ) : (
-                                        <div style={{ background: '#1a1a24', padding: '25px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <h3 style={{ color: '#fff', margin: '0 0 15px', fontSize: '16px' }}>Bron qilish:</h3>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '25px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <h3 style={{ margin: '0 0 20px', color: '#fff', fontSize: '18px', textAlign: 'center' }}>Bron qilish:</h3>
 
                                             <div style={{ marginBottom: '15px' }}>
                                                 <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>MIJOZ ISMI:</label>
-                                                <input value={reserveNameInput} onChange={e => setReserveNameInput(e.target.value)} placeholder="Masalan: Azizbek..." style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #333', color: '#fff', borderRadius: '12px', outline: 'none' }} />
+                                                <input placeholder="Masalan: Azizbek..." value={reserveNameInput} onChange={e => setReserveNameInput(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff' }} />
                                             </div>
 
                                             <div style={{ marginBottom: '15px' }}>
-                                                <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>TEL RAQAMI:</label>
-                                                <input value={reservePhoneInput} onChange={e => setReservePhoneInput(e.target.value)} placeholder="+998 90..." style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #333', color: '#fff', borderRadius: '12px', outline: 'none' }} />
+                                                <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>TEL RAQAMI (IXTIYORIY):</label>
+                                                <input placeholder="+998 90..." value={reservePhoneInput} onChange={e => setReservePhoneInput(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff' }} />
                                             </div>
 
                                             <div style={{ marginBottom: '20px' }}>
-                                                <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>BRON VAQTI:</label>
+                                                <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>BRON VAQTI (Majburiy):</label>
                                                 <input type="time" value={reserveTimeInput} onChange={e => setReserveTimeInput(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff', fontSize: '24px', textAlign: 'center', fontWeight: 'bold' }} />
                                             </div>
 
@@ -729,7 +776,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                 <button
                                                     onClick={() => handleAction('reserve', null, reserveTimeInput, reserveNameInput, reservePhoneInput)}
                                                     disabled={actionLoading || !reserveTimeInput || !reserveNameInput}
-                                                    style={{ flex: 1, padding: '15px', background: 'linear-gradient(45deg, #f6d365, #fda085)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 'bold', opacity: (!reserveTimeInput || !reserveNameInput || actionLoading) ? 0.5 : 1 }}
+                                                    style={{ flex: 1, padding: '15px', background: 'linear-gradient(45deg, #f6d365, #fda085)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 'bold', opacity: (!reserveTimeInput || !reserveNameInput || actionLoading) ? 0.3 : 1 }}
                                                 >
                                                     SAQLASH
                                                 </button>

@@ -205,7 +205,13 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 key={pc.id}
                 whileHover={{ scale: 1.05, boxShadow: `0 0 20px ${color}44` }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedPC(pc)}
+                onClick={() => {
+                    setSelectedPC(pc);
+                    setReserveNameInput('');
+                    setReservePhoneInput('');
+                    setReserveTimeInput('');
+                    setShowReservePicker(false);
+                }}
                 style={{
                     background: `linear-gradient(145deg, #111, #050505)`,
                     border: `1px solid ${(isActive || pc.status === 'reserved') ? color + '66' : '#222'}`,

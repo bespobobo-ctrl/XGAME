@@ -59,13 +59,19 @@ async function initializeDatabase() {
         const config = require('../config/index');
 
         if (config.NODE_ENV === 'production') {
-            // Production'da faqat authenticate — migration'lar bilan boshqarish
             await sequelize.authenticate();
             logger.info('✅ Database ulanishi muvaffaqiyatli (Production mode)!');
         } else {
-            // Development'da alter mode
-            await sequelize.sync({ alter: true });
-            logger.info('✅ Database sinxronizatsiya qilindi (Development mode)!');
+            // SQLite alter mode'dagi FK hatolarini oldini olish uchun qo'lda qo'shamiz
+            await sequelize.authenticate();
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedAt` DATETIME;");
+                logger.info('✅ notifiedAt ustuni Sessions jadvaliga qo\'shildi.');
+            } catch (e) {
+                // Agar ustun allaqachon bo'lsa xato beradi (ignore)
+            }
+            await sequelize.sync({ alter: false });
+            logger.info('✅ Database sinxronizatsiya qilindi (Safe mode)!');
         }
 
         const clubCount = await Club.count();

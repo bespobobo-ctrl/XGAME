@@ -306,22 +306,25 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                         {(() => {
                             let liveTotalDay = stats?.revenue?.day || 0;
+                            let isTicking = false;
                             stats?.pcStats?.forEach(p => {
                                 if (p.activeSessionStart) {
-                                    const room = rooms.find(r => r.id === p.roomId);
+                                    isTicking = true;
+                                    const room = rooms.find(r => String(r.id) === String(p.roomId));
                                     const now = new Date(nowTime);
-                                    const fetch = new Date(stats?.fetchTime || Date.now());
-                                    const deltaMin = Math.max(0, (now - fetch) / 60000);
-                                    const pph = room?.pricePerHour || 15000;
-                                    liveTotalDay += Math.round((deltaMin / 60) * pph);
+                                    const fetch = new Date(stats?.fetchTime || nowTime);
+                                    const deltaMs = Math.max(0, now.getTime() - fetch.getTime());
+                                    const pph = room?.pricePerHour || p.pricePerHour || 15000;
+                                    liveTotalDay += (deltaMs / 3600000) * pph;
                                 }
                             });
 
                             return (
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '20px' }}>
-                                    <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                    <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #333', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                                        {isTicking && <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 2 }} style={{ position: 'absolute', top: '5px', right: '5px', width: '4px', height: '4px', background: '#39ff14', borderRadius: '50%' }} />}
                                         <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>DAROMAD</p>
-                                        <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#39ff14' }}>{Math.round(liveTotalDay).toLocaleString()}</h3>
+                                        <h3 style={{ margin: '3px 0 0', fontSize: '15px', color: '#39ff14', fontWeight: '900' }}>{Math.round(liveTotalDay).toLocaleString()}</h3>
                                     </div>
                                     <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
                                         <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>JAMI</p>
@@ -493,16 +496,16 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             let roomRevenue = 0;
                             let roomHours = 0;
                             stats?.pcStats?.forEach(p => {
-                                if (p.roomId === room.id) {
+                                if (String(p.roomId) === String(room.id)) {
                                     let curR = p.revenue;
                                     let curH = p.hours;
                                     if (p.activeSessionStart) {
                                         const now = new Date(nowTime);
-                                        const fetch = new Date(stats?.fetchTime || Date.now());
-                                        const deltaMin = Math.max(0, (now - fetch) / 60000);
-                                        const pph = room.pricePerHour || 15000;
-                                        curR += (deltaMin / 60) * pph;
-                                        curH += (deltaMin / 60);
+                                        const fetch = new Date(stats?.fetchTime || nowTime);
+                                        const deltaMs = Math.max(0, now.getTime() - fetch.getTime());
+                                        const pph = room.pricePerHour || p.pricePerHour || 15000;
+                                        curR += (deltaMs / 3600000) * pph;
+                                        curH += (deltaMs / 3600000);
                                     }
                                     roomRevenue += curR;
                                     roomHours += curH;

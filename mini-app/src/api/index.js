@@ -1,4 +1,4 @@
-const API_URL = 'https://fast-teeth-brake.loca.lt';
+const API_URL = 'https://brick-emacs-simultaneously-klein.trycloudflare.com';
 
 export const callAPI = async (endpoint, options = {}) => {
     const token = localStorage.getItem('x-token');

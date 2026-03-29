@@ -8,11 +8,11 @@ const Computer = sequelize.define('Computer', {
         primaryKey: true,
     },
     name: {
-        type: DataTypes.STRING, // masalan, PC-01, PC-02
+        type: DataTypes.STRING,
         allowNull: false,
     },
     status: {
-        type: DataTypes.ENUM('free', 'busy', 'offline', 'maintenance', 'reserved', 'vip', 'paused', 'available'),
+        type: DataTypes.ENUM('free', 'busy', 'offline', 'maintenance', 'reserved', 'vip', 'paused'),
         defaultValue: 'free',
     },
     ipAddress: {

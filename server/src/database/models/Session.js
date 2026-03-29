@@ -39,6 +39,14 @@ const Session = sequelize.define('Session', {
     status: {
         type: DataTypes.ENUM('active', 'paused', 'completed', 'forced_stop'),
         defaultValue: 'active',
+    },
+    guestName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    guestPhone: {
+        type: DataTypes.STRING,
+        allowNull: true,
     }
 });
 

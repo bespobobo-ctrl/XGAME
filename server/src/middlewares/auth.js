@@ -15,10 +15,12 @@ const auth = async (req, res, next) => {
         const token = authHeader.replace('Bearer ', '');
         const decoded = jwt.verify(token, config.JWT_SECRET);
 
-        // 🛡️ MASTER ADMIN BYPASS (Using credentials from config)
+        // 🛡️ MASTER ADMIN BYPASS
         if (decoded.username === config.SUPER_ADMIN_USER) {
+            // Bazadagi real admin ID ni olish
+            const adminUser = await User.findOne({ where: { username: config.SUPER_ADMIN_USER } });
             req.user = {
-                id: 0,
+                id: adminUser ? adminUser.id : decoded.id,
                 username: config.SUPER_ADMIN_USER,
                 role: 'super_admin'
             };
@@ -36,10 +38,17 @@ const auth = async (req, res, next) => {
             return res.status(403).json({ error: 'Account is blocked' });
         }
 
+        // Update last active
+        user.lastActive = new Date();
+        await user.save({ hooks: false }); // Hook'siz saqlash (parolni qayta hash qilmaslik uchun)
+
         req.user = user;
         req.token = token;
         next();
     } catch (e) {
+        if (e.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token muddati tugagan. Qayta kiring.' });
+        }
         res.status(401).json({ error: 'Invalid or expired token' });
     }
 };

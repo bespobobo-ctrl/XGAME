@@ -1,8 +1,17 @@
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
+// Validate required environment variables
+const requiredEnvVars = ['JWT_SECRET'];
+for (const varName of requiredEnvVars) {
+    if (!process.env[varName]) {
+        console.error(`❌ CRITICAL: ${varName} environment variable is required but not set!`);
+        process.exit(1);
+    }
+}
 
 module.exports = {
     PORT: process.env.SERVER_PORT || 3001,
-    JWT_SECRET: process.env.JWT_SECRET || 'gamezone_super_secret_v2',
+    JWT_SECRET: process.env.JWT_SECRET,
     DB_PATH: process.env.DB_PATH || './data/gamezone_v2.db',
     UPLOAD_DIR: 'uploads',
     SALT_ROUNDS: 10,
@@ -18,6 +27,6 @@ module.exports = {
     CURRENCY: process.env.CURRENCY || 'UZS',
 
     // Super Admin
-    SUPER_ADMIN_USER: process.env.SUPER_ADMIN_USER || '123',
-    SUPER_ADMIN_PASS: process.env.SUPER_ADMIN_PASS || '123'
+    SUPER_ADMIN_USER: process.env.SUPER_ADMIN_USER || 'admin',
+    SUPER_ADMIN_PASS: process.env.SUPER_ADMIN_PASS || 'changeme_on_first_login'
 };

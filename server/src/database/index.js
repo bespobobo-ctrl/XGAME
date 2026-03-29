@@ -6,21 +6,38 @@ const Room = require('./models/Room');
 const Session = require('./models/Session');
 const Transaction = require('./models/Transaction');
 const AuditLog = require('./models/AuditLog');
+const Broadcast = require('./models/Broadcast');
 const logger = require('../utils/logger');
 
-// Associations
+// ═══════════════════════════════════════════════
+// 🔗 ASSOCIATIONS (Model Relationships)
+// ═══════════════════════════════════════════════
+
+// Club → Users
 Club.hasMany(User);
 User.belongsTo(Club);
+
+// Club → Rooms
 Club.hasMany(Room);
 Room.belongsTo(Club);
+
+// Room → Computers
 Room.hasMany(Computer);
 Computer.belongsTo(Room);
+
+// Club → Computers
 Club.hasMany(Computer);
 Computer.belongsTo(Club);
+
+// Club → Sessions
 Club.hasMany(Session);
 Session.belongsTo(Club);
+
+// User → Sessions
 User.hasMany(Session);
 Session.belongsTo(User);
+
+// Computer → Sessions
 Computer.hasMany(Session);
 Session.belongsTo(Computer);
 
@@ -34,18 +51,29 @@ Transaction.belongsTo(Club);
 User.hasMany(AuditLog, { foreignKey: 'adminId' });
 AuditLog.belongsTo(User, { foreignKey: 'adminId' });
 
+// ═══════════════════════════════════════════════
+// 🚀 DATABASE INITIALIZATION
+// ═══════════════════════════════════════════════
 async function initializeDatabase() {
     try {
-        await sequelize.sync({ alter: true });
-        logger.info('✅ Database sinxronizatsiya qilindi!');
+        const config = require('../config/index');
 
-        // ℹ️ Klublar faqat Super Admin tomonidan qo'shiladi.
-        // Avtomatik club yaratish o'chirildi.
+        if (config.NODE_ENV === 'production') {
+            // Production'da faqat authenticate — migration'lar bilan boshqarish
+            await sequelize.authenticate();
+            logger.info('✅ Database ulanishi muvaffaqiyatli (Production mode)!');
+        } else {
+            // Development'da alter mode
+            await sequelize.sync({ alter: true });
+            logger.info('✅ Database sinxronizatsiya qilindi (Development mode)!');
+        }
+
         const clubCount = await Club.count();
-        logger.info(`ℹ️ Jami ${clubCount} ta klub mavjud. Yangi klub qo'shish uchun Super Admin panelidan foydalaning.`);
+        logger.info(`ℹ️ Jami ${clubCount} ta klub mavjud.`);
 
     } catch (error) {
         logger.error('❌ Database error:', error);
+        throw error; // Serverni to'xtatish uchun
     }
 }
 
@@ -58,5 +86,6 @@ module.exports = {
     Session,
     Transaction,
     AuditLog,
+    Broadcast,
     initializeDatabase,
 };

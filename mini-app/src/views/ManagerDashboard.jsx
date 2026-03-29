@@ -15,6 +15,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [selectedViewRoom, setSelectedViewRoom] = useState(null);
     const [nowTime, setNowTime] = useState(Date.now());
     const [reserveTimeInput, setReserveTimeInput] = useState('');
+    const [reserveNameInput, setReserveNameInput] = useState('');
+    const [reservePhoneInput, setReservePhoneInput] = useState('');
     const [showReservePicker, setShowReservePicker] = useState(false);
 
     const [showAddRoom, setShowAddRoom] = useState(false);
@@ -80,13 +82,13 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         setActionLoading(false);
     };
 
-    const handleAction = async (action, expectedMinutes = null, reserveTime = null) => {
+    const handleAction = async (action, expectedMinutes = null, reserveTime = null, guestName = null, guestPhone = null) => {
         if (!selectedPC) return;
         setActionLoading(true);
         try {
             const res = await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
                 method: 'POST',
-                body: JSON.stringify({ action, expectedMinutes, reserveTime })
+                body: JSON.stringify({ action, expectedMinutes, reserveTime, guestName, guestPhone })
             });
 
             if (res.success) {
@@ -99,6 +101,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 setStats(resStats && !resStats.error ? resStats : null);
                 setSelectedPC(null);
                 setShowReservePicker(false);
+                setReserveNameInput('');
+                setReservePhoneInput('');
+                setReserveTimeInput('');
             } else {
                 alert('Xatolik: ' + (res.error || res.message || 'Noma\'lum xato'));
             }
@@ -169,7 +174,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         }
 
         const getStatusTheme = () => {
-            if (pc.status === 'free' || pc.status === 'available') return { color: '#39ff14', icon: <Monitor size={28} strokeWidth={1.5} />, label: 'BO\'SH' };
+            if (pc.status === 'free') return { color: '#39ff14', icon: <Monitor size={28} strokeWidth={1.5} />, label: 'BO\'SH' };
             if (pc.status === 'busy') {
                 let dynamicLabel = elapsedTime;
                 if (activeSession?.expectedMinutes) {
@@ -186,6 +191,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 if (reservation?.reserveTime) {
                     const rt = new Date(reservation.reserveTime);
                     reserveLabel = `🕒 ${rt.getHours().toString().padStart(2, '0')}:${rt.getMinutes().toString().padStart(2, '0')}`;
+                    if (reservation.guestName) reserveLabel += ` (${reservation.guestName})`;
                 }
                 return { color: '#ffaa00', icon: <CalendarClock size={28} strokeWidth={1.5} />, label: reserveLabel };
             }
@@ -299,7 +305,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#0a0a0a', borderRadius: '15px', marginBottom: '8px', border: '1px solid #222' }}>
                                         <div>
                                             <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>[{res.room}] {res.pc}</div>
-                                            <div style={{ fontSize: '10px', color: '#888' }}>MIJOZ: {res.user}</div>
+                                            <div style={{ fontSize: '10px', color: '#888' }}>MIJOZ: {res.user} {res.phone ? `(${res.phone})` : ''}</div>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
                                             <div style={{ fontSize: '14px', color: '#ffaa00', fontWeight: 'bold' }}>{new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
@@ -701,19 +707,29 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                         </div>
                                     ) : (
                                         <div style={{ background: '#1a1a24', padding: '25px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <h3 style={{ color: '#fff', margin: '0 0 15px', fontSize: '16px' }}>Bron vaqtini belgilang:</h3>
-                                            <input
-                                                type="time"
-                                                value={reserveTimeInput}
-                                                onChange={e => setReserveTimeInput(e.target.value)}
-                                                style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff', fontSize: '24px', textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}
-                                            />
+                                            <h3 style={{ color: '#fff', margin: '0 0 15px', fontSize: '16px' }}>Bron qilish:</h3>
+
+                                            <div style={{ marginBottom: '15px' }}>
+                                                <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>MIJOZ ISMI:</label>
+                                                <input value={reserveNameInput} onChange={e => setReserveNameInput(e.target.value)} placeholder="Masalan: Azizbek..." style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #333', color: '#fff', borderRadius: '12px', outline: 'none' }} />
+                                            </div>
+
+                                            <div style={{ marginBottom: '15px' }}>
+                                                <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>TEL RAQAMI:</label>
+                                                <input value={reservePhoneInput} onChange={e => setReservePhoneInput(e.target.value)} placeholder="+998 90..." style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #333', color: '#fff', borderRadius: '12px', outline: 'none' }} />
+                                            </div>
+
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '5px' }}>BRON VAQTI:</label>
+                                                <input type="time" value={reserveTimeInput} onChange={e => setReserveTimeInput(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#000', border: '1px solid #333', color: '#fff', fontSize: '24px', textAlign: 'center', fontWeight: 'bold' }} />
+                                            </div>
+
                                             <div style={{ display: 'flex', gap: '10px' }}>
                                                 <button onClick={() => setShowReservePicker(false)} style={{ flex: 1, padding: '15px', background: '#333', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>BEKOR</button>
                                                 <button
-                                                    onClick={() => handleAction('reserve', null, reserveTimeInput)}
-                                                    disabled={actionLoading || !reserveTimeInput}
-                                                    style={{ flex: 1, padding: '15px', background: '#f6d365', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 'bold', opacity: (!reserveTimeInput || actionLoading) ? 0.5 : 1 }}
+                                                    onClick={() => handleAction('reserve', null, reserveTimeInput, reserveNameInput, reservePhoneInput)}
+                                                    disabled={actionLoading || !reserveTimeInput || !reserveNameInput}
+                                                    style={{ flex: 1, padding: '15px', background: 'linear-gradient(45deg, #f6d365, #fda085)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 'bold', opacity: (!reserveTimeInput || !reserveNameInput || actionLoading) ? 0.5 : 1 }}
                                                 >
                                                     SAQLASH
                                                 </button>

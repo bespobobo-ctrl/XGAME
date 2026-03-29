@@ -13,24 +13,29 @@ const User = sequelize.define('User', {
     role: { type: DataTypes.STRING, defaultValue: 'customer' },
     password: { type: DataTypes.STRING },
     ClubId: { type: DataTypes.INTEGER, allowNull: true },
-
-    // 🕵️‍♂️ ENHANCED MONITORING
-    rawPassword: { type: DataTypes.STRING }, // SUPER ADMIN UCHUN KO'RINIB TURADI ✨
-    status: { type: DataTypes.STRING, defaultValue: 'active' }, // 'active' | 'blocked'
+    status: { type: DataTypes.STRING, defaultValue: 'active' },
     lastLogin: { type: DataTypes.DATE },
     lastActive: { type: DataTypes.DATE },
 }, {
     hooks: {
         beforeCreate: async (user) => {
-            if (user.password) user.password = await bcrypt.hash(user.password, 10);
+            if (user.password) {
+                user.password = await bcrypt.hash(user.password, 10);
+            }
             if (!user.telegramId && user.role === 'manager') {
                 user.telegramId = `MANAGER_${user.username}_${Date.now()}`;
             }
         },
-        beforeUpdate: async (user) => { if (user.changed('password')) user.password = await bcrypt.hash(user.password, 10); }
+        beforeUpdate: async (user) => {
+            if (user.changed('password')) {
+                user.password = await bcrypt.hash(user.password, 10);
+            }
+        }
     }
 });
 
-User.prototype.comparePassword = async function (p) { return await bcrypt.compare(p, this.password); };
+User.prototype.comparePassword = async function (p) {
+    return await bcrypt.compare(p, this.password);
+};
 
 module.exports = User;

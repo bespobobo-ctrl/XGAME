@@ -1,7 +1,7 @@
 const { Club, User, Session, Transaction } = require('../database');
 const config = require('../config/index');
 const { Op } = require('sequelize');
-const { startOfDay } = require('date-fns');
+const os = require('os');
 
 exports.getDashboardStats = async (req, res, next) => {
     try {
@@ -26,13 +26,19 @@ exports.getDashboardStats = async (req, res, next) => {
             })
         ]);
 
+        // Real server load
+        const cpuLoad = os.loadavg()[0];
+        const totalMem = os.totalmem();
+        const freeMem = os.freemem();
+        const memUsage = Math.round(((totalMem - freeMem) / totalMem) * 100);
+
         res.json({
             totalClubs,
             totalManagers,
             activeSessions,
             todayRevenue: todayRevenue || 0,
-            systemHealth: `v${config.API_STABILITY_VERSION || '1.0.1'} (Stable)`,
-            serverLoad: 'Normal (12%)',
+            systemHealth: `v${config.API_STABILITY_VERSION || '2.5'} (Stable)`,
+            serverLoad: `CPU: ${cpuLoad.toFixed(1)} | RAM: ${memUsage}%`,
             clubsHistory
         });
     } catch (err) {

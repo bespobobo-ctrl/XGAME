@@ -10,17 +10,22 @@ const app = express();
 /**
  * 🛠️ MIDDLEWARES
  */
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = config.NODE_ENV === 'production'
+    ? [process.env.MINI_APP_URL || 'https://xgame-eta.vercel.app']
+    : ['*'];
+
+app.use(cors({
+    origin: config.NODE_ENV === 'production' ? allowedOrigins : '*',
+    credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 /**
  * 🖼️ STATIC FILES
  */
-// Uploads service
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Mini App static files (Vite build)
 const miniAppPath = path.join(__dirname, '../../mini-app/dist');
 app.use(express.static(miniAppPath));
 
@@ -41,7 +46,7 @@ app.use('/api', apiRoutes);
  * 📱 SPA CATCH-ALL
  * Redirects all non-api routes to the frontend SPA.
  */
-app.get('*', (req, res) => {
+app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     res.sendFile(path.join(miniAppPath, 'index.html'));
 });

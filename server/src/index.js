@@ -9,15 +9,24 @@ const User = require('./database/models/User');
 
 const server = http.createServer(app);
 
-// 🔌 WEBSOCKETS (Centralized Management)
-const io = new Server(server, { cors: { origin: '*' } });
-app.set('io', io); // Makes IO accessible in route controllers via req.app.get('io')
+// 🔌 WEBSOCKETS
+const allowedOrigins = config.NODE_ENV === 'production'
+    ? [process.env.MINI_APP_URL || 'https://xgame-eta.vercel.app']
+    : ['*'];
+
+const io = new Server(server, {
+    cors: {
+        origin: config.NODE_ENV === 'production' ? allowedOrigins : '*',
+        credentials: true
+    }
+});
+app.set('io', io);
 
 async function startServer() {
     try {
         console.log(`\n============== INITIALIZING GAMEZONE SERVER ==============`);
 
-        // 1. Link Database
+        // 1. Database
         await initializeDatabase();
 
         // 2. Ensure Super Admin exists
@@ -32,10 +41,10 @@ async function startServer() {
             console.log(`🛡️  Master Admin created: ${config.SUPER_ADMIN_USER} / ****`);
         }
 
-        // 3. Connect WebSockets
+        // 3. WebSockets
         setupWebSockets(io);
 
-        // 4. Start Internal Services (Billing, etc.)
+        // 4. Billing Service
         startBillingService(io);
 
         // 5. Start HTTP Server
@@ -43,6 +52,7 @@ async function startServer() {
         server.listen(PORT, () => {
             console.log(`🔥 Server running at: http://localhost:${PORT}`);
             console.log(`📱 Frontend active: http://localhost:${PORT}`);
+            console.log(`🌍 Environment: ${config.NODE_ENV}`);
             console.log(`==========================================================\n`);
         });
 
@@ -51,5 +61,18 @@ async function startServer() {
         process.exit(1);
     }
 }
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Shutting down gracefully...');
+    server.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+    });
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 startServer();

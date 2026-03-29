@@ -1,58 +1,81 @@
-const { User, Computer, Session } = require('../database/index');
+const { User, Computer, Session, Room } = require('../database/index');
+const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 const logger = require('../utils/logger');
 
 /**
- * ⏰ BILLING SERVICE (SENIOR OPTIMIZED)
- * Ushbu servis har daqiqa bazadan faol seanslarni olib,
- * foydalanuvchi balansini nazorat qiladi va avtomatik qulflaydi.
+ * ⏰ BILLING SERVICE
+ * Har daqiqa faol seanslarni tekshiradi va foydalanuvchi balansini nazorat qiladi.
  */
 async function runBillingCycle(io) {
     try {
         const activeSessions = await Session.findAll({
             where: { status: 'active' },
-            include: [User, Computer]
+            include: [
+                User,
+                { model: Computer, include: [Room] }
+            ]
         });
 
         if (activeSessions.length === 0) return;
 
-        // 🚀 Parallel Processing for high performance
-        await Promise.all(activeSessions.map(async (session) => {
+        // Sessiyalarni ketma-ket qayta ishlash (race condition oldini olish)
+        for (const session of activeSessions) {
+            const t = await sequelize.transaction();
             try {
                 const { User: user, Computer: computer } = session;
-                if (!user || !computer) return;
+                if (!computer) {
+                    await t.rollback();
+                    continue;
+                }
 
-                const pricePerMinute = Math.ceil(computer.pricePerHour / 60);
+                // Narxni Room dan olish
+                const room = computer.Room;
+                const pricePerHour = room ? room.pricePerHour : 20000;
+                const pricePerMinute = Math.ceil(pricePerHour / 60);
 
-                // Start Transactional logic (Calculations)
-                user.balance = Math.max(0, user.balance - pricePerMinute);
                 session.totalMinutes += 1;
                 session.totalCost += pricePerMinute;
 
-                // 🚨 AUTO-LOCK: Puli tugagan bo'lsa
-                if (user.balance <= 0) {
-                    session.status = 'completed';
-                    session.endTime = new Date();
-                    computer.status = 'locked';
+                // Agar User ulangan bo'lsa (registered player), balansini kamaytirish
+                if (user && user.balance !== undefined) {
+                    // User ni fresh olish (race condition oldini olish)
+                    const freshUser = await User.findByPk(user.id, { transaction: t, lock: true });
+                    if (freshUser) {
+                        freshUser.balance = Math.max(0, freshUser.balance - pricePerMinute);
 
-                    if (io) {
-                        io.to(computer.name).emit('lock');
-                        logger.info(`🚨 LOCK: ${computer.name} (User: ${user.username}) - Balance exhausted.`);
+                        // 🚨 AUTO-LOCK: Puli tugagan bo'lsa
+                        if (freshUser.balance <= 0) {
+                            session.status = 'completed';
+                            session.endTime = new Date();
+                            computer.status = 'free';
+
+                            if (io) {
+                                io.to(computer.name).emit('lock');
+                                io.emit('pc-status-updated', {
+                                    pcId: computer.id,
+                                    clubId: computer.ClubId,
+                                    status: 'free'
+                                });
+                                logger.info(`🚨 LOCK: ${computer.name} (User: ${freshUser.username}) - Balance exhausted.`);
+                            }
+                        }
+
+                        await freshUser.save({ transaction: t });
                     }
                 }
 
-                // Batch save all changes at once (Atomic operation per user)
-                await Promise.all([
-                    user.save(),
-                    session.save(),
-                    computer.save()
-                ]);
+                await session.save({ transaction: t });
+                await computer.save({ transaction: t });
+                await t.commit();
 
             } catch (err) {
+                await t.rollback();
                 logger.error(`❌ Session billing error (ID:${session.id}):`, err);
             }
-        }));
+        }
 
-        logger.info(`⏱️ Billing Cycle OK: ${activeSessions.length} sessions updated.`);
+        logger.info(`⏱️ Billing Cycle OK: ${activeSessions.length} sessions processed.`);
 
     } catch (err) {
         logger.error('❌ Global Billing Error:', err);
@@ -63,7 +86,6 @@ async function runBillingCycle(io) {
  * 🚀 START SERVICE
  */
 function startBillingService(io) {
-    // 60000ms = 1 Minute
     setInterval(() => runBillingCycle(io), 60000);
     console.log('⏰ Professional Billing Service: ACTIVE');
 }

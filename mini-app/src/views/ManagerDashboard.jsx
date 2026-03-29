@@ -304,29 +304,44 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             </div>
                         )}
 
-                        {/* 📋 ASOSIY STATISTIKA (5 ta blok) */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '20px' }}>
-                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>DAROMAD</p>
-                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#39ff14' }}>{stats?.revenue?.day?.toLocaleString()}</h3>
-                            </div>
-                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>JAMI</p>
-                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#fff' }}>{stats?.totalPCs} ta</h3>
-                            </div>
-                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>BAND</p>
-                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#ff4444' }}>{stats?.busyPCs} ta</h3>
-                            </div>
-                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #ffaa0044', textAlign: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '9px', color: '#ffaa00' }}>BRON</p>
-                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#ffaa00' }}>{stats?.reservedPCs || 0} ta</h3>
-                            </div>
-                            <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>BO'SH</p>
-                                <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#7000ff' }}>{stats?.freePCs} ta</h3>
-                            </div>
-                        </div>
+                        {(() => {
+                            let liveTotalDay = stats?.revenue?.day || 0;
+                            stats?.pcStats?.forEach(p => {
+                                if (p.activeSessionStart) {
+                                    const room = rooms.find(r => r.id === p.roomId);
+                                    const now = new Date(nowTime);
+                                    const fetch = new Date(stats?.fetchTime || Date.now());
+                                    const deltaMin = Math.max(0, (now - fetch) / 60000);
+                                    const pph = room?.pricePerHour || 15000;
+                                    liveTotalDay += Math.round((deltaMin / 60) * pph);
+                                }
+                            });
+
+                            return (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+                                    <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>DAROMAD</p>
+                                        <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#39ff14' }}>{Math.round(liveTotalDay).toLocaleString()}</h3>
+                                    </div>
+                                    <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>JAMI</p>
+                                        <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#fff' }}>{stats?.totalPCs} ta</h3>
+                                    </div>
+                                    <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>BAND</p>
+                                        <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#ff4444' }}>{stats?.busyPCs} ta</h3>
+                                    </div>
+                                    <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #ffaa0044', textAlign: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: '9px', color: '#ffaa00' }}>BRON</p>
+                                        <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#ffaa00' }}>{stats?.reservedPCs || 0} ta</h3>
+                                    </div>
+                                    <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: '9px', color: '#888' }}>BO'SH</p>
+                                        <h3 style={{ margin: '3px 0 0', fontSize: '14px', color: '#7000ff' }}>{stats?.freePCs} ta</h3>
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* 📅 KUTILAYOTGAN BRONLAR */}
                         <div style={{ background: '#111', padding: '20px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #ffaa0033' }}>
@@ -477,10 +492,20 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                         {Array.isArray(rooms) && rooms.map((room, index) => {
                             let roomRevenue = 0;
                             let roomHours = 0;
-                            stats?.pcStats?.forEach(pcStat => {
-                                if (pcStat.roomId === room.id) {
-                                    roomRevenue += pcStat.revenue;
-                                    roomHours += pcStat.hours;
+                            stats?.pcStats?.forEach(p => {
+                                if (p.roomId === room.id) {
+                                    let curR = p.revenue;
+                                    let curH = p.hours;
+                                    if (p.activeSessionStart) {
+                                        const now = new Date(nowTime);
+                                        const fetch = new Date(stats?.fetchTime || Date.now());
+                                        const deltaMin = Math.max(0, (now - fetch) / 60000);
+                                        const pph = room.pricePerHour || 15000;
+                                        curR += (deltaMin / 60) * pph;
+                                        curH += (deltaMin / 60);
+                                    }
+                                    roomRevenue += curR;
+                                    roomHours += curH;
                                 }
                             });
                             return (
@@ -522,7 +547,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                             </div>
                                             <div>
                                                 <div style={{ fontSize: '10px', color: '#666', marginBottom: '2px' }}>DAROMAD (Bugun)</div>
-                                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#00ffff' }}>{roomRevenue.toLocaleString()} UZS</div>
+                                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#00ffff' }}>{Math.round(roomRevenue).toLocaleString()} UZS</div>
                                             </div>
                                         </div>
                                         <ChevronRight size={20} color="#7000ff" />

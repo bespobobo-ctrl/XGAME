@@ -118,6 +118,7 @@ exports.getStats = async (req, res, next) => {
             if (pcStats[pcId]) {
                 pcStats[pcId].hours += h;
                 pcStats[pcId].revenue += currentCost;
+                pcStats[pcId].activeSessionStart = s.startTime;
             }
 
             activeUnrealizedRevenue.year += currentCost;
@@ -158,6 +159,7 @@ exports.getStats = async (req, res, next) => {
         }));
 
         res.json({
+            fetchTime: new Date(),
             totalPCs, busyPCs, freePCs, reservedPCs, urgentReservations,
             clubName: club?.name || 'GAME CLUB',
             upcomingReservations: upcomingReservations.map(r => ({

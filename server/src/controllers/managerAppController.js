@@ -146,8 +146,19 @@ exports.getStats = async (req, res, next) => {
 
         const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
 
+        const urgentReservations = upcomingReservations.filter(r => {
+            const rTime = new Date(r.reserveTime);
+            const diff = (rTime - now) / 60000;
+            return diff > 0 && diff <= 10; // Keyingi 10 daqiqa ichida
+        }).map(r => ({
+            pc: r.Computer?.name,
+            user: r.User?.username || r.guestName,
+            phone: r.User?.phone || r.guestPhone,
+            startTime: r.reserveTime
+        }));
+
         res.json({
-            totalPCs, busyPCs, freePCs, reservedPCs,
+            totalPCs, busyPCs, freePCs, reservedPCs, urgentReservations,
             clubName: club?.name || 'GAME CLUB',
             upcomingReservations: upcomingReservations.map(r => ({
                 id: r.id,

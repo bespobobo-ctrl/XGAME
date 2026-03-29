@@ -289,6 +289,21 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {activeTab === 'stats' && (
                     <motion.div key="stats" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ padding: '20px' }}>
 
+                        {/* 🔔 URGENT RESERVATIONS ALERT */}
+                        {stats?.urgentReservations?.length > 0 && (
+                            <div style={{ background: 'linear-gradient(90deg, #ffaa00, #ff4444)', padding: '15px', borderRadius: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div style={{ background: 'rgba(0,0,0,0.2)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📞</div>
+                                <div style={{ flex: 1 }}>
+                                    <h4 style={{ margin: 0, fontSize: '13px', color: '#000', fontWeight: 'bold' }}>DIQQAT: BRON VAQTI YAQINLASHDI!</h4>
+                                    {stats.urgentReservations.map((ur, i) => (
+                                        <p key={i} style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(0,0,0,0.8)' }}>
+                                            <b>{ur.pc}</b> - {ur.user} ({ur.phone || 'Tel topilmadi'}). Telefon qilib ogohlantiring!
+                                        </p>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* 📋 ASOSIY STATISTIKA (5 ta blok) */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '20px' }}>
                             <div style={{ background: '#111', padding: '12px 8px', borderRadius: '15px', border: '1px solid #222', textAlign: 'center' }}>
@@ -722,7 +737,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                     style={{ background: '#ff4444', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 68, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1, gridColumn: (selectedPC.status === 'busy') ? 'span 2' : 'auto' }}
                                                 >
                                                     <Trash2 size={28} strokeWidth={2} />
-                                                    <span>BRONNI BEKOR QILISH</span>
+                                                    <span>{reservation && new Date(reservation.reserveTime) < nowTime ? 'KELMADI (TOZALASH)' : 'BRONNI BEKOR QILISH'}</span>
                                                 </button>
                                             ) : (selectedPC.status !== 'busy' && selectedPC.status !== 'paused') && (
                                                 <button

@@ -99,11 +99,15 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 ]);
                 setRooms(Array.isArray(resRooms) ? resRooms : []);
                 setStats(resStats && !resStats.error ? resStats : null);
-                setSelectedPC(null);
-                setShowReservePicker(false);
-                setReserveNameInput('');
+                const now = new Date();
+                const defaultTime = new Date(now.getTime() + 60 * 60000); // +1 soat
+                const hours = defaultTime.getHours().toString().padStart(2, '0');
+                const minutes = defaultTime.getMinutes().toString().padStart(2, '0');
+
+                setReserveNameInput('Mehmon');
                 setReservePhoneInput('');
-                setReserveTimeInput('');
+                setReserveTimeInput(`${hours}:${minutes}`);
+                setShowReservePicker(false);
             } else {
                 alert('Xatolik: ' + (res.error || res.message || 'Noma\'lum xato'));
             }
@@ -207,9 +211,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                     setSelectedPC(pc);
-                    setReserveNameInput('');
+                    const now = new Date();
+                    const nextHour = new Date(now.getTime() + 60 * 60000);
+                    setReserveNameInput('Mehmon');
+                    setReserveTimeInput(`${nextHour.getHours().toString().padStart(2, '0')}:${nextHour.getMinutes().toString().padStart(2, '0')}`);
                     setReservePhoneInput('');
-                    setReserveTimeInput('');
                     setShowReservePicker(false);
                 }}
                 style={{
@@ -781,8 +787,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                 <button onClick={() => setShowReservePicker(false)} style={{ flex: 1, padding: '15px', background: '#333', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>BEKOR</button>
                                                 <button
                                                     onClick={() => handleAction('reserve', null, reserveTimeInput, reserveNameInput, reservePhoneInput)}
-                                                    disabled={actionLoading || !reserveTimeInput || !reserveNameInput}
-                                                    style={{ flex: 1, padding: '15px', background: 'linear-gradient(45deg, #f6d365, #fda085)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 'bold', opacity: (!reserveTimeInput || !reserveNameInput || actionLoading) ? 0.3 : 1 }}
+                                                    disabled={actionLoading || !reserveTimeInput}
+                                                    style={{ flex: 1, padding: '15px', background: 'linear-gradient(45deg, #f6d365, #fda085)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 'bold', opacity: (!reserveTimeInput || actionLoading) ? 0.3 : 1 }}
                                                 >
                                                     SAQLASH
                                                 </button>

@@ -1,4 +1,4 @@
-const API_URL = 'https://brick-emacs-simultaneously-klein.trycloudflare.com';
+const API_URL = 'https://assurance-hunt-ages-relatives.trycloudflare.com';
 
 export const callAPI = async (endpoint, options = {}) => {
     const token = localStorage.getItem('x-token');

@@ -12,6 +12,19 @@ if (!token) {
 const bot = new TelegramBot(token, { polling: true });
 console.log('🤖 GameZone boti muvaffaqiyatli ulangan!');
 
+// 🚀 PERSISTENT MENU BUTTON (Senior UX)
+const miniAppUrl = process.env.MINI_APP_URL;
+if (miniAppUrl) {
+    bot.setChatMenuButton({
+        menu_button: JSON.stringify({
+            type: 'web_app',
+            text: '🎮 GameZone',
+            web_app: { url: miniAppUrl }
+        })
+    }).then(() => console.log('✅ Menu Button yangilandi.'))
+        .catch(e => console.error('❌ Menu Button xatosi:', e.message));
+}
+
 // --- Helper Functions ---
 const getMainMenu = (user) => {
     const lang = user.language || 'uz';

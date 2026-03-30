@@ -491,8 +491,32 @@ exports.pcAction = async (req, res, next) => {
         // 📢 REAL-TIME YANGILASH
         const io = req.app.get('io');
         if (io) {
+            // Global (for all managers)
             io.emit('pc-status-updated', { pcId: pc.id, clubId: pc.ClubId, status: pc.status });
             io.emit('stats-updated', { clubId: pc.ClubId });
+
+            // Specific PC Room (for the Agent/PC itself)
+            const session = await Session.findOne({
+                where: { ComputerId: pc.id, status: { [Op.in]: ['active', 'paused'] } },
+                order: [['createdAt', 'DESC']]
+            });
+
+            io.to(pc.name).emit('pc-action', {
+                action: action,
+                status: pc.status,
+                session: session ? {
+                    startTime: session.startTime,
+                    expectedMinutes: session.expectedMinutes,
+                    totalMinutes: session.totalMinutes
+                } : null
+            });
+
+            // Compatibility for older agents
+            if (action === 'start' || action === 'resume') {
+                io.to(pc.name).emit('unlock', { startTime: session?.startTime });
+            } else if (action === 'stop' || action === 'free' || action === 'lock') {
+                io.to(pc.name).emit('lock');
+            }
         }
 
         res.json({

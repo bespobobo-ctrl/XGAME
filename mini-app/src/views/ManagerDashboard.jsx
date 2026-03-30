@@ -93,17 +93,23 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
             if (res.success) {
                 if (res.message) alert(res.message);
-                const [resRooms, resStats] = await Promise.all([
-                    callAPI('/api/manager/rooms'),
-                    callAPI('/api/manager/stats')
-                ]);
+                const resRooms = await callAPI('/api/manager/rooms');
+                const resStats = await callAPI('/api/manager/stats');
+
                 setRooms(Array.isArray(resRooms) ? resRooms : []);
                 setStats(resStats && !resStats.error ? resStats : null);
+
+                // 🔄 Refresh selectedPC with fresh data to start timer immediately
+                if (selectedPC && Array.isArray(resRooms)) {
+                    const allPCs = resRooms.flatMap(r => r.Computers);
+                    const freshPC = allPCs.find(p => p.id === selectedPC.id);
+                    if (freshPC) setSelectedPC(freshPC);
+                }
+
                 const now = new Date();
                 const defaultTime = new Date(now.getTime() + 60 * 60000); // +1 soat
                 const hours = defaultTime.getHours().toString().padStart(2, '0');
                 const minutes = defaultTime.getMinutes().toString().padStart(2, '0');
-
                 setReserveNameInput('Mehmon');
                 setReservePhoneInput('');
                 setReserveTimeInput(`${hours}:${minutes}`);
@@ -149,7 +155,24 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             }
         };
         fetchData();
-        const dataInterval = setInterval(fetchData, 10000); // 10s update for real-time feel
+        const dataInterval = setInterval(async () => {
+            try {
+                const [s, r] = await Promise.all([
+                    callAPI('/api/manager/stats'),
+                    callAPI('/api/manager/rooms')
+                ]);
+                setStats(s && !s.error ? s : null);
+                setRooms(Array.isArray(r) ? r : []);
+
+                // 🔄 Real-time selected PC update (Senior UX)
+                if (selectedPC && Array.isArray(r)) {
+                    const allPCs = r.flatMap(rm => rm.Computers);
+                    const freshPC = allPCs.find(p => p.id === selectedPC.id);
+                    if (freshPC) setSelectedPC(freshPC);
+                }
+            } catch (err) { console.error(err); }
+        }, 4000); // 4s update (Optimized for performance & real-time)
+
         const timerInterval = setInterval(() => setNowTime(Date.now()), 1000); // 1s live UI update
         return () => {
             clearInterval(dataInterval);

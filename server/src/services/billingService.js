@@ -37,6 +37,13 @@ async function runBillingCycle(io) {
                 session.totalMinutes += 1;
                 session.totalCost += pricePerMinute;
 
+                // 🚨 AUTO-STOP: Fixed time sessions (expectedMinutes)
+                let isLimitReached = false;
+                if (session.expectedMinutes && session.totalMinutes >= session.expectedMinutes) {
+                    isLimitReached = true;
+                    logger.info(`⏰ LIMIT REACHED: ${computer.name} (${session.expectedMinutes} min). Closing session.`);
+                }
+
                 // Agar User ulangan bo'lsa (registered player), balansini kamaytirish
                 if (user && user.balance !== undefined) {
                     // User ni fresh olish (race condition oldini olish)
@@ -46,22 +53,35 @@ async function runBillingCycle(io) {
 
                         // 🚨 AUTO-LOCK: Puli tugagan bo'lsa
                         if (freshUser.balance <= 0) {
-                            session.status = 'completed';
-                            session.endTime = new Date();
-                            computer.status = 'free';
-
-                            if (io) {
-                                io.to(computer.name).emit('lock');
-                                io.emit('pc-status-updated', {
-                                    pcId: computer.id,
-                                    clubId: computer.ClubId,
-                                    status: 'free'
-                                });
-                                logger.info(`🚨 LOCK: ${computer.name} (User: ${freshUser.username}) - Balance exhausted.`);
-                            }
+                            isLimitReached = true;
+                            logger.info(`🚨 BALANCE EMPTY: ${computer.name} (User: ${freshUser.username}). Closing session.`);
                         }
-
                         await freshUser.save({ transaction: t });
+                    }
+                }
+
+                if (isLimitReached) {
+                    session.status = 'completed';
+                    session.endTime = new Date();
+                    computer.status = 'free';
+
+                    if (io) {
+                        io.to(computer.name).emit('lock');
+                        io.emit('pc-status-updated', {
+                            pcId: computer.id,
+                            clubId: computer.ClubId,
+                            status: 'free'
+                        });
+                    }
+                } else {
+                    // 💓 HEARTBEAT: Har daqiqa dashboardga ma'lumot yuborib turadi (Real-time update uchun)
+                    if (io) {
+                        io.emit('pc-status-updated', {
+                            pcId: computer.id,
+                            clubId: computer.ClubId,
+                            status: computer.status,
+                            totalMinutes: session.totalMinutes
+                        });
                     }
                 }
 

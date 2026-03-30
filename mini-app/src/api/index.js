@@ -1,4 +1,4 @@
-const API_URL = 'https://bedford-itself-months-permits.trycloudflare.com';
+const API_URL = 'https://vegetarian-hope-confident-spreading.trycloudflare.com';
 
 export const callAPI = async (endpoint, options = {}) => {
     const token = localStorage.getItem('x-token');

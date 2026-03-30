@@ -56,6 +56,22 @@ async function runBillingCycle(io) {
                             isLimitReached = true;
                             logger.info(`🚨 BALANCE EMPTY: ${computer.name} (User: ${freshUser.username}). Closing session.`);
                         }
+
+                        // 🔔 LOW BALANCE NOTIFICATION ( < 5000 UZS )
+                        if (freshUser.balance > 0 && freshUser.balance < 5000) {
+                            const { broadcastMessage } = require('../utils/bot');
+                            if (freshUser.telegramId) {
+                                // Faqat har 10 daqiqada bir marta ogohlantirish (spam bo'lmasligi uchun)
+                                const lastAlertKey = `alert_${freshUser.id}`;
+                                const now = Date.now();
+                                if (!global[lastAlertKey] || now - global[lastAlertKey] > 10 * 60000) {
+                                    broadcastMessage([freshUser.telegramId],
+                                        `⚠️ <b>BALANS KAM!</b>\n\nHisobingizda <b>${Math.floor(freshUser.balance)} UZS</b> qoldi. O'yin uzilib qolmasligi uchun balansingizni to'ldiring! 🔌`
+                                    ).catch(() => { });
+                                    global[lastAlertKey] = now;
+                                }
+                            }
+                        }
                         await freshUser.save({ transaction: t });
                     }
                 }

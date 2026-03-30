@@ -67,5 +67,6 @@ router.get('/player/me', auth, authorize('customer'), asyncHandler(playerCtrl.ge
 router.get('/player/rooms', auth, authorize('customer'), asyncHandler(playerCtrl.getRooms));
 router.post('/player/pc/:id/reserve', auth, authorize('customer'), asyncHandler(playerCtrl.reservePc));
 router.delete('/player/pc/:id/reserve', auth, authorize('customer'), asyncHandler(playerCtrl.cancelReserve));
+router.post('/player/pc/unlock-with-qr', auth, authorize('customer'), asyncHandler(playerCtrl.unlockWithQR));
 
 module.exports = router;

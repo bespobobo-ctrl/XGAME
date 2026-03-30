@@ -161,3 +161,53 @@ exports.cancelReserve = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.unlockWithQR = async (req, res, next) => {
+    try {
+        const { qrData } = req.body;
+        if (!qrData) return res.status(400).json({ success: false, message: 'QR ma\'lumotlar topilmadi' });
+
+        const user = await User.findByPk(req.user.id);
+        if (!user || user.balance < 1000) {
+            return res.status(400).json({ success: false, message: 'Balansingiz yetarli emas (kamida 1000 UZS)' });
+        }
+
+        // Try to find PC by Name (typical for Agents) or ID
+        const pc = await Computer.findOne({
+            where: {
+                [Op.or]: [{ id: qrData }, { name: qrData }],
+                ClubId: user.ClubId
+            }
+        });
+
+        if (!pc) return res.status(404).json({ success: false, message: 'Kompyuter topilmadi' });
+        if (pc.status === 'busy' || pc.status === 'paused') {
+            return res.status(400).json({ success: false, message: 'Bu kompyuter hozir band' });
+        }
+
+        // Create Active Session (Unlimited balance-based)
+        const session = await Session.create({
+            startTime: new Date(),
+            ComputerId: pc.id,
+            ClubId: user.ClubId,
+            UserId: user.id,
+            status: 'active',
+            totalMinutes: 0,
+            totalCost: 0,
+            guestName: user.username
+        });
+
+        pc.status = 'busy';
+        await pc.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(pc.name).emit('unlock', { sessionId: session.id, guestName: user.username });
+            io.to(`club_${user.ClubId}`).emit('room_update');
+        }
+
+        res.json({ success: true, message: 'Kompyuter ochildi! O\'yinga tayyorlaning 🎮' });
+    } catch (error) {
+        next(error);
+    }
+};

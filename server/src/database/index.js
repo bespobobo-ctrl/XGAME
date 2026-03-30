@@ -77,6 +77,20 @@ async function initializeDatabase() {
                 await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestPhone` TEXT;");
             } catch (e) { }
 
+            // 💳 TOP-UP MIGRATIONS
+            try {
+                await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardNumber` TEXT;");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardOwner` TEXT;");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `status` TEXT DEFAULT 'approved';");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT;");
+            } catch (e) { }
+
             await sequelize.sync({ alter: false });
             logger.info('✅ Database sinxronizatsiya qilindi (Safe mode)!');
         }

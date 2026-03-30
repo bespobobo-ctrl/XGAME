@@ -26,19 +26,21 @@ const UserDashboard = ({ user, onLogout, setView }) => {
 
             if (profRes.success) {
                 setProfileData(profRes);
-            } else {
-                console.error("Profile error:", profRes);
             }
 
             if (mapRes.success) {
                 setRoomsData(mapRes.rooms || []);
                 calculateStats(mapRes.rooms || []);
             } else {
-                setError(mapRes.message || "Xonalar ro'yxatini yuklab bo'lmadi");
+                // Check if user is not assigned to a club
+                if (mapRes.message === 'Klubga biriktirilmagansiz') {
+                    setError("SIZ HALI KLUB TANLAMAGANSIZ 🏛️");
+                } else {
+                    setError(mapRes.message || "Xonalar ro'yxatini yuklab bo'lmadi");
+                }
             }
         } catch (err) {
-            console.error("Fetch error:", err);
-            setError("Server bilan aloqa uzildi");
+            setError("Server bilan aloqa uzildi! 🔌");
         } finally {
             setLoading(false);
         }
@@ -46,7 +48,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 30000); // 30s auto refresh
+        const interval = setInterval(fetchData, 30000);
         return () => clearInterval(interval);
     }, []);
 
@@ -122,7 +124,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ padding: '20px', paddingBottom: '120px', display: 'flex', flexDirection: 'column', gap: '15px', minHeight: '100vh', background: '#050505', color: '#fff' }}
         >
-            {/* Header */}
+            {/* Header omitted for brevity in thought, but I'll write full */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div>
                     <h2 style={{ fontSize: '26px', margin: 0, fontWeight: '900', letterSpacing: '-1px' }}>X-GAME</h2>
@@ -132,7 +134,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={fetchData} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', padding: '10px', borderRadius: '12px' }}>🔄</button>
-                    <button onClick={onLogout} style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}>CHIQUISH</button>
+                    <button onClick={onLogout} style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}>CHIQISH</button>
                 </div>
             </div>
 
@@ -180,17 +182,23 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                         </motion.div>
                     ) : (
                         <motion.div key="map" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                            {error && (
-                                <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', padding: '15px', borderRadius: '15px', marginBottom: '15px', fontSize: '13px', textAlign: 'center' }}>
-                                    {error}
+                            {error ? (
+                                <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', padding: '30px', borderRadius: '25px', textAlign: 'center', border: '1px solid rgba(255,0,0,0.2)' }}>
+                                    <span style={{ fontSize: '40px' }}>🏛️</span>
+                                    <h3 style={{ margin: '15px 0 10px', fontSize: '18px' }}>XATOLIK</h3>
+                                    <p style={{ fontSize: '13px', margin: '0 0 20px', opacity: 0.8 }}>{error}</p>
+                                    {error.includes("KLUB TANLAMAGANSIZ") && (
+                                        <button onClick={() => setView('home')} style={{ background: '#7000ff', border: 'none', color: '#fff', padding: '15px 30px', borderRadius: '15px', fontWeight: 'bold' }}>KLUB TANLASH</button>
+                                    )}
+                                    {!error.includes("KLUB TANLAMAGANSIZ") && (
+                                        <button onClick={fetchData} style={{ background: '#333', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px' }}>QAYTA YUklash</button>
+                                    )}
                                 </div>
-                            )}
-
-                            {roomsData.length === 0 && !loading ? (
+                            ) : roomsData.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '25px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                                     <span style={{ fontSize: '40px' }}>🗺️</span>
                                     <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: '15px', fontSize: '14px' }}>Xonalar topilmadi. Klubda xonalar sozlanmagan bo'lishi mumkin.</p>
-                                    <button onClick={fetchData} style={{ marginTop: '15px', background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px', fontSize: '12px' }}>QAYTA YUKLASH</button>
+                                    <button onClick={fetchData} style={{ marginTop: '15px', background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px', fontSize: '12px' }}>QAYTA YUklash</button>
                                 </div>
                             ) : (
                                 roomsData.map(room => (
@@ -227,7 +235,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                 </AnimatePresence>
             )}
 
-            {/* Modals same logic, but cleaner */}
+            {/* PC Detail Modal */}
             <AnimatePresence>
                 {pcDetail && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>

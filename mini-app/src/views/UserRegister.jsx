@@ -23,7 +23,7 @@ const UserRegister = ({ club, onBack, onComplete }) => {
             });
 
             if (res.success) {
-                alert(`Klubga xush kelibsiz! 🎉 Siz endi "${club?.name || 'GAME ZONE'}" klubining foydalanuvchisisiz.`);
+                alert(res.isNew ? 'Siz muvaffaqiyatli ro\'yxatdan o\'tdingiz! 🎉' : 'Xush kelibsiz! 👋');
                 localStorage.setItem('x-token', res.token);
                 localStorage.setItem('x-user', JSON.stringify(res.user));
                 onComplete(res);

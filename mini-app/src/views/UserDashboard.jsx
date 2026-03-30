@@ -8,6 +8,9 @@ const UserDashboard = ({ user, onLogout, setView }) => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('profile'); // profile, map
 
+    // Stats calculations
+    const [stats, setStats] = useState({ total: 0, free: 0, busy: 0, vips: [] });
+
     // Reservation state
     const [selectedPC, setSelectedPC] = useState(null);
     const [reserveTimeInput, setReserveTimeInput] = useState('');
@@ -21,7 +24,10 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                     callAPI('/api/player/rooms')
                 ]);
                 if (profRes.success) setProfileData(profRes);
-                if (mapRes.success) setRoomsData(mapRes.rooms);
+                if (mapRes.success) {
+                    setRoomsData(mapRes.rooms);
+                    calculateStats(mapRes.rooms);
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -30,6 +36,28 @@ const UserDashboard = ({ user, onLogout, setView }) => {
         };
         fetchData();
     }, []);
+
+    const calculateStats = (rooms) => {
+        let total = 0, free = 0, busy = 0, vips = [];
+        rooms.forEach(r => {
+            r.Computers.forEach(pc => {
+                total++;
+                if (pc.status === 'free') free++;
+                else {
+                    busy++;
+                    if (pc.type === 'vip') {
+                        const sess = pc.Sessions && pc.Sessions[0];
+                        vips.push({
+                            name: pc.name,
+                            guest: sess?.guestName || 'Gamer',
+                            since: sess?.startTime ? new Date(sess.startTime) : null
+                        });
+                    }
+                }
+            });
+        });
+        setStats({ total, free, busy, vips });
+    };
 
     const handleReserve = async () => {
         if (!selectedPC || !reserveTimeInput) return;
@@ -42,9 +70,11 @@ const UserDashboard = ({ user, onLogout, setView }) => {
             if (res.success) {
                 alert('Muvaffaqiyatli bron qilindi! 🎉');
                 setSelectedPC(null);
-                // Refresh map
                 const mapRes = await callAPI('/api/player/rooms');
-                if (mapRes.success) setRoomsData(mapRes.rooms);
+                if (mapRes.success) {
+                    setRoomsData(mapRes.rooms);
+                    calculateStats(mapRes.rooms);
+                }
             } else {
                 alert(res.error || res.message || 'Xatolik yuz berdi');
             }
@@ -53,6 +83,14 @@ const UserDashboard = ({ user, onLogout, setView }) => {
         } finally {
             setReserveLoading(false);
         }
+    };
+
+    const getTimeDiff = (sinceDate) => {
+        if (!sinceDate) return '...';
+        const diff = Math.floor((new Date() - sinceDate) / 60000); // minutes
+        const h = Math.floor(diff / 60);
+        const m = diff % 60;
+        return h > 0 ? `${h}s ${m}d` : `${m} daqiqa`;
     };
 
     const qrValue = user?.telegramId ? `tg_${user.telegramId}` : `user_${user?.id}`;
@@ -84,6 +122,45 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                 <AnimatePresence mode='wait'>
                     {activeTab === 'profile' ? (
                         <motion.div key="profile" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
+
+                            {/* LIVE CLUB STATUS (New Prominent Card) */}
+                            <motion.div
+                                style={{ background: 'rgba(20, 20, 20, 0.8)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '25px', padding: '20px', marginBottom: '20px', backdropFilter: 'blur(10px)' }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                    <h3 style={{ margin: 0, fontSize: '14px', color: '#fff', opacity: 0.8 }}>⚡ KLUB STATUS</h3>
+                                    <div style={{ height: '8px', width: '8px', background: '#39ff14', borderRadius: '50%', boxShadow: '0 0 10px #39ff14' }}></div>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                                    <div style={{ flex: 1, textAlign: 'center' }}>
+                                        <p style={{ margin: 0, color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>JAMI PC</p>
+                                        <h4 style={{ margin: '5px 0 0', color: '#fff' }}>{stats.total}</h4>
+                                    </div>
+                                    <div style={{ flex: 1, textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.05)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <p style={{ margin: 0, color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>BO'SH</p>
+                                        <h4 style={{ margin: '5px 0 0', color: '#39ff14' }}>{stats.free}</h4>
+                                    </div>
+                                    <div style={{ flex: 1, textAlign: 'center' }}>
+                                        <p style={{ margin: 0, color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>BAND</p>
+                                        <h4 style={{ margin: '5px 0 0', color: '#ff4444' }}>{stats.busy}</h4>
+                                    </div>
+                                </div>
+
+                                {stats.vips.length > 0 && (
+                                    <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(112, 0, 255, 0.05)', borderRadius: '15px', border: '1px solid rgba(112, 0, 255, 0.1)' }}>
+                                        <p style={{ margin: '0 0 8px', color: '#7000ff', fontSize: '10px', fontWeight: 'bold' }}>💎 VIP ZONADA O'YINDA:</p>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {stats.vips.map((v, i) => (
+                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                                    <span style={{ color: '#fff' }}>{v.name} ({v.guest})</span>
+                                                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>{getTimeDiff(v.since)} dan beri</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+
                             {/* ID Card */}
                             <motion.div
                                 style={{

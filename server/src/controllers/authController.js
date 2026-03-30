@@ -108,17 +108,12 @@ exports.telegramAuth = async (req, res, next) => {
         }
 
         let user = await User.findOne({ where: { telegramId: tgUser.id.toString() } });
+        let isNew = false;
 
         if (!user) {
-            const baseUsername = tgUser.username || `tg_${tgUser.id}`;
-            let username = baseUsername;
-            let existingUsername = await User.findOne({ where: { username } });
-            let counter = 1;
-            while (existingUsername) {
-                username = `${baseUsername}_${counter}`;
-                existingUsername = await User.findOne({ where: { username } });
-                counter++;
-            }
+            isNew = true;
+            const count = await User.count({ where: { username: { [Op.like]: 'gamer%' } } });
+            let username = `gamer_${count + 1}`;
 
             user = await User.create({
                 telegramId: tgUser.id.toString(),
@@ -158,6 +153,7 @@ exports.telegramAuth = async (req, res, next) => {
 
         res.json({
             success: true,
+            isNew,
             token,
             user: {
                 id: user.id,

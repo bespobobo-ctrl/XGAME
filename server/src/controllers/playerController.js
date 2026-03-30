@@ -51,7 +51,14 @@ exports.getRooms = async (req, res, next) => {
             where: { ClubId: user.ClubId },
             include: [{
                 model: Computer,
-                attributes: ['id', 'name', 'status', 'type', 'pricePerHour']
+                attributes: ['id', 'name', 'status', 'type', 'pricePerHour'],
+                include: [{
+                    model: Session,
+                    as: 'Sessions',
+                    where: { status: { [Op.in]: ['active', 'paused'] } },
+                    required: false,
+                    attributes: ['startTime', 'guestName']
+                }]
             }],
             order: [['name', 'ASC']]
         });

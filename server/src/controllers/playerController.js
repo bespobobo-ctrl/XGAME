@@ -55,18 +55,19 @@ exports.getRooms = async (req, res, next) => {
             where: { ClubId: user.ClubId },
             include: [{
                 model: Computer,
-                attributes: ['id', 'name', 'status', 'type', 'pricePerHour', 'RoomId'],
                 include: [{
                     model: Session,
                     where: { status: { [Op.in]: ['active', 'paused'] } },
-                    required: false,
-                    attributes: ['startTime', 'guestName', 'expectedMinutes', 'ComputerId']
+                    required: false
                 }]
             }],
             order: [['name', 'ASC']]
         });
 
         console.log(`[MAP_SUCCESS] Found ${rooms.length} rooms for Club ${user.ClubId}`);
+        if (rooms.length > 0) {
+            console.log(`[MAP_DETAIL] Room 1 PCs: ${rooms[0].Computers?.length || 0}`);
+        }
         res.json({ success: true, rooms });
     } catch (error) {
         console.error("GET_ROOMS_ERROR:", error);

@@ -125,14 +125,12 @@ const UserDashboard = ({ user, onLogout, setView }) => {
             {/* 💎 SMART HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div>
-                    <h2 style={{ fontSize: '26px', margin: 0, fontWeight: '900', letterSpacing: '-1px', color: '#00ffcc', textShadow: '0 0 15px rgba(0,255,204,0.3)' }}>{clubName.toUpperCase()}</h2>
-                    <p style={{ color: '#aaa', margin: 0, fontSize: '11px', letterSpacing: '2px', fontWeight: 'bold' }}>
-                        {activeTab === 'profile' ? 'CABINET' : 'MAP VIEW'}
-                    </p>
+                    <h2 style={{ fontSize: '24px', margin: 0, fontWeight: '900', letterSpacing: '-1px', color: '#00ffcc', textShadow: '0 0 15px rgba(0,255,204,0.3)' }}>{clubName.toUpperCase()}</h2>
+                    <p style={{ color: '#aaa', margin: 0, fontSize: '11px', letterSpacing: '2px', fontWeight: 'bold' }}>GAMER PANEL</p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={fetchData} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', padding: '10px', borderRadius: '12px' }}>🔄</button>
-                    <button onClick={onLogout} style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}>CHIQUISH</button>
+                    <button onClick={onLogout} style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}>CHIQISH</button>
                 </div>
             </div>
 
@@ -143,96 +141,89 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                     <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
                 </div>
             ) : (
-                <AnimatePresence mode='wait'>
-                    {activeTab === 'profile' ? (
-                        <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                            {/* GREETING CARD */}
-                            <div style={{ marginBottom: '20px' }}>
-                                <h3 style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>Assalomu alaykum,</h3>
-                                <h2 style={{ margin: 0, fontSize: '28px', color: '#fff' }}>{userName} 🎮</h2>
-                            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* GREETING CARD */}
+                    <div style={{ marginBottom: '5px' }}>
+                        <h3 style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>Xush kelibsiz,</h3>
+                        <h2 style={{ margin: 0, fontSize: '24px', color: '#fff' }}>{userName} 🎮</h2>
+                    </div>
 
-                            {/* LIVE STATUS CARD */}
-                            <div style={{ background: 'linear-gradient(135deg, rgba(20,20,20,0.9), rgba(10,10,10,0.9))', borderRadius: '25px', padding: '20px', marginBottom: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>LIVE STATUS</span>
-                                    <span style={{ fontSize: '12px', color: '#39ff14' }}>● Online</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <div><p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>JAMI PC</p><h3 style={{ margin: '5px 0 0' }}>{stats.total}</h3></div>
-                                    <div><p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>BO'SH</p><h3 style={{ margin: '5px 0 0', color: '#39ff14' }}>{stats.free}</h3></div>
-                                    <div><p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>BAND</p><h3 style={{ margin: '5px 0 0', color: '#ff4444' }}>{stats.busy}</h3></div>
-                                </div>
-                            </div>
+                    {/* LIVE STATUS CARD */}
+                    <div style={{ background: 'linear-gradient(135deg, rgba(20,20,20,0.9), rgba(10,10,10,0.9))', borderRadius: '25px', padding: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>KLUB STATUSI</span>
+                            <span style={{ fontSize: '12px', color: '#39ff14' }}>● Online</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div><p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>JAMI PC</p><h3 style={{ margin: '5px 0 0' }}>{stats.total}</h3></div>
+                            <div><p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>BO'SH</p><h3 style={{ margin: '5px 0 0', color: '#39ff14' }}>{stats.free}</h3></div>
+                            <div><p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>BAND</p><h3 style={{ margin: '5px 0 0', color: '#ff4444' }}>{stats.busy}</h3></div>
+                        </div>
+                    </div>
 
-                            {/* ID CARD */}
-                            <div style={{ background: 'linear-gradient(135deg, #00ffcc11, #7000ff22)', borderRadius: '25px', padding: '25px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
-                                <div style={{ zIndex: 1, position: 'relative' }}>
-                                    <h3 style={{ margin: 0, fontSize: '20px', color: '#00ffcc' }}>ID CARD</h3>
-                                    <p style={{ margin: '5px 0 20px', color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 'bold' }}>OFFICIAL MEMBER OF {clubName.toUpperCase()}</p>
-                                    <div style={{ display: 'flex', gap: '15px' }}>
-                                        <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '15px' }}>
-                                            <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>BALANCE</p>
-                                            <h4 style={{ margin: '5px 0 0', color: '#00ffcc' }}>{profileData?.user?.balance?.toLocaleString() || 0}</h4>
-                                        </div>
-                                        <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '15px' }}>
-                                            <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>LEVEL</p>
-                                            <h4 style={{ margin: '5px 0 0' }}>1</h4>
-                                        </div>
+                    {/* 🎮 ROOMS & PCS LIST (NOW ALWAYS VISIBLE FOR CONVENIENCE) */}
+                    <div style={{ marginTop: '10px' }}>
+                        <h3 style={{ fontSize: '14px', color: '#00ffcc', margin: '0 0 15px', letterSpacing: '2px', fontWeight: 'bold' }}>🎮 KOMPYUTERLAR</h3>
+
+                        {error ? (
+                            <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', padding: '20px', borderRadius: '20px', textAlign: 'center' }}>
+                                <p style={{ margin: 0, fontSize: '13px' }}>{error}</p>
+                            </div>
+                        ) : roomsData.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: '20px' }}>
+                                <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0, fontSize: '13px' }}>Xonalar topilmadi.</p>
+                            </div>
+                        ) : (
+                            roomsData.map(room => (
+                                <div key={room.id} style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                        <h4 style={{ margin: 0, color: '#ff00aa', fontSize: '14px', fontWeight: '900' }}>{room.name.toUpperCase()}</h4>
+                                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>{room.pricePerHour?.toLocaleString()} UZS / s</span>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(75px, 1fr))', gap: '10px' }}>
+                                        {(room.Computers || room.computers || []).map(pc => {
+                                            const isBusy = pc.status === 'busy' || pc.status === 'paused';
+                                            const isReserved = pc.status === 'reserved';
+                                            const color = isBusy ? '#ff4444' : (isReserved ? '#ffaa00' : '#39ff14');
+                                            const sessList = pc.Sessions || pc.sessions || [];
+                                            const sess = sessList[0];
+
+                                            return (
+                                                <motion.div
+                                                    key={pc.id} whileTap={{ scale: 0.95 }}
+                                                    onClick={() => {
+                                                        if (!isBusy && !isReserved) setSelectedPC(pc);
+                                                        else setPcDetail(pc);
+                                                    }}
+                                                    style={{ background: 'rgba(0,0,0,0.3)', border: `1px solid ${color}33`, borderRadius: '15px', padding: '12px 5px', textAlign: 'center' }}
+                                                >
+                                                    <div style={{ fontSize: '18px', marginBottom: '3px' }}>{pc.type === 'vip' ? '💎' : '🖥️'}</div>
+                                                    <div style={{ color, fontWeight: 'bold', fontSize: '11px' }}>{pc.name}</div>
+                                                    {isBusy && sess && <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{getTimeDiff(sess.startTime)}</div>}
+                                                </motion.div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
-                                <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', fontSize: '100px', opacity: 0.05 }}>💎</div>
-                            </div>
-                        </motion.div>
-                    ) : (
-                        <motion.div key="map" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                            {error ? (
-                                <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', padding: '30px', borderRadius: '25px', textAlign: 'center', border: '1px solid rgba(255,0,0,0.2)' }}>
-                                    <span style={{ fontSize: '40px' }}>⚠️</span>
-                                    <h3 style={{ margin: '15px 0 10px', fontSize: '18px' }}>XATOLIK</h3>
-                                    <p style={{ fontSize: '13px', margin: '0 0 20px', opacity: 0.8 }}>{error}</p>
-                                    <button onClick={fetchData} style={{ background: '#333', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px' }}>QAYTA YUKLASH</button>
-                                </div>
-                            ) : roomsData.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '25px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                    <span style={{ fontSize: '40px' }}>🗺️</span>
-                                    <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: '15px', fontSize: '14px' }}>Xonalar topilmadi. Klubda xonalar sozlanmagan bo'lishi mumkin.</p>
-                                    <button onClick={fetchData} style={{ marginTop: '15px', background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px', fontSize: '12px' }}>QAYTA YUKLASH</button>
-                                </div>
-                            ) : (
-                                roomsData.map(room => (
-                                    <div key={room.id} style={{ marginBottom: '20px', background: '#111', padding: '20px', borderRadius: '25px', border: '1px solid rgba(255,0,170,0.1)' }}>
-                                        <h3 style={{ margin: '0 0 15px', color: '#ff00aa', fontSize: '15px', fontWeight: '900', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>
-                                            {(room.Computers || room.computers || []).map(pc => {
-                                                const isBusy = pc.status === 'busy' || pc.status === 'paused';
-                                                const isReserved = pc.status === 'reserved';
-                                                const color = isBusy ? '#ff4444' : (isReserved ? '#ffaa00' : '#39ff14');
-                                                const sessList = pc.Sessions || pc.sessions || [];
-                                                const sess = sessList[0];
+                            ))
+                        )}
+                    </div>
 
-                                                return (
-                                                    <motion.div
-                                                        key={pc.id} whileTap={{ scale: 0.95 }}
-                                                        onClick={() => {
-                                                            if (!isBusy && !isReserved) setSelectedPC(pc);
-                                                            else setPcDetail(pc);
-                                                        }}
-                                                        style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${color}33`, borderRadius: '15px', padding: '12px 5px', textAlign: 'center' }}
-                                                    >
-                                                        <div style={{ fontSize: '20px', marginBottom: '5px' }}>{pc.type === 'vip' ? '💎' : '🖥️'}</div>
-                                                        <div style={{ color, fontWeight: 'bold', fontSize: '12px' }}>{pc.name}</div>
-                                                        {isBusy && sess && <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{getTimeDiff(sess.startTime)}</div>}
-                                                    </motion.div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    {/* ID CARD (Compact) */}
+                    <div style={{ background: 'linear-gradient(135deg, #00ffcc11, #7000ff11)', borderRadius: '25px', padding: '20px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+                        <h3 style={{ margin: 0, fontSize: '16px', color: '#00ffcc' }}>HISOB</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                            <div>
+                                <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>BALANCE</p>
+                                <h4 style={{ margin: '3px 0 0', color: '#fff' }}>{profileData?.user?.balance?.toLocaleString() || 0} UZS</h4>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>MEMBER ID</p>
+                                <h4 style={{ margin: '3px 0 0', color: '#fff' }}>#{profileData?.user?.id || '...'}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* PC Detail Modal */}

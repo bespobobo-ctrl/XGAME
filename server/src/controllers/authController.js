@@ -4,6 +4,7 @@ const User = require('../database/models/User');
 const Broadcast = require('../database/models/Broadcast');
 const Club = require('../database/models/Club');
 const config = require('../config/index');
+const { Op } = require('sequelize');
 
 exports.login = async (req, res, next) => {
     try {

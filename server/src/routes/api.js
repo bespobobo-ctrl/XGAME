@@ -66,5 +66,6 @@ router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(mana
 router.get('/player/me', auth, authorize('customer'), asyncHandler(playerCtrl.getMe));
 router.get('/player/rooms', auth, authorize('customer'), asyncHandler(playerCtrl.getRooms));
 router.post('/player/pc/:id/reserve', auth, authorize('customer'), asyncHandler(playerCtrl.reservePc));
+router.delete('/player/pc/:id/reserve', auth, authorize('customer'), asyncHandler(playerCtrl.cancelReserve));
 
 module.exports = router;

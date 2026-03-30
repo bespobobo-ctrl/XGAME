@@ -249,7 +249,22 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                     {(pcDetail.Sessions || pcDetail.sessions || [])[0].expectedMinutes && <p style={{ margin: 0 }}>Qoldi: <b style={{ color: '#ff00aa' }}>{getRemainingTime((pcDetail.Sessions || pcDetail.sessions || [])[0])}</b></p>}
                                 </div>
                             )}
-                            <button onClick={() => setPcDetail(null)} style={{ width: '100%', background: '#7000ff', border: 'none', color: '#fff', padding: '12px', borderRadius: '12px', marginTop: '15px', fontWeight: 'bold' }}>YOPISH</button>
+
+                            {pcDetail.status === 'reserved' && (
+                                <button
+                                    onClick={async () => {
+                                        if (!window.confirm("Bronni bekor qilmoqchimisiz?")) return;
+                                        const res = await callAPI(`/api/player/pc/${pcDetail.id}/reserve`, { method: 'DELETE' });
+                                        if (res.success) { alert("Bron bekor qilindi"); setPcDetail(null); fetchData(); }
+                                        else alert(res.error || "Xato yuz berdi");
+                                    }}
+                                    style={{ width: '100%', background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.2)', color: '#ff4444', padding: '12px', borderRadius: '12px', marginTop: '10px', fontWeight: 'bold', fontSize: '12px' }}
+                                >
+                                    BRONNI BEKOR QILISH ❌
+                                </button>
+                            )}
+
+                            <button onClick={() => setPcDetail(null)} style={{ width: '100%', background: '#7000ff', border: 'none', color: '#fff', padding: '12px', borderRadius: '12px', marginTop: '10px', fontWeight: 'bold' }}>YOPISH</button>
                         </motion.div>
                     </div>
                 )}

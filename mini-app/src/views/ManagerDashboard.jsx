@@ -743,61 +743,70 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                                     {!showReservePicker ? (
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            {/* Free or Reserved PC controls */}
                                             {(selectedPC.status !== 'busy' && selectedPC.status !== 'paused') && (
-                                                <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-                                                    <button onClick={() => handleAction('start', 30)} disabled={actionLoading} style={{ background: (selectedPC.status === 'reserved' ? '#7000ff' : '#1a1a24'), color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{selectedPC.status === 'reserved' ? 'OK (30)' : '30 DAQ'}</button>
-                                                    <button onClick={() => handleAction('start', 60)} disabled={actionLoading} style={{ background: (selectedPC.status === 'reserved' ? '#7000ff' : '#1a1a24'), color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{selectedPC.status === 'reserved' ? 'OK (1S)' : '1 SOAT'}</button>
-                                                    <button onClick={() => handleAction('start', 120)} disabled={actionLoading} style={{ background: (selectedPC.status === 'reserved' ? '#7000ff' : '#1a1a24'), color: '#fff', padding: '15px 0', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{selectedPC.status === 'reserved' ? 'OK (2S)' : '2 SOAT'}</button>
-                                                    <button onClick={() => handleAction('start', null)} disabled={actionLoading} style={{ background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', color: '#fff', padding: '15px 0', borderRadius: '16px', border: 'none', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', boxShadow: '0 5px 15px rgba(79,172,254,0.3)' }}>{selectedPC.status === 'reserved' ? 'GO!' : 'CHEKSIZ'}</button>
+                                                <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                                        <button onClick={() => handleAction('start', 30)} disabled={actionLoading} style={{ background: '#111', color: '#39ff14', border: '1px solid #39ff1433', padding: '15px', borderRadius: '15px', fontWeight: 'bold' }}>30M</button>
+                                                        <button onClick={() => handleAction('start', 60)} disabled={actionLoading} style={{ background: '#111', color: '#39ff14', border: '1px solid #39ff1433', padding: '15px', borderRadius: '15px', fontWeight: 'bold' }}>1S</button>
+                                                        <button onClick={() => handleAction('start', 120)} disabled={actionLoading} style={{ background: '#111', color: '#39ff14', border: '1px solid #39ff1433', padding: '15px', borderRadius: '15px', fontWeight: 'bold' }}>2S</button>
+                                                        <button onClick={() => handleAction('start', null)} disabled={actionLoading} style={{ background: 'linear-gradient(45deg, #39ff14, #00ffcc)', color: '#000', border: 'none', padding: '15px', borderRadius: '15px', fontWeight: 'bold' }}>GO</button>
+                                                    </div>
+
+                                                    {selectedPC.status === 'reserved' || reservation ? (
+                                                        <button
+                                                            onClick={() => handleAction('cancel_reserve')}
+                                                            style={{
+                                                                width: '100%', padding: '18px', borderRadius: '20px',
+                                                                background: '#ff4444', color: '#fff', border: 'none',
+                                                                fontWeight: 'bold', display: 'flex', alignItems: 'center',
+                                                                justifyContent: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 68, 68, 0.2)'
+                                                            }}
+                                                        >
+                                                            <Trash2 size={20} /> BRONNI BEKOR QILISH ❌
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setShowReservePicker(true)}
+                                                            style={{
+                                                                width: '100%', padding: '18px', borderRadius: '20px',
+                                                                background: '#ffaa00', color: '#000', border: 'none',
+                                                                fontWeight: 'bold', display: 'flex', alignItems: 'center',
+                                                                justifyContent: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(253, 160, 133, 0.2)'
+                                                            }}
+                                                        >
+                                                            <CalendarClock size={20} /> BRON QILISH (RESERVE) 🕒
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
 
+                                            {/* Active PC controls (Stop/Pause) */}
                                             {(selectedPC.status === 'busy' || selectedPC.status === 'paused') && (
                                                 <>
                                                     <button
                                                         onClick={() => handleAction('stop')} disabled={actionLoading}
-                                                        style={{ background: 'linear-gradient(135deg, #000, #111)', color: '#ff0844', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,8,68,0.3)', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                        style={{ background: '#000', color: '#ff4444', padding: '20px', borderRadius: '24px', border: '1px solid #ff444433', fontWeight: 'bold', gridColumn: 'span 1' }}
                                                     >
-                                                        <Square size={28} fill="#ff0844" strokeWidth={1} />
-                                                        <span>YAKUNLASH</span>
+                                                        STOP ⏹️
                                                     </button>
 
                                                     {selectedPC.status === 'busy' ? (
                                                         <button
                                                             onClick={() => handleAction('pause')} disabled={actionLoading}
-                                                            style={{ background: '#ffee32', color: '#000', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 238, 50, 0.2)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                            style={{ background: '#ffee32', color: '#000', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', gridColumn: 'span 1' }}
                                                         >
-                                                            <Clock size={28} strokeWidth={2.5} />
-                                                            <span>PAUZA</span>
+                                                            PAUSE ⏸️
                                                         </button>
                                                     ) : (
                                                         <button
                                                             onClick={() => handleAction('resume')} disabled={actionLoading}
-                                                            style={{ background: '#39ff14', color: '#000', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(57, 255, 20, 0.2)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
+                                                            style={{ background: '#39ff14', color: '#000', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', gridColumn: 'span 1' }}
                                                         >
-                                                            <Play size={28} fill="#000" strokeWidth={1} />
-                                                            <span>DAVOM ETTIRISH</span>
+                                                            RESUME ▶️
                                                         </button>
                                                     )}
                                                 </>
-                                            )}
-
-                                            {(selectedPC.status === 'reserved' || reservation) ? (
-                                                <button
-                                                    onClick={() => handleAction('cancel_reserve')} disabled={actionLoading}
-                                                    style={{ background: '#ff4444', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255, 68, 68, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1, gridColumn: (selectedPC.status === 'busy') ? 'span 2' : 'auto' }}
-                                                >
-                                                    <Trash2 size={28} strokeWidth={2} />
-                                                    <span>{reservation && new Date(reservation.reserveTime) < nowTime ? 'KELMADI (TOZALASH)' : 'BRONNI BEKOR QILISH'}</span>
-                                                </button>
-                                            ) : (selectedPC.status !== 'busy' && selectedPC.status !== 'paused') && (
-                                                <button
-                                                    onClick={() => setShowReservePicker(true)} disabled={actionLoading}
-                                                    style={{ background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#fff', padding: '20px', borderRadius: '24px', border: 'none', fontWeight: 'bold', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(253, 160, 133, 0.3)', cursor: 'pointer', opacity: actionLoading ? 0.6 : 1 }}
-                                                >
-                                                    <Ticket size={28} strokeWidth={2} />
-                                                    <span>BRON QILISH</span>
-                                                </button>
                                             )}
 
                                             {selectedPC.status !== 'busy' && selectedPC.status !== 'paused' && (

@@ -116,3 +116,38 @@ exports.reservePc = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.cancelReserve = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findByPk(req.user.id);
+
+        if (!user) return res.status(404).json({ success: false, message: 'Foydalanuvchi topilmadi' });
+
+        const pc = await Computer.findByPk(id);
+        if (!pc) return res.status(404).json({ success: false, message: 'Kompyuter topilmadi' });
+
+        // User faqat o'zining reservationini o'chira oladi (yoki manager bo'lmasa)
+        // Biz player controlleridamiz, demak faqat player uchun
+        const session = await Session.findOne({
+            where: { ComputerId: id, status: 'paused', reserveTime: { [Op.ne]: null } },
+            order: [['createdAt', 'DESC']]
+        });
+
+        if (session) {
+            session.status = 'cancelled';
+            await session.save();
+        }
+
+        pc.status = 'free';
+        await pc.save();
+
+        if (req.app.get('io')) {
+            req.app.get('io').to(`club_${pc.ClubId}`).emit('room_update');
+        }
+
+        res.json({ success: true, message: 'Bron muvaffaqiyatli bekor qilindi!' });
+    } catch (error) {
+        next(error);
+    }
+};

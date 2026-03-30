@@ -100,6 +100,78 @@ exports.registerPlayer = async (req, res, next) => {
     }
 };
 
+exports.telegramAuth = async (req, res, next) => {
+    try {
+        const { tgUser, clubId } = req.body;
+        if (!tgUser || !tgUser.id) {
+            return res.status(400).json({ success: false, message: 'Telegram ma\\'lumoti yo\\'q' });
+        }
+
+        let user = await User.findOne({ where: { telegramId: tgUser.id.toString() } });
+
+        if (!user) {
+            const baseUsername = tgUser.username || `tg_${tgUser.id}`;
+            let username = baseUsername;
+            let existingUsername = await User.findOne({ where: { username } });
+            let counter = 1;
+            while (existingUsername) {
+                username = `${baseUsername}_${counter}`;
+                existingUsername = await User.findOne({ where: { username } });
+                counter++;
+            }
+
+            user = await User.create({
+                telegramId: tgUser.id.toString(),
+                firstName: tgUser.first_name || '',
+                lastName: tgUser.last_name || '',
+                username: username,
+                role: 'player',
+                ClubId: clubId || null,
+                status: 'active'
+            });
+
+            let clubName = "Noma'lum Klub";
+            if (clubId) {
+                const clubInfo = await Club.findByPk(clubId);
+                if (clubInfo) clubName = clubInfo.name;
+            }
+
+            await Broadcast.create({
+                message: `🎉 Yangi O'yinchi(Telegram) ro'yxatdan o'tdi!\nIsmi: ${tgUser.first_name}\nKlub: ${clubName}`,
+                type: 'global',
+                senderRole: 'system'
+            });
+        } else {
+            // Agar boshqa klubga o'tgan bo'lsa, ClubId ni almashtiramiz
+            if (clubId && user.ClubId != clubId) {
+                user.ClubId = clubId;
+            }
+            user.lastLogin = new Date();
+            await user.save();
+        }
+
+        const token = jwt.sign(
+            { id: user.id, username: user.username, role: user.role },
+            config.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                ClubId: user.ClubId,
+                telegramId: user.telegramId
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 exports.ping = (req, res) => {
     res.json({
         message: "GameZone API is running! 🚀",

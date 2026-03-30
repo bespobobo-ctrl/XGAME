@@ -19,6 +19,7 @@ const statsCtrl = require('../controllers/statsController');
 router.get('/health', (req, res) => res.status(200).send('API Healthy'));
 router.post('/login', asyncHandler(authCtrl.login));
 router.post('/register', asyncHandler(authCtrl.registerPlayer));
+router.post('/telegram-auth', asyncHandler(authCtrl.telegramAuth));
 
 /**
  * 🏛️ CLUB ROUTES (Admin Protected)

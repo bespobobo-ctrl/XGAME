@@ -11,6 +11,7 @@ import ManagerLogin from './views/ManagerLogin';
 import ManagerSetup from './views/ManagerSetup';
 import ManagerDashboard from './views/ManagerDashboard';
 import UserRegister from './views/UserRegister';
+import UserDashboard from './views/UserDashboard';
 
 const App = () => {
   const [view, setView] = useState('intro'); // intro, home, superAdmin, managerDashboard, managerLogin, clubIntro, userRegister
@@ -31,6 +32,7 @@ const App = () => {
         setUser(userData);
         if (userData.role === 'super_admin') setView('superAdmin');
         else if (userData.role === 'manager') setView('managerDashboard');
+        else if (userData.role === 'player') setView('userDashboard');
       } catch (e) { localStorage.clear(); }
     }
   }, []);
@@ -116,9 +118,13 @@ const App = () => {
               <UserRegister
                 club={selectedClub}
                 onBack={() => setView('clubIntro')}
-                onComplete={() => setView('home')}
+                onComplete={(res) => {
+                  setUser(res.user);
+                  setView('userDashboard');
+                }}
               />
             )}
+            {view === 'userDashboard' && <UserDashboard user={user} onLogout={logout} />}
             {view === 'superAdmin' && <SuperAdminDashboard activeTab={adminTab} />}
             {view === 'managerLogin' && <ManagerLogin onLogin={handleManagerLogin} onBack={() => setView('home')} />}
             {view === 'managerSetup' && <ManagerSetup onFinish={() => setView('managerDashboard')} />}
@@ -148,7 +154,7 @@ const App = () => {
                 <div onClick={() => setManagerTab('rooms')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'rooms' ? '#7000ff' : '#fff' }}>🗺️ Xarita</div>
                 <div onClick={() => setManagerTab('settings')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'settings' ? '#7000ff' : '#fff' }}>⚙️ Sozlamalar</div>
               </motion.nav>
-            ) : (view === 'home' || view === 'clubIntro' || view === 'userRegister' || view === 'managerLogin') ? (
+            ) : (view === 'home' || view === 'clubIntro' || view === 'userRegister' || view === 'managerLogin' || view === 'userDashboard') ? (
               /* 🎮 USER NAVIGATION */
               <motion.nav
                 initial={{ y: 100 }} animate={{ y: 0 }}
@@ -157,9 +163,10 @@ const App = () => {
                 <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none', transition: '0.3s' }}>🏠 Asosiy</div>
                 <div onClick={() => {
                   if (user && user.role === 'manager') setView('managerDashboard');
+                  else if (user && user.role === 'player') setView('userDashboard');
                   else if (user && user.role === 'super_admin') setView('superAdmin');
                   else setView('managerLogin');
-                }} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: (view === 'managerLogin' || view === 'managerDashboard') ? '#7000ff' : 'rgba(255,255,255,0.3)', textShadow: (view === 'managerLogin' || view === 'managerDashboard') ? '0 0 15px #7000ff' : 'none', transition: '0.3s' }}>👤 Profil</div>
+                }} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: (view === 'managerLogin' || view === 'managerDashboard' || view === 'userDashboard') ? '#7000ff' : 'rgba(255,255,255,0.3)', textShadow: (view === 'managerLogin' || view === 'managerDashboard' || view === 'userDashboard') ? '0 0 15px #7000ff' : 'none', transition: '0.3s' }}>👤 Profil</div>
               </motion.nav>
             ) : null}
           </AnimatePresence>

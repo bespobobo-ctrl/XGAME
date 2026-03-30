@@ -47,6 +47,7 @@ router.get('/admin/stats', auth, authorize('super_admin'), asyncHandler(statsCtr
 router.post('/admin/broadcast', auth, authorize('super_admin'), asyncHandler(broadcastCtrl.sendBroadcast));
 
 const managerAppCtrl = require('../controllers/managerAppController');
+const playerCtrl = require('../controllers/playerController');
 
 /**
  * 👤 MANAGER DASHBOARD (Mini-App)
@@ -58,5 +59,10 @@ router.post('/manager/broadcast', auth, authorize('manager'), asyncHandler(manag
 router.post('/manager/pc/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.pcAction));
 router.put('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.editRoom));
 router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.deleteRoom));
+
+/**
+ * 🎮 PLAYER DASHBOARD (Gamer Profile)
+ */
+router.get('/player/me', auth, authorize('player'), asyncHandler(playerCtrl.getMe));
 
 module.exports = router;

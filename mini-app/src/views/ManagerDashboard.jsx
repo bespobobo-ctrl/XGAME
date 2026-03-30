@@ -123,13 +123,20 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             <motion.div
                 key={pc.id} whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedPC({ ...pc, roomPrice: room.pricePerHour })}
-                style={{ background: '#111', border: `1px solid ${isActive ? color + '44' : '#222'}`, borderTop: `3px solid ${isActive ? color : '#333'}`, borderRadius: '22px', padding: '18px 10px', textAlign: 'center', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+                style={{
+                    background: '#111',
+                    border: `1.5px solid ${isActive ? color : '#222'}`,
+                    borderRadius: '25px',
+                    padding: '20px 10px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    boxShadow: isActive ? `0 0 15px ${color}15` : 'none'
+                }}
             >
-                {isActive && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '4px', background: color, width: `${Math.min(progress, 100)}%`, transition: '0.5s' }} />}
-                <div style={{ color: color, marginBottom: '8px', opacity: isActive ? 1 : 0.4 }}>{icon}</div>
-                <span style={{ fontSize: '13px', fontWeight: '900' }}>{pc.name}</span>
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: isActive ? color : '#555', marginTop: '4px' }}>{label}</div>
-                {isActive && <div style={{ fontSize: '10px', color: '#fff', marginTop: '5px', opacity: 0.7 }}>{cost.toLocaleString()} UZS</div>}
+                <div style={{ color: color, marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>{icon}</div>
+                <div style={{ fontSize: '12px', fontWeight: '900', color: '#fff', marginBottom: '4px' }}>{pc.name}</div>
+                <div style={{ fontSize: '11px', fontWeight: '900', color: isActive ? color : '#555' }}>{label}</div>
             </motion.div>
         );
     };
@@ -350,19 +357,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
-            <nav style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', background: 'rgba(28,28,30,0.8)', border: '1px solid rgba(255,255,255,0.05)', padding: '15px 15px', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(25px)', zIndex: 100, boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
-                {[
-                    { id: 'stats', label: 'Stat', icon: '📊' },
-                    { id: 'rooms', label: 'Xarita', icon: '🗺️' },
-                    { id: 'payments', label: 'To\'lov', icon: '💰' },
-                    { id: 'settings', label: 'Sozlamalar', icon: '⚙️' }
-                ].map(tab => (
-                    <div key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === tab.id ? '#7000ff' : '#555', transition: '0.3s', flex: 1 }}>
-                        <span style={{ fontSize: '22px', marginBottom: '2px' }}>{tab.icon}</span>
-                        <span style={{ fontSize: '10px', fontWeight: 'bold' }}>{tab.label}</span>
-                    </div>
-                ))}
-            </nav>
         </div>
     );
 };

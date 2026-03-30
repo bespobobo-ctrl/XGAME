@@ -65,6 +65,7 @@ exports.getRooms = async (req, res, next) => {
 
         res.json({ success: true, rooms });
     } catch (error) {
+        console.error("GET_ROOMS_ERROR:", error);
         next(error);
     }
 };

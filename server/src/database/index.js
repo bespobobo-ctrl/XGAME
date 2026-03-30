@@ -66,10 +66,17 @@ async function initializeDatabase() {
             await sequelize.authenticate();
             try {
                 await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedAt` DATETIME;");
-                logger.info('✅ notifiedAt ustuni Sessions jadvaliga qo\'shildi.');
-            } catch (e) {
-                // Agar ustun allaqachon bo'lsa xato beradi (ignore)
-            }
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `expectedMinutes` INTEGER;");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestName` TEXT;");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestPhone` TEXT;");
+            } catch (e) { }
+
             await sequelize.sync({ alter: false });
             logger.info('✅ Database sinxronizatsiya qilindi (Safe mode)!');
         }

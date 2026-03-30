@@ -64,5 +64,7 @@ router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(mana
  * 🎮 PLAYER DASHBOARD (Gamer Profile)
  */
 router.get('/player/me', auth, authorize('player'), asyncHandler(playerCtrl.getMe));
+router.get('/player/rooms', auth, authorize('player'), asyncHandler(playerCtrl.getRooms));
+router.post('/player/pc/:id/reserve', auth, authorize('player'), asyncHandler(playerCtrl.reservePc));
 
 module.exports = router;

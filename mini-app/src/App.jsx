@@ -32,7 +32,7 @@ const App = () => {
         setUser(userData);
         if (userData.role === 'super_admin') setView('superAdmin');
         else if (userData.role === 'manager') setView('managerDashboard');
-        else if (userData.role === 'player') setView('userDashboard');
+        else if (userData.role === 'customer') setView('userDashboard');
       } catch (e) { localStorage.clear(); }
     }
   }, []);
@@ -163,7 +163,7 @@ const App = () => {
                 <div onClick={() => setView('home')} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: view === 'home' ? '#39ff14' : 'rgba(255,255,255,0.3)', textShadow: view === 'home' ? '0 0 10px #39ff14' : 'none', transition: '0.3s' }}>🏠 Asosiy</div>
                 <div onClick={() => {
                   if (user && user.role === 'manager') setView('managerDashboard');
-                  else if (user && user.role === 'player') setView('userDashboard');
+                  else if (user && user.role === 'customer') setView('userDashboard');
                   else if (user && user.role === 'super_admin') setView('superAdmin');
                   else setView('managerLogin');
                 }} style={{ fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: (view === 'managerLogin' || view === 'managerDashboard' || view === 'userDashboard') ? '#7000ff' : 'rgba(255,255,255,0.3)', textShadow: (view === 'managerLogin' || view === 'managerDashboard' || view === 'userDashboard') ? '0 0 15px #7000ff' : 'none', transition: '0.3s' }}>👤 Profil</div>

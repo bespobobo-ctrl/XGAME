@@ -120,7 +120,7 @@ exports.telegramAuth = async (req, res, next) => {
                 firstName: tgUser.first_name || '',
                 lastName: tgUser.last_name || '',
                 username: username,
-                role: 'player',
+                role: 'customer',
                 ClubId: clubId || null,
                 status: 'active'
             });

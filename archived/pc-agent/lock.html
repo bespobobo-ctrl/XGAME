@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>LOCKED | GameZone</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
     
@@ -11,56 +12,70 @@
       padding: 0;
       width: 100vw;
       height: 100vh;
-      background-color: #050505;
+      background-color: #000;
       color: #fff;
       font-family: 'Inter', sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       overflow: hidden;
-      cursor: none; /* Sichqoncha ko'rinmaydi */
+      cursor: none;
     }
 
     .container {
       text-align: center;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
     }
 
-    /* Qizil Pulsli Qulf */
     .lock-icon {
-      font-size: 8rem;
-      color: #ef4444;
-      text-shadow: 0 0 50px rgba(239, 68, 68, 0.6);
+      font-size: 5rem;
+      color: #ff3b30;
+      filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.5));
       animation: pulse 2s infinite alternate;
-      margin-bottom: 2rem;
     }
 
     h1 {
-      font-size: 4rem;
-      letter-spacing: 5px;
-      margin: 0 0 10px 0;
+      font-size: 3.5rem;
+      font-weight: 900;
+      margin: 0;
+      letter-spacing: -2px;
       text-transform: uppercase;
-      background: linear-gradient(180deg, #fff, #888);
+      background: linear-gradient(180deg, #fff, #444);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    p {
-      font-size: 1.5rem;
-      color: #a1a1aa;
+    .qr-box {
+      background: #fff;
+      padding: 15px;
+      border-radius: 25px;
+      box-shadow: 0 0 50px rgba(255, 255, 255, 0.1);
+      margin-top: 10px;
+    }
+
+    .hint {
+      font-size: 1.2rem;
+      color: #888;
+      max-width: 400px;
+      line-height: 1.5;
     }
 
     .footer {
-      position: absolute;
-      bottom: -150px; /* Ozgina tepaga suriladi */
-      width: 100%;
-      color: #52525b;
-      font-size: 1rem;
+      position: fixed;
+      bottom: 30px;
+      color: #333;
+      font-size: 0.9rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
 
     @keyframes pulse {
-      0% { transform: scale(1); filter: brightness(1); }
-      100% { transform: scale(1.1); filter: brightness(1.5); }
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.1); opacity: 1; }
     }
   </style>
 </head>
@@ -68,23 +83,37 @@
 
   <div class="container">
     <div class="lock-icon">🔒</div>
-    <h1>GameZone | X-Game</h1>
-    <p>Ushbu kompyuter vaqtinchalik qulflangan.</p>
-    <p style="font-size: 1.2rem; margin-top: 30px;">
-      O'ynash uchun Telegram Bot orqali bron qiling <br>yoki Administratorga murojaat qiling!
-    </p>
+    <h1>GAME ZONE</h1>
+    <p class="hint">O'yinni boshlash uchun Telegram bot - <b>@X_Game123_bot</b> orqali quyidagi QR kodni skanerlang.</p>
+    
+    <div class="qr-box">
+      <canvas id="qrcode"></canvas>
+    </div>
 
-    <!-- Kichik yordam idenfikatori kompyuterni nomini ko'rsatish uchun -->
     <div class="footer">
-      System ID: <span id="pc-name">Loading...</span>
+      SYSTEM ID: <span id="pc-name">...</span>
     </div>
   </div>
 
   <script>
-    // Agar agent uzoq serverdan ismini(nomini) olsa shu yerga kiritadi
     const { ipcRenderer } = require('electron');
+    
     ipcRenderer.on('update-pc-name', (event, name) => {
       document.getElementById('pc-name').innerText = name;
+      
+      // QR kodni generatsiya qilish
+      // QR tarkibida faqat PC nomi bo'ladi, Mini-app uni taniydi
+      QRCode.toCanvas(document.getElementById('qrcode'), name, {
+        width: 220,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      }, function (error) {
+        if (error) console.error(error)
+        console.log('QR code generated!');
+      });
     });
   </script>
 

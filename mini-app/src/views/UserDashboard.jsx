@@ -271,7 +271,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                         <CreditCard size={18} color="#7000ff" />
                                     </div>
                                     <h4 style={{ fontSize: '22px', letterSpacing: '4px', margin: 0, fontWeight: 'bold' }}>{profileData?.club?.cardNumber || '---- ---- ---- ----'}</h4>
-                                    <p style={{ margin: '15px 0 0', fontSize: '14px', fontWeight: 'bold', color: '#888' }}>EGASI: {profileData?.club?.cardOwner || 'MA'LUMOT YO'Q'}</p>
+                                    <p style={{ margin: '15px 0 0', fontSize: '14px', fontWeight: 'bold', color: '#888' }}>EGASI: {profileData?.club?.cardOwner || "MA'LUMOT YO'Q"}</p>
                                 </div>
                                 <p style={{ fontSize: '11px', color: '#555', lineHeight: '1.5' }}>💡 Ushbu kartaga kerakli summani o'tkazing va to'lov chekini (screenshot) pastdagi tugma orqali yuklang.</p>
                             </div>

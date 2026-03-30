@@ -28,6 +28,13 @@ const Transaction = sequelize.define('Transaction', {
     },
     comment: {
         type: DataTypes.STRING,
+    },
+    status: {
+        type: DataTypes.ENUM('pending', 'approved', 'rejected'), // Yangi
+        defaultValue: 'approved' // Eski tranzaksiyalar uchun auto-approved
+    },
+    receiptImage: {
+        type: DataTypes.STRING // Yangi: Chek surati
     }
 });
 

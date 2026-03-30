@@ -1,5 +1,6 @@
 {
-    "pcName": "PC-01",
-    "serverUrl": "https://magazines-neo-mailed-justify.trycloudflare.com",
+    "pcName": "TEST-PC",
+    "clubId": 1,
+    "serverUrl": "http://localhost:3001",
     "isDev": true
 }

@@ -59,6 +59,9 @@ router.post('/manager/broadcast', auth, authorize('manager'), asyncHandler(manag
 router.post('/manager/pc/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.pcAction));
 router.put('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.editRoom));
 router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.deleteRoom));
+router.get('/manager/topups', auth, authorize('manager'), asyncHandler(managerAppCtrl.getTopUpRequests));
+router.post('/manager/topups/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.updateTopUpStatus));
+router.patch('/manager/club/card', auth, authorize('manager'), asyncHandler(managerAppCtrl.updateClubCard));
 
 /**
  * 🎮 PLAYER DASHBOARD (Gamer Profile)
@@ -68,5 +71,6 @@ router.get('/player/rooms', auth, authorize('customer'), asyncHandler(playerCtrl
 router.post('/player/pc/:id/reserve', auth, authorize('customer'), asyncHandler(playerCtrl.reservePc));
 router.delete('/player/pc/:id/reserve', auth, authorize('customer'), asyncHandler(playerCtrl.cancelReserve));
 router.post('/player/pc/unlock-with-qr', auth, authorize('customer'), asyncHandler(playerCtrl.unlockWithQR));
+router.post('/player/topup', auth, authorize('customer'), upload.single('receipt'), asyncHandler(playerCtrl.submitTopUp));
 
 module.exports = router;

@@ -211,3 +211,28 @@ exports.unlockWithQR = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.submitTopUp = async (req, res, next) => {
+    try {
+        const { amount } = req.body;
+        const user = await User.findByPk(req.user.id);
+        if (!user || user.status !== 'active') return res.status(401).json({ error: 'Foydalanuvchi topilmadi' });
+
+        if (!req.file) return res.status(400).json({ error: 'Chek suratini yuklang' });
+
+        await Transaction.create({
+            amount: parseInt(amount) || 0,
+            type: 'deposit',
+            ClubId: user.ClubId,
+            UserId: user.id,
+            status: 'pending',
+            receiptImage: req.file.path,
+            description: `To'lov so'rovi: ${user.username}`,
+            comment: `Foydalanuvchi tomonidan yuborilgan chek`
+        });
+
+        res.json({ success: true, message: 'To\'lov so\'rovi yuborildi! Admin tasdiqlashini kuting 🕒' });
+    } catch (error) {
+        next(error);
+    }
+};

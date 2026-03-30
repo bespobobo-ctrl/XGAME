@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send } from 'lucide-react';
 
 const UserDashboard = ({ user, onLogout, setView }) => {
     const [profileData, setProfileData] = useState(null);
     const [roomsData, setRoomsData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('profile'); // profile, map
+    const [activeTab, setActiveTab] = useState('profile'); // profile, map, topup
 
     const [stats, setStats] = useState({ total: 0, free: 0, busy: 0 });
     const [selectedPC, setSelectedPC] = useState(null);
@@ -15,6 +16,11 @@ const UserDashboard = ({ user, onLogout, setView }) => {
     const [openRoomId, setOpenRoomId] = useState(null);
     const [reserveTimeInput, setReserveTimeInput] = useState('');
     const [reserveLoading, setReserveLoading] = useState(false);
+
+    // 💸 TOP-UP STATES
+    const [topupAmount, setTopupAmount] = useState('10000');
+    const [receiptFile, setReceiptFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     const clubName = profileData?.user?.clubName || 'GAME ZONE';
     const userName = profileData?.user?.name || user?.username || 'Gamer';
@@ -68,9 +74,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
             return;
         }
 
-        window.Telegram.WebApp.showScanQrPopup({
-            text: "Kompyuter ekranidagi QR kodni skanerlang"
-        }, async (text) => {
+        window.Telegram.WebApp.showScanQrPopup({ text: "Kompyuter ekranidagi QR kodni skanerlang" }, async (text) => {
             if (!text) return true;
             try {
                 const res = await callAPI('/api/player/pc/unlock-with-qr', {
@@ -92,6 +96,31 @@ const UserDashboard = ({ user, onLogout, setView }) => {
         });
     };
 
+    const handleSubmitTopUp = async () => {
+        if (!receiptFile || !topupAmount) return alert("Summani kiriting va chekni yuklang!");
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('amount', topupAmount);
+            formData.append('receipt', receiptFile);
+
+            const res = await fetch(`${window.API_URL || '/api'}/player/topup`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                setTopupAmount('10000');
+                setReceiptFile(null);
+                setActiveTab('profile');
+                fetchData();
+            } else { alert(data.error); }
+        } catch (error) { alert("Serverga ulanishda xato!"); }
+        finally { setUploading(false); }
+    };
+
     const handleReserve = async () => {
         if (!selectedPC || !reserveTimeInput) return;
         setReserveLoading(true);
@@ -104,14 +133,9 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                 alert('Muvaffaqiyatli bron qilindi! 🎉');
                 setSelectedPC(null);
                 fetchData();
-            } else {
-                alert(res.error || res.message || 'Xatolik yuz berdi');
-            }
-        } catch (error) {
-            alert('Internet bilan muammo');
-        } finally {
-            setReserveLoading(false);
-        }
+            } else { alert(res.error || res.message); }
+        } catch (error) { alert('Internet bilan muammo'); }
+        finally { setReserveLoading(false); }
     };
 
     const getTimeDiff = (sinceDate) => {
@@ -122,16 +146,18 @@ const UserDashboard = ({ user, onLogout, setView }) => {
         return h > 0 ? `${h}h ${m}m` : `${m} daqiqa`;
     };
 
-    const getRemainingTime = (session) => {
-        if (!session || !session.startTime || !session.expectedMinutes) return 'Ochiq qoladi';
-        const start = new Date(session.startTime);
-        const end = new Date(start.getTime() + session.expectedMinutes * 60000);
-        const diff = Math.floor((end - new Date()) / 60000);
-        if (diff <= 0) return 'Tugayapti';
-        const h = Math.floor(diff / 60);
-        const m = diff % 60;
-        return h > 0 ? `${h}h ${m}m qoldi` : `${m} daqiqa qoldi`;
-    };
+    const navItem = (id, label, icon) => (
+        <div
+            onClick={() => setActiveTab(id)}
+            style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                color: activeTab === id ? '#7000ff' : '#666', cursor: 'pointer', transition: '0.3s'
+            }}
+        >
+            <span style={{ fontSize: '24px' }}>{icon}</span>
+            <span style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '4px' }}>{label}</span>
+        </div>
+    );
 
     return (
         <motion.div
@@ -140,193 +166,159 @@ const UserDashboard = ({ user, onLogout, setView }) => {
         >
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <div>
-                    <h1 style={{ fontSize: '32px', margin: 0, fontWeight: '900', letterSpacing: '-1px', color: '#fff', textTransform: 'uppercase' }}>{clubName}</h1>
-                    <p style={{ color: '#fff', margin: 0, fontSize: '14px', fontWeight: 'bold', letterSpacing: '2px', opacity: 0.8, textTransform: 'uppercase' }}>DASHBOARD</p>
+                    <h1 style={{ fontSize: '28px', margin: 0, fontWeight: '900', letterSpacing: '-1px' }}>{clubName.toUpperCase()}</h1>
+                    <p style={{ color: '#888', margin: 0, fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px' }}>DASHBOARD</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <button onClick={fetchData} style={{ background: '#1c1c1e', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🔄</button>
-                    <button onClick={onLogout} style={{ background: 'rgba(255,255,255,0.05)', color: '#ff3b30', border: 'none', padding: '10px 20px', borderRadius: '14px', fontWeight: '900', fontSize: '13px', textTransform: 'uppercase' }}>Chiqish</button>
-                </div>
+                <button onClick={onLogout} style={{ background: '#ff444411', color: '#ff4444', border: 'none', padding: '8px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '10px' }}>CHIQISH</button>
             </header>
 
             {loading && roomsData.length === 0 ? (
                 <div style={{ textAlign: 'center', marginTop: '100px' }}>
-                    <div className="spinner" style={{ border: '3px solid rgba(255,255,255,0.1)', borderTop: '3px solid #00ffcc', borderRadius: '50%', width: '40px', height: '40px', margin: '0 auto' }}></div>
+                    <div className="spinner" style={{ border: '3px solid #222', borderTop: '3px solid #7000ff', borderRadius: '50%', width: '40px', height: '40px', margin: '0 auto', animation: 'spin 1s linear infinite' }}></div>
                 </div>
             ) : (
                 <AnimatePresence mode='wait'>
-                    {activeTab === 'profile' ? (
+                    {activeTab === 'profile' && (
                         <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ marginBottom: '5px' }}>
-                                <h3 style={{ margin: 0, fontSize: '16px', color: '#888' }}>Xush kelibsiz,</h3>
-                                <h2 style={{ margin: 0, fontSize: '32px', color: '#fff', fontWeight: '900' }}>{userName} 🕹️</h2>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '14px', color: '#888' }}>Salom,</h3>
+                                <h2 style={{ margin: 0, fontSize: '32px', fontWeight: '900' }}>{userName} ✨</h2>
                             </div>
 
-                            {/* 🚀 QUICK SCAN BUTTON */}
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
                                 onClick={handleScanQR}
-                                style={{
-                                    background: 'linear-gradient(135deg, #007aff, #5856d6)',
-                                    border: 'none',
-                                    color: '#fff',
-                                    padding: '25px',
-                                    borderRadius: '25px',
-                                    fontSize: '18px',
-                                    fontWeight: '900',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '15px',
-                                    boxShadow: '0 10px 20px rgba(0,122,255,0.3)'
-                                }}
+                                style={{ background: 'linear-gradient(135deg, #007aff, #5856d6)', border: 'none', color: '#fff', padding: '25px', borderRadius: '25px', fontSize: '18px', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}
                             >
-                                <span style={{ fontSize: '30px' }}>📷</span>
-                                QR SKANERLASH VA KIRISH
+                                <ImageIcon size={30} /> QR KIRISH
                             </motion.button>
 
-                            <div style={{ background: '#1c1c1e', borderRadius: '25px', padding: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                                    <span style={{ fontSize: '12px', color: '#888', fontWeight: '900' }}>LIVE STATS</span>
-                                    <span style={{ fontSize: '12px', color: '#32d74b' }}>● ONLINE</span>
+                            <div style={{ background: 'linear-gradient(135deg, #111, #050505)', borderRadius: '25px', padding: '25px', border: '1px solid #222' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <h4 style={{ margin: 0, fontSize: '14px', color: '#7000ff', fontWeight: 'bold' }}>BALANSINGIZ</h4>
+                                    <button
+                                        onClick={() => setActiveTab('topup')}
+                                        style={{ background: '#7000ff22', border: 'none', color: '#7000ff', padding: '8px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}
+                                    >+ TO'LDIRISH</button>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <div><p style={{ margin: 0, fontSize: '11px', color: '#555' }}>JAMI</p><h3 style={{ margin: '5px 0 0', fontSize: '24px' }}>{stats.total}</h3></div>
-                                    <div><p style={{ margin: 0, fontSize: '11px', color: '#555' }}>BO'SH</p><h3 style={{ margin: '5px 0 0', fontSize: '24px', color: '#32d74b' }}>{stats.free}</h3></div>
-                                    <div><p style={{ margin: 0, fontSize: '11px', color: '#555' }}>BAND</p><h3 style={{ margin: '5px 0 0', fontSize: '24px', color: '#ff3b30' }}>{stats.busy}</h3></div>
-                                </div>
+                                <h4 style={{ margin: 0, fontSize: '36px', fontWeight: '900' }}>{profileData?.user?.balance?.toLocaleString()} <span style={{ fontSize: '14px', color: '#444' }}>UZS</span></h4>
                             </div>
 
-                            <div style={{ background: 'linear-gradient(135deg, rgba(0,255,204,0.1), rgba(112,0,255,0.1))', borderRadius: '25px', padding: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <h3 style={{ margin: 0, fontSize: '18px', color: '#00ffcc', fontWeight: '900' }}>HISOBINGIZ</h3>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '20px' }}>
-                                    <h4 style={{ margin: 0, fontSize: '34px', color: '#fff' }}>{profileData?.user?.balance?.toLocaleString() || 0}<span style={{ fontSize: '14px', marginLeft: '5px' }}>UZS</span></h4>
-                                    <span style={{ fontSize: '12px', color: '#888' }}>ID: #{profileData?.user?.id || '...'}</span>
-                                </div>
+                            <div style={{ background: '#111', borderRadius: '25px', padding: '20px', border: '1px solid #222' }}>
+                                <h4 style={{ margin: '0 0 15px', fontSize: '12px', color: '#444' }}>OXIRGI HARAKATLAR</h4>
+                                {profileData?.user?.Transactions?.slice(0, 3).map((t, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #222' }}>
+                                        <div style={{ fontSize: '13px' }}>{t.description || t.type}</div>
+                                        <div style={{ fontSize: '13px', color: t.type === 'deposit' ? '#39ff14' : '#ff4444', fontWeight: 'bold' }}>
+                                            {t.type === 'deposit' ? '+' : '-'}{t.amount.toLocaleString()}
+                                            {t.status === 'pending' && ' 🕒'}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </motion.div>
-                    ) : (
-                        <motion.div key="map" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {roomsData.map(room => {
-                                const pcs = room.Computers || room.computers || [];
-                                const busyCount = pcs.filter(p => p.status === 'busy' || p.status === 'paused' || p.status === 'reserved').length;
-                                const isOpen = openRoomId === room.id;
+                    )}
 
-                                return (
-                                    <div key={room.id} style={{ background: '#1c1c1e', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-                                        <div
-                                            onClick={() => setOpenRoomId(isOpen ? null : room.id)}
-                                            style={{ padding: '20px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                                        >
-                                            <div>
-                                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#fff' }}>{room.name.toUpperCase()}</h3>
-                                                {!isOpen && <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#888' }}>{pcs.length} PC • {busyCount} band</p>}
-                                            </div>
-                                            <span style={{ fontSize: '18px', opacity: 0.5 }}>{isOpen ? '▲' : '▼'}</span>
+                    {activeTab === 'map' && (
+                        <motion.div key="map" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {roomsData.map(room => (
+                                <div key={room.id} style={{ background: '#111', borderRadius: '25px', border: '1px solid #222', overflow: 'hidden' }}>
+                                    <div onClick={() => setOpenRoomId(openRoomId === room.id ? null : room.id)} style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900' }}>{room.name.toUpperCase()}</h3>
+                                            <p style={{ margin: '5px 0 0', fontSize: '10px', color: '#444' }}>{room.Computers?.length} PC • JAMI</p>
                                         </div>
-
-                                        <AnimatePresence>
-                                            {isOpen && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                                                    style={{ padding: '0 20px 25px', overflow: 'hidden' }}
-                                                >
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))', gap: '12px' }}>
-                                                        {pcs.map(pc => {
-                                                            const isBusy = pc.status === 'busy' || pc.status === 'paused';
-                                                            const isReserved = pc.status === 'reserved';
-                                                            const color = isBusy ? '#ff3b30' : (isReserved ? '#ff9f0a' : '#32d74b');
-                                                            const sess = (pc.Sessions || pc.sessions || [])[0];
-
-                                                            return (
-                                                                <motion.div
-                                                                    key={pc.id} whileTap={{ scale: 0.95 }}
-                                                                    onClick={() => {
-                                                                        if (!isBusy && !isReserved) setSelectedPC(pc);
-                                                                        else setPcDetail(pc);
-                                                                    }}
-                                                                    style={{ background: '#000', border: `1px solid ${color}44`, borderRadius: '20px', padding: '20px 5px', textAlign: 'center' }}
-                                                                >
-                                                                    <div style={{ fontSize: '22px', marginBottom: '8px' }}>{pc.type === 'vip' ? '💎' : '🖥️'}</div>
-                                                                    <div style={{ color: '#fff', fontWeight: '900', fontSize: '11px' }}>{pc.name}</div>
-                                                                    {isBusy && sess && <div style={{ fontSize: '9px', color: '#888', marginTop: '5px' }}>{getTimeDiff(sess.startTime)}</div>}
-                                                                </motion.div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
+                                        <ChevronRight style={{ transform: openRoomId === room.id ? 'rotate(90deg)' : 'none', transition: '0.3s' }} />
                                     </div>
-                                );
-                            })}
+                                    <AnimatePresence>
+                                        {openRoomId === room.id && (
+                                            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden', padding: '0 15px 20px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>
+                                                    {room.Computers?.map(pc => (
+                                                        <div
+                                                            key={pc.id}
+                                                            onClick={() => setPcDetail(pc)}
+                                                            style={{
+                                                                background: '#000', border: `1px solid ${pc.status === 'free' ? '#39ff14' : pc.status === 'reserved' ? '#ffaa00' : '#ff00ff'}22`,
+                                                                borderRadius: '15px', padding: '15px 5px', textAlign: 'center'
+                                                            }}
+                                                        >
+                                                            <Monitor size={24} style={{ color: pc.status === 'free' ? '#39ff14' : pc.status === 'reserved' ? '#ffaa00' : '#ff00ff' }} />
+                                                            <div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>{pc.name}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            ))}
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'topup' && (
+                        <motion.div key="topup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <button onClick={() => setActiveTab('profile')} style={{ background: '#222', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '12px' }}><ArrowLeft size={18} /></button>
+                                <h2 style={{ fontSize: '24px', fontWeight: '900' }}>BALANS TO'LDIRISH</h2>
+                            </div>
+
+                            <div style={{ background: 'linear-gradient(135deg, #1c1c1e, #0a0a0a)', borderRadius: '25px', padding: '25px', border: '1px solid #333' }}>
+                                <h4 style={{ margin: '0 0 15px', fontSize: '12px', color: '#7000ff', letterSpacing: '1px' }}>KARTA MA'LUMOTLARI</h4>
+                                <div style={{ background: '#000', padding: '20px', borderRadius: '20px', marginBottom: '15px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                        <span style={{ fontSize: '12px', color: '#666' }}>KARTA RAQAMI:</span>
+                                        <CreditCard size={18} color="#7000ff" />
+                                    </div>
+                                    <h4 style={{ fontSize: '22px', letterSpacing: '4px', margin: 0, fontWeight: 'bold' }}>{profileData?.club?.cardNumber || '---- ---- ---- ----'}</h4>
+                                    <p style={{ margin: '15px 0 0', fontSize: '14px', fontWeight: 'bold', color: '#888' }}>EGASI: {profileData?.club?.cardOwner || 'MA'LUMOT YO'Q'}</p>
+                                </div>
+                                <p style={{ fontSize: '11px', color: '#555', lineHeight: '1.5' }}>💡 Ushbu kartaga kerakli summani o'tkazing va to'lov chekini (screenshot) pastdagi tugma orqali yuklang.</p>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div>
+                                    <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '8px' }}>O'TKAZILGAN SUMMA (UZS):</label>
+                                    <input
+                                        type="number" value={topupAmount} onChange={e => setTopupAmount(e.target.value)}
+                                        style={{ width: '100%', padding: '18px', background: '#111', border: '1px solid #333', color: '#fff', borderRadius: '20px', fontSize: '20px', fontWeight: 'bold' }}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '8px' }}>TO'LOV CHEKI (SNAPSHOT):</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type="file" accept="image/*"
+                                            onChange={e => setReceiptFile(e.target.files[0])}
+                                            style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 2, cursor: 'pointer' }}
+                                        />
+                                        <div style={{ width: '100%', padding: '30px', background: receiptFile ? '#39ff1411' : '#111', border: `2px dashed ${receiptFile ? '#39ff14' : '#333'}`, borderRadius: '20px', textAlign: 'center' }}>
+                                            {receiptFile ? (
+                                                <div style={{ color: '#39ff14', fontWeight: 'bold' }}>📸 {receiptFile.name} TANLANDI</div>
+                                            ) : (
+                                                <div style={{ color: '#666' }}><ImageIcon size={30} style={{ marginBottom: '10px' }} /><br />GALEREYADAN TANLASH</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleSubmitTopUp} disabled={uploading}
+                                    style={{ width: '100%', padding: '20px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '20px', fontWeight: '900', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                                >
+                                    {uploading ? 'YUKLANMOQDA...' : <><Send size={20} /> TO'LOVNI TASDIQLASHGA YUBORISH</>}
+                                </button>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             )}
 
-            <AnimatePresence>
-                {pcDetail && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px', backdropFilter: 'blur(15px)' }}>
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: '#1c1c1e', width: '100%', maxWidth: '300px', padding: '30px', borderRadius: '30px', border: '1px solid #7000ff', textAlign: 'center' }}>
-                            <h3 style={{ margin: '0 0 10px', fontSize: '24px', fontWeight: '900' }}>{pcDetail.name}</h3>
-                            <div style={{ display: 'inline-block', padding: '5px 15px', borderRadius: '10px', background: pcDetail.status === 'busy' ? '#ff3b3022' : '#ff9f0a22', color: pcDetail.status === 'busy' ? '#ff453a' : '#ff9f0a', fontSize: '12px', fontWeight: '900', marginBottom: '20px' }}>
-                                {pcDetail.status.toUpperCase()}
-                            </div>
-
-                            {(pcDetail.Sessions || pcDetail.sessions || [])[0] && (
-                                <div style={{ textAlign: 'left', background: '#000', padding: '20px', borderRadius: '20px', fontSize: '14px', marginBottom: '20px' }}>
-                                    <p style={{ margin: '0 0 10px', color: '#888' }}>Mijoz: <b style={{ color: '#fff' }}>{(pcDetail.Sessions || pcDetail.sessions || [])[0].guestName || 'Gamer'}</b></p>
-                                    <p style={{ margin: '0 0 10px', color: '#888' }}>Vaqti: <b style={{ color: '#32d74b' }}>{getTimeDiff((pcDetail.Sessions || pcDetail.sessions || [])[0].startTime)}</b></p>
-                                </div>
-                            )}
-
-                            {pcDetail.status === 'reserved' && (pcDetail.Sessions || pcDetail.sessions || [])[0]?.UserId === profileData?.user?.id && (
-                                <button
-                                    onClick={async () => {
-                                        if (!window.confirm("Bronni bekor qilasizmi?")) return;
-                                        const res = await callAPI(`/api/player/pc/${pcDetail.id}/reserve`, { method: 'DELETE' });
-                                        if (res.success) { alert("Bekor qilindi"); setPcDetail(null); fetchData(); }
-                                        else alert(res.error || "Xatolik");
-                                    }}
-                                    style={{ width: '100%', background: 'rgba(255,59,48,0.1)', color: '#ff3b30', border: 'none', padding: '15px', borderRadius: '18px', marginBottom: '10px', fontWeight: 'bold' }}
-                                >
-                                    BEKOR QILISH ❌
-                                </button>
-                            )}
-
-                            <button onClick={() => setPcDetail(null)} style={{ width: '100%', background: '#7000ff', border: 'none', color: '#fff', padding: '15px', borderRadius: '18px', fontWeight: 'bold' }}>YOPISH</button>
-                        </motion.div>
-                    </div>
-                )}
-                {selectedPC && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px', backdropFilter: 'blur(15px)' }}>
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: '#1c1c1e', width: '100%', maxWidth: '300px', padding: '30px', borderRadius: '30px', border: '1px solid #ff00aa', textAlign: 'center' }}>
-                            <h3 style={{ margin: '0 0 20px', fontSize: '24px', fontWeight: '900' }}>BAND QILISH</h3>
-                            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff00aa', marginBottom: '20px' }}>{selectedPC.name}</div>
-                            <input type="time" value={reserveTimeInput} onChange={e => setReserveTimeInput(e.target.value)} style={{ width: '100%', padding: '18px', background: '#000', border: '1px solid #333', color: '#fff', borderRadius: '20px', fontSize: '20px', textAlign: 'center' }} />
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
-                                <button onClick={() => setSelectedPC(null)} style={{ flex: 1, padding: '15px', borderRadius: '18px', background: '#333', border: 'none', color: '#fff' }}>X</button>
-                                <button onClick={handleReserve} disabled={reserveLoading} style={{ flex: 2, padding: '15px', borderRadius: '18px', background: '#ff00aa', border: 'none', color: '#fff', fontWeight: 'bold' }}>OK</button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.05)', padding: '15px', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100, boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
-                <div onClick={() => setView('home')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#888', cursor: 'pointer' }}>
-                    <span style={{ fontSize: '22px' }}>🏠</span>
-                    <span style={{ fontSize: '10px', fontWeight: '900' }}>Asosiy</span>
-                </div>
-                <div onClick={() => setActiveTab('profile')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'profile' ? '#af52de' : '#888', cursor: 'pointer' }}>
-                    <span style={{ fontSize: '22px' }}>👤</span>
-                    <span style={{ fontSize: '10px', fontWeight: '900' }}>Profil</span>
-                </div>
-                <div onClick={() => setActiveTab('map')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'map' ? '#007aff' : '#888', cursor: 'pointer' }}>
-                    <span style={{ fontSize: '22px' }}>🗺️</span>
-                    <span style={{ fontSize: '10px', fontWeight: '900' }}>Xarita</span>
-                </div>
+            <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: 'rgba(28,28,30,0.8)', border: '1px solid rgba(255,255,255,0.05)', padding: '15px 25px', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100, boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
+                {navItem('profile', 'Profil', '👤')}
+                {navItem('map', 'Xarita', '🗺️')}
+                {navItem('topup', 'Balans', '💰')}
             </nav>
             <style>{`
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

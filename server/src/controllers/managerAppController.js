@@ -653,3 +653,78 @@ exports.deleteRoom = async (req, res, next) => {
         next(err);
     }
 };
+
+// ═══════════════════════════════════════════════
+// 💳 TOP-UP MANAGEMENT (Manual Billing)
+// ═══════════════════════════════════════════════
+
+exports.updateClubCard = async (req, res, next) => {
+    try {
+        const { cardNumber, cardOwner } = req.body;
+        const club = await Club.findByPk(req.user.ClubId);
+        if (!club) return res.status(404).json({ error: 'Klub topilmadi' });
+
+        club.cardNumber = cardNumber;
+        club.cardOwner = cardOwner;
+        await club.save();
+
+        res.json({ success: true, message: 'Karta ma\'lumotlari yangilandi' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.getTopUpRequests = async (req, res, next) => {
+    try {
+        const requests = await Transaction.findAll({
+            where: { ClubId: req.user.ClubId, status: 'pending' },
+            include: [{ model: User, attributes: ['id', 'username', 'telegramId'] }],
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(requests);
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.updateTopUpStatus = async (req, res, next) => {
+    const t = await sequelize.transaction();
+    try {
+        const { id } = req.params;
+        const { action, amount } = req.body;
+
+        const trans = await Transaction.findOne({
+            where: { id, ClubId: req.user.ClubId, status: 'pending' }
+        });
+
+        if (!trans) {
+            await t.rollback();
+            return res.status(404).json({ error: 'Topilmadi' });
+        }
+
+        if (action === 'approve') {
+            const finalAmount = amount || trans.amount;
+            const user = await User.findByPk(trans.UserId, { transaction: t, lock: true });
+            if (user) {
+                user.balance = (user.balance || 0) + parseInt(finalAmount);
+                await user.save({ transaction: t });
+            }
+            trans.status = 'approved';
+            trans.amount = finalAmount;
+
+            if (user && user.telegramId) {
+                const bot = require('../utils/bot');
+                bot.broadcastMessage([user.telegramId], `✅ <b>HISOB TO'LDIRILDI!</b>\n\nBalansingizga <b>${parseInt(finalAmount).toLocaleString()} UZS</b> qo'shildi.`).catch(() => { });
+            }
+        } else {
+            trans.status = 'rejected';
+        }
+
+        await trans.save({ transaction: t });
+        await t.commit();
+        res.json({ success: true, message: 'Bajarildi' });
+    } catch (error) {
+        await t.rollback();
+        next(error);
+    }
+};

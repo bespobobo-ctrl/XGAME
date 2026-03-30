@@ -104,7 +104,7 @@ exports.telegramAuth = async (req, res, next) => {
     try {
         const { tgUser, clubId } = req.body;
         if (!tgUser || !tgUser.id) {
-            return res.status(400).json({ success: false, message: 'Telegram ma\\'lumoti yo\\'q' });
+            return res.status(400).json({ success: false, message: "Telegram ma'lumoti yo'q" });
         }
 
         let user = await User.findOne({ where: { telegramId: tgUser.id.toString() } });

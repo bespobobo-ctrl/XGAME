@@ -39,3 +39,4 @@ export const callAPI = async (endpoint, options = {}) => {
     }
 };
 
+export default API_URL;

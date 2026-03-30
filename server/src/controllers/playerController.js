@@ -103,6 +103,7 @@ exports.reservePc = async (req, res, next) => {
             startTime: new Date(),
             ComputerId: pc.id,
             ClubId: user.ClubId,
+            UserId: user.id, // Add this
             status: 'paused',
             reserveTime: rDate,
             guestName: user.firstName || user.username,
@@ -140,6 +141,10 @@ exports.cancelReserve = async (req, res, next) => {
         });
 
         if (session) {
+            // Check if it's their own or they are manager (req.user.role is not available here, but they are in player controller)
+            if (session.UserId !== user.id) {
+                return res.status(403).json({ success: false, message: "Siz faqat o'zingiz bron qilgan kompyuterni bekor qila olasiz" });
+            }
             session.status = 'cancelled';
             await session.save();
         }

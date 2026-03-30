@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI } from '../api';
 
-const UserDashboard = ({ user, onLogout }) => {
+const UserDashboard = ({ user, onLogout, setView }) => {
     const [profileData, setProfileData] = useState(null);
     const [roomsData, setRoomsData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -233,6 +233,9 @@ const UserDashboard = ({ user, onLogout }) => {
                 initial={{ y: 100 }} animate={{ y: 0 }}
                 style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(0, 0, 0, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100 }}
             >
+                <div onClick={() => setView('home')} style={{ fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '20px' }}>🏠</span> Asosiy
+                </div>
                 <div onClick={() => setActiveTab('profile')} style={{ fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'profile' ? '#00ffcc' : 'rgba(255,255,255,0.4)', transition: '0.3s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
                     <span style={{ fontSize: '20px' }}>👤</span> Profil
                 </div>

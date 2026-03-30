@@ -124,7 +124,7 @@ const App = () => {
                 }}
               />
             )}
-            {view === 'userDashboard' && <UserDashboard user={user} onLogout={logout} />}
+            {view === 'userDashboard' && <UserDashboard user={user} onLogout={logout} setView={setView} />}
             {view === 'superAdmin' && <SuperAdminDashboard activeTab={adminTab} />}
             {view === 'managerLogin' && <ManagerLogin onLogin={handleManagerLogin} onBack={() => setView('home')} />}
             {view === 'managerSetup' && <ManagerSetup onFinish={() => setView('managerDashboard')} />}
@@ -154,7 +154,7 @@ const App = () => {
                 <div onClick={() => setManagerTab('rooms')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'rooms' ? '#7000ff' : '#fff' }}>🗺️ Xarita</div>
                 <div onClick={() => setManagerTab('settings')} style={{ fontSize: '13px', fontWeight: 'bold', color: managerTab === 'settings' ? '#7000ff' : '#fff' }}>⚙️ Sozlamalar</div>
               </motion.nav>
-            ) : (view === 'home' || view === 'clubIntro' || view === 'userRegister' || view === 'managerLogin' || view === 'userDashboard') ? (
+            ) : (view === 'home' || view === 'clubIntro' || view === 'userRegister' || view === 'managerLogin') ? (
               /* 🎮 USER NAVIGATION */
               <motion.nav
                 initial={{ y: 100 }} animate={{ y: 0 }}

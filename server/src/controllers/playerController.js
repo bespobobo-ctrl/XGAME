@@ -1,4 +1,5 @@
-const { User, Club, Session, Computer } = require('../database');
+const { User, Club, Session, Computer, Room } = require('../database');
+const { Op } = require('sequelize');
 
 exports.getMe = async (req, res, next) => {
     try {
@@ -54,10 +55,9 @@ exports.getRooms = async (req, res, next) => {
                 attributes: ['id', 'name', 'status', 'type', 'pricePerHour'],
                 include: [{
                     model: Session,
-                    as: 'Sessions',
                     where: { status: { [Op.in]: ['active', 'paused'] } },
                     required: false,
-                    attributes: ['startTime', 'guestName']
+                    attributes: ['startTime', 'guestName', 'expectedMinutes']
                 }]
             }],
             order: [['name', 'ASC']]

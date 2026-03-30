@@ -86,7 +86,7 @@ const App = () => {
       {view !== 'intro' && (
         <>
           {/* HIDE HEADER ON DASHBOARDS FOR MORE SPACE */}
-          {view !== 'superAdmin' && view !== 'managerDashboard' && (
+          {view !== 'superAdmin' && view !== 'managerDashboard' && view !== 'userDashboard' && (
             <header className="app-header" style={{ padding: '35px 20px 0px', display: 'flex', justifyContent: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'linear-gradient(rgba(5,5,5,1), transparent)' }}>
               <motion.h1
                 onMouseDown={startLongPress} onMouseUp={stopLongPress}
@@ -95,7 +95,7 @@ const App = () => {
                 transition={{ repeat: Infinity, duration: 1.5 }}
                 style={{ margin: 0, fontSize: '40px', fontWeight: '950', letterSpacing: '8px', cursor: 'grab', color: '#fff' }}
               >
-                {view === 'superAdmin' ? 'NEXUS' : 'X-GAME'}
+                {view === 'superAdmin' ? 'NEXUS' : (selectedClub ? selectedClub.name.toUpperCase() : 'GAME ZONE')}
               </motion.h1>
             </header>
           )}

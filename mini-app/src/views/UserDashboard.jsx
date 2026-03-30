@@ -15,6 +15,9 @@ const UserDashboard = ({ user, onLogout, setView }) => {
     const [reserveLoading, setReserveLoading] = useState(false);
     const [pcDetail, setPcDetail] = useState(null);
 
+    const clubName = profileData?.user?.clubName || 'GAME ZONE';
+    const userName = profileData?.user?.name || user?.username || 'Gamer';
+
     const fetchData = async () => {
         setLoading(true);
         setError(null);
@@ -32,12 +35,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                 setRoomsData(mapRes.rooms || []);
                 calculateStats(mapRes.rooms || []);
             } else {
-                // Check if user is not assigned to a club
-                if (mapRes.message === 'Klubga biriktirilmagansiz') {
-                    setError("SIZ HALI KLUB TANLAMAGANSIZ 🏛️");
-                } else {
-                    setError(mapRes.message || "Xonalar ro'yxatini yuklab bo'lmadi");
-                }
+                setError(mapRes.error || mapRes.message || "Ma'lumotlarni yuklab bo'lmadi");
             }
         } catch (err) {
             setError("Server bilan aloqa uzildi! 🔌");
@@ -124,17 +122,17 @@ const UserDashboard = ({ user, onLogout, setView }) => {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ padding: '20px', paddingBottom: '120px', display: 'flex', flexDirection: 'column', gap: '15px', minHeight: '100vh', background: '#050505', color: '#fff' }}
         >
-            {/* Header omitted for brevity in thought, but I'll write full */}
+            {/* 💎 SMART HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div>
-                    <h2 style={{ fontSize: '26px', margin: 0, fontWeight: '900', letterSpacing: '-1px' }}>X-GAME</h2>
-                    <p style={{ color: activeTab === 'profile' ? '#00ffcc' : '#ff00aa', margin: 0, fontSize: '11px', letterSpacing: '2px', fontWeight: 'bold' }}>
-                        {activeTab === 'profile' ? 'PROFILE' : 'ROOMS MAP'}
+                    <h2 style={{ fontSize: '26px', margin: 0, fontWeight: '900', letterSpacing: '-1px', color: '#00ffcc', textShadow: '0 0 15px rgba(0,255,204,0.3)' }}>{clubName.toUpperCase()}</h2>
+                    <p style={{ color: '#aaa', margin: 0, fontSize: '11px', letterSpacing: '2px', fontWeight: 'bold' }}>
+                        {activeTab === 'profile' ? 'CABINET' : 'MAP VIEW'}
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={fetchData} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', padding: '10px', borderRadius: '12px' }}>🔄</button>
-                    <button onClick={onLogout} style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}>CHIQISH</button>
+                    <button onClick={onLogout} style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}>CHIQUISH</button>
                 </div>
             </div>
 
@@ -148,6 +146,12 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                 <AnimatePresence mode='wait'>
                     {activeTab === 'profile' ? (
                         <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                            {/* GREETING CARD */}
+                            <div style={{ marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>Assalomu alaykum,</h3>
+                                <h2 style={{ margin: 0, fontSize: '28px', color: '#fff' }}>{userName} 🎮</h2>
+                            </div>
+
                             {/* LIVE STATUS CARD */}
                             <div style={{ background: 'linear-gradient(135deg, rgba(20,20,20,0.9), rgba(10,10,10,0.9))', borderRadius: '25px', padding: '20px', marginBottom: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
@@ -162,14 +166,14 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                             </div>
 
                             {/* ID CARD */}
-                            <div style={{ background: 'linear-gradient(135deg, #00ffcc22, #7000ff22)', borderRadius: '25px', padding: '25px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ background: 'linear-gradient(135deg, #00ffcc11, #7000ff22)', borderRadius: '25px', padding: '25px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
                                 <div style={{ zIndex: 1, position: 'relative' }}>
-                                    <h3 style={{ margin: 0, fontSize: '24px' }}>{profileData?.user?.name || user?.username}</h3>
-                                    <p style={{ margin: '5px 0 20px', color: '#00ffcc', fontSize: '12px', fontWeight: 'bold' }}>{profileData?.user?.clubName?.toUpperCase()}</p>
+                                    <h3 style={{ margin: 0, fontSize: '20px', color: '#00ffcc' }}>ID CARD</h3>
+                                    <p style={{ margin: '5px 0 20px', color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 'bold' }}>OFFICIAL MEMBER OF {clubName.toUpperCase()}</p>
                                     <div style={{ display: 'flex', gap: '15px' }}>
                                         <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '15px' }}>
                                             <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>BALANCE</p>
-                                            <h4 style={{ margin: '5px 0 0', color: '#00ffcc' }}>{profileData?.user?.balance?.toLocaleString()}</h4>
+                                            <h4 style={{ margin: '5px 0 0', color: '#00ffcc' }}>{profileData?.user?.balance?.toLocaleString() || 0}</h4>
                                         </div>
                                         <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '15px' }}>
                                             <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>LEVEL</p>
@@ -184,32 +188,28 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                         <motion.div key="map" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                             {error ? (
                                 <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4444', padding: '30px', borderRadius: '25px', textAlign: 'center', border: '1px solid rgba(255,0,0,0.2)' }}>
-                                    <span style={{ fontSize: '40px' }}>🏛️</span>
+                                    <span style={{ fontSize: '40px' }}>⚠️</span>
                                     <h3 style={{ margin: '15px 0 10px', fontSize: '18px' }}>XATOLIK</h3>
                                     <p style={{ fontSize: '13px', margin: '0 0 20px', opacity: 0.8 }}>{error}</p>
-                                    {error.includes("KLUB TANLAMAGANSIZ") && (
-                                        <button onClick={() => setView('home')} style={{ background: '#7000ff', border: 'none', color: '#fff', padding: '15px 30px', borderRadius: '15px', fontWeight: 'bold' }}>KLUB TANLASH</button>
-                                    )}
-                                    {!error.includes("KLUB TANLAMAGANSIZ") && (
-                                        <button onClick={fetchData} style={{ background: '#333', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px' }}>QAYTA YUklash</button>
-                                    )}
+                                    <button onClick={fetchData} style={{ background: '#333', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px' }}>QAYTA YUKLASH</button>
                                 </div>
                             ) : roomsData.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '25px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                                     <span style={{ fontSize: '40px' }}>🗺️</span>
                                     <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: '15px', fontSize: '14px' }}>Xonalar topilmadi. Klubda xonalar sozlanmagan bo'lishi mumkin.</p>
-                                    <button onClick={fetchData} style={{ marginTop: '15px', background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px', fontSize: '12px' }}>QAYTA YUklash</button>
+                                    <button onClick={fetchData} style={{ marginTop: '15px', background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '12px', fontSize: '12px' }}>QAYTA YUKLASH</button>
                                 </div>
                             ) : (
                                 roomsData.map(room => (
                                     <div key={room.id} style={{ marginBottom: '20px', background: '#111', padding: '20px', borderRadius: '25px', border: '1px solid rgba(255,0,170,0.1)' }}>
-                                        <h3 style={{ margin: '0 0 15px', color: '#ff00aa', fontSize: '15px', fontWeight: '900' }}>{room.name.toUpperCase()}</h3>
+                                        <h3 style={{ margin: '0 0 15px', color: '#ff00aa', fontSize: '15px', fontWeight: '900', letterSpacing: '1px' }}>{room.name.toUpperCase()}</h3>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>
                                             {(room.Computers || room.computers || []).map(pc => {
                                                 const isBusy = pc.status === 'busy' || pc.status === 'paused';
                                                 const isReserved = pc.status === 'reserved';
                                                 const color = isBusy ? '#ff4444' : (isReserved ? '#ffaa00' : '#39ff14');
-                                                const sess = (pc.Sessions || pc.sessions || [])[0];
+                                                const sessList = pc.Sessions || pc.sessions || [];
+                                                const sess = sessList[0];
 
                                                 return (
                                                     <motion.div
@@ -249,7 +249,6 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                     {(pcDetail.Sessions || pcDetail.sessions || [])[0].expectedMinutes && <p style={{ margin: 0 }}>Qoldi: <b style={{ color: '#ff00aa' }}>{getRemainingTime((pcDetail.Sessions || pcDetail.sessions || [])[0])}</b></p>}
                                 </div>
                             )}
-
                             {pcDetail.status === 'reserved' && (
                                 <button
                                     onClick={async () => {
@@ -263,7 +262,6 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                     BRONNI BEKOR QILISH ❌
                                 </button>
                             )}
-
                             <button onClick={() => setPcDetail(null)} style={{ width: '100%', background: '#7000ff', border: 'none', color: '#fff', padding: '12px', borderRadius: '12px', marginTop: '10px', fontWeight: 'bold' }}>YOPISH</button>
                         </motion.div>
                     </div>

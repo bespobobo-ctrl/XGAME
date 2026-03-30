@@ -23,7 +23,7 @@ exports.getMe = async (req, res, next) => {
             user: {
                 id: user.id,
                 telegramId: user.telegramId,
-                name: user.firstName || user.username,
+                name: (user.firstName && user.firstName !== '_' && user.firstName !== '-') ? user.firstName : user.username,
                 balance: user.balance,
                 ClubId: user.ClubId,
                 clubName: user.Club ? user.Club.name : 'Unknown Club',
@@ -45,8 +45,11 @@ exports.getRooms = async (req, res, next) => {
     try {
         const user = await User.findByPk(req.user.id);
         if (!user || !user.ClubId) {
+            console.log(`[MAP_ERROR] User not assigned to club: ${req.user.id}`);
             return res.status(400).json({ success: false, message: 'Klubga biriktirilmagansiz' });
         }
+
+        console.log(`[MAP_FETCH] User: ${user.username}, ClubId: ${user.ClubId}`);
 
         const rooms = await Room.findAll({
             where: { ClubId: user.ClubId },

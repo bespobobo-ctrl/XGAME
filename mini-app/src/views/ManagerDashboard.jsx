@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-presence'; // Note: corrected to 'framer-motion' usually, checking existing imports
-import { motion as motionBase, AnimatePresence as AnimatePresenceBase } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
 import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock, Hash, Activity, TimerReset, Banknote } from 'lucide-react';
 
@@ -183,7 +182,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     };
 
     const navItem = (id, label, icon) => (
-        <motionBase.div
+        <motion.div
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setActiveTab(id)}
@@ -198,22 +197,22 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             }}
         >
             {activeTab === id && (
-                <motionBase.div layoutId="navGlow" style={{ position: 'absolute', top: '-15px', width: '20px', height: '3px', background: '#7000ff', borderRadius: '4px', boxShadow: '0 0 10px #7000ff' }} />
+                <motion.div layoutId="navGlow" style={{ position: 'absolute', top: '-15px', width: '20px', height: '3px', background: '#7000ff', borderRadius: '4px', boxShadow: '0 0 10px #7000ff' }} />
             )}
             <div style={{ padding: '6px', borderRadius: '12px', background: activeTab === id ? 'rgba(112, 0, 255, 0.1)' : 'transparent' }}>
                 {icon}
             </div>
             <span style={{ fontSize: '8px', fontWeight: '900', letterSpacing: '0.5px' }}>{label.toUpperCase()}</span>
-        </motionBase.div>
+        </motion.div>
     );
 
     if (loading && !stats) return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-            <motionBase.div
+            <motion.div
                 animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}
                 style={{ fontSize: '20px', fontWeight: '950', color: '#7000ff', letterSpacing: '4px' }}
-            >GAMEZONE</motionBase.div>
+            >GAMEZONE</motion.div>
         </div>
     );
 
@@ -228,10 +227,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 <button onClick={onLogout} style={{ background: 'rgba(255, 68, 68, 0.08)', color: '#ff4444', padding: '8px 16px', borderRadius: '14px', border: '1px solid rgba(255,68,68,0.15)', fontSize: '11px', fontWeight: '900' }}>CHIQISH</button>
             </header>
 
-            <AnimatePresenceBase mode="wait">
+            <AnimatePresence mode="wait">
                 {activeTab === 'stats' && (
-                    <motionBase.div key="stats" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '15px' }}>
-                        {/* STATS CONTENT PRESERVED */}
+                    <motion.div key="stats" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '15px' }}>
                         <div style={{ background: 'linear-gradient(145deg, #0e0e0e, #050505)', padding: '40px 20px', borderRadius: '40px', textAlign: 'center', marginBottom: '15px', border: '1px solid rgba(112, 0, 255, 0.1)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
                             <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontWeight: '900', letterSpacing: '4px', marginBottom: '8px' }}>DAILY REVENUE</p>
                             <h2 style={{ fontSize: '56px', fontWeight: '950', margin: 0, color: '#fff' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h2>
@@ -239,6 +237,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 <Activity size={10} /> ACTUAL MONITORING
                             </div>
                         </div>
+                        {/* Stats Rows */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                             <div style={{ background: '#0a0a0a', padding: '18px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.03)' }}>
                                 <DashItem label="NAQD KASSA" icon={<Coins size={12} color="#7000ff" />} value={stats?.revenue?.cashPcRevenue?.toLocaleString()} />
@@ -254,55 +253,59 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 <b style={{ color: '#39ff14', fontSize: '15px' }}>{Math.round(stats?.revenue?.avgHourly || 0).toLocaleString()} UZS</b>
                             </div>
                         </div>
-                    </motionBase.div>
+                    </motion.div>
                 )}
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
-                    <motionBase.div key="rooms" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
-                        {/* ROOMS LIST CONTENT PRESERVED */}
+                    <motion.div key="rooms" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
+                        {/* Rooms List */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-                            <h1 style={{ fontSize: '20px', fontWeight: '950', margin: 0, letterSpacing: '-0.5px' }}>XONALAR</h1>
-                            <motionBase.button whileTap={{ scale: 0.92 }} onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }} style={{ background: 'linear-gradient(45deg, #7000ff 0%, #a000ff 100%)', padding: '10px 18px', borderRadius: '16px', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '950', fontSize: '11px', boxShadow: '0 8px 20px rgba(112, 0, 255, 0.4)' }}><Plus size={14} strokeWidth={3} /> QO'SHISH</motionBase.button>
+                            <h1 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>XONALAR</h1>
+                            <motion.button whileTap={{ scale: 0.92 }} onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }} style={{ background: 'linear-gradient(45deg, #7000ff 0%, #a000ff 100%)', padding: '10px 18px', borderRadius: '16px', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '950', fontSize: '11px' }}><Plus size={14} strokeWidth={3} /> QO'SHISH</motion.button>
                         </div>
                         {rooms.map(room => {
                             const busy = room.Computers?.filter(pc => pc.status === 'busy' || pc.status === 'paused').length || 0;
                             const reserved = room.Computers?.filter(pc => pc.status === 'reserved').length || 0;
                             const free = (room.Computers?.length || 0) - busy - reserved;
                             return (
-                                <motionBase.div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? 'rgba(255,68,68,0.03)' : '#090909', borderRadius: '35px', padding: '24px', marginBottom: '15px', border: `1px solid ${room.isLocked ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.04)'}`, cursor: 'pointer' }}>
+                                <motion.div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? 'rgba(255,68,68,0.03)' : '#090909', borderRadius: '35px', padding: '24px', marginBottom: '15px', border: `1px solid ${room.isLocked ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.04)'}`, cursor: 'pointer' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><h3 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>{room.isLocked && <Lock size={15} color="#ff4444" />}</div><p style={{ fontSize: '11px', color: '#444', marginTop: '2px', fontWeight: '600' }}>{room.Computers?.length} PC • {room.pricePerHour.toLocaleString()} UZS/SOAT</p></div>
                                         <div style={{ display: 'flex', gap: '6px' }}><RoomAction onClick={e => handleLockRoom(e, room.id)} color={room.isLocked ? '#39ff14' : '#ffee32'} icon={room.isLocked ? <Unlock size={15} /> : <Lock size={15} />} /><RoomAction onClick={e => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} icon={<Pencil size={15} />} /><RoomAction onClick={e => handleDeleteRoom(e, room.id)} color="#ff4444" icon={<Trash2 size={15} />} /></div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '5px', margin: '14px 0' }}><div style={{ flex: busy || 1, background: '#ff00ff', height: '4px', borderRadius: '10px', opacity: busy > 0 ? 1 : 0.05 }} /><div style={{ flex: reserved || 1, background: '#ffaa00', height: '4px', borderRadius: '10px', opacity: reserved > 0 ? 1 : 0.05 }} /><div style={{ flex: free || 1, background: '#39ff14', height: '4px', borderRadius: '10px', opacity: free > 0 ? 1 : 0.05 }} /></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '15px' }}><MiniStat label="BAND" count={busy} color="#ff00ff" /><MiniStat label="BRON" count={reserved} color="#ffaa00" /><MiniStat label="BO'SH" count={free} color="#39ff14" /></div><div style={{ textAlign: 'right' }}><p style={{ fontSize: '8px', color: '#333', margin: 0, fontWeight: '900' }}>TUSHUM</p><b style={{ fontSize: '13px', color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div></div>
-                                </motionBase.div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '15px' }}><MiniStat label="BAND" count={busy} color="#ff00ff" /><MiniStat label="BRON" count={reserved} color="#ffaa00" /><MiniStat label="BO'SH" count={free} color="#39ff14" /></div><div style={{ textAlign: 'right' }}><p style={{ fontSize: '8px', color: '#333', margin: 0, fontWeight: '900', letterSpacing: '1px' }}>TUSHUM</p><b style={{ fontSize: '13px', color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div></div>
+                                </motion.div>
                             );
                         })}
-                    </motionBase.div>
+                    </motion.div>
                 )}
 
                 {activeTab === 'rooms' && selectedViewRoom && (
-                    <motionBase.div key="room-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}><button onClick={() => setSelectedViewRoom(null)} style={{ background: '#0a0a0a', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ArrowLeft size={20} /></button><h1 style={{ margin: 0, fontSize: '22px', fontWeight: '950' }}>{rooms.find(r => r.id === selectedViewRoom.id)?.name?.toUpperCase()}</h1></div>
+                    <motion.div key="room-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ padding: '15px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+                            <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#0a0a0a', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ArrowLeft size={20} /></button>
+                            <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '950' }}>{rooms.find(r => r.id === selectedViewRoom.id)?.name?.toUpperCase()}</h1>
+                        </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '10px' }}>
                             {rooms.find(r => r.id === selectedViewRoom.id)?.Computers?.map(pc => {
                                 const info = calculateSessionInfo(pc, rooms.find(r => r.id === selectedViewRoom.id)?.pricePerHour);
                                 const s = pc.status.toLowerCase();
                                 const theme = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#222';
                                 return (
-                                    <motionBase.div key={pc.id} whileTap={{ scale: 0.94 }} onClick={() => setSelectedPC({ ...pc, roomPrice: rooms.find(r => r.id === selectedViewRoom.id)?.pricePerHour })} style={{ background: '#090909', border: `1px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.03)'}`, borderRadius: '24px', padding: '18px 8px', textAlign: 'center', cursor: 'pointer', opacity: rooms.find(r => r.id === selectedViewRoom.id)?.isLocked ? 0.4 : 1 }}><div style={{ fontSize: '11px', fontWeight: '950', marginBottom: '4px' }}>{pc.name}</div><div style={{ fontSize: '8px', fontWeight: '900', color: (s !== 'free') ? theme : '#333' }}>{s === 'free' ? 'BO\'SH' : (s === 'reserved' ? info.reservedInfo?.time : info.time)}</div></motionBase.div>
+                                    <motion.div key={pc.id} whileTap={{ scale: 0.94 }} onClick={() => setSelectedPC({ ...pc, roomPrice: rooms.find(r => r.id === selectedViewRoom.id)?.pricePerHour })} style={{ background: '#090909', border: `1px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.03)'}`, borderRadius: '24px', padding: '18px 8px', textAlign: 'center', cursor: 'pointer', opacity: rooms.find(r => r.id === selectedViewRoom.id)?.isLocked ? 0.4 : 1 }}><div style={{ fontSize: '11px', fontWeight: '950', marginBottom: '4px' }}>{pc.name}</div><div style={{ fontSize: '8px', fontWeight: '900', color: (s !== 'free') ? theme : '#333' }}>{s === 'free' ? 'BO\'SH' : (s === 'reserved' ? info.reservedInfo?.time : info.time)}</div></motion.div>
                                 );
                             })}
                         </div>
-                    </motionBase.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
 
-            <AnimatePresenceBase>
+            {/* PC CONTROL MODAL */}
+            <AnimatePresence>
                 {selectedPC && (
-                    <motionBase.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(45px)' }} onClick={() => setSelectedPC(null)}>
-                        <motionBase.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#0a0a0a', width: '100%', padding: '30px 25px 60px', borderRadius: '50px 50px 0 0', borderTop: '2px solid rgba(112, 0, 255, 0.4)', boxShadow: '0 -20px 80px rgba(112, 0, 255, 0.15)' }} onClick={e => e.stopPropagation()}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(45px)' }} onClick={() => setSelectedPC(null)}>
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#0a0a0a', width: '100%', padding: '30px 25px 60px', borderRadius: '50px 50px 0 0', borderTop: '2px solid rgba(112, 0, 255, 0.4)', boxShadow: '0 -20px 80px rgba(112, 0, 255, 0.15)' }} onClick={e => e.stopPropagation()}>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                                 <div><h1 style={{ margin: 0, fontSize: '30px', fontWeight: '950', color: '#fff' }}>{selectedPC.name}</h1><p style={{ color: '#555', fontSize: '11px', fontWeight: '900' }}>{(selectedPC.specs || 'PREMIUM PC').toUpperCase()}</p></div>
@@ -348,9 +351,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                     <QuickTouchBtn label="20.000 UZS" sub="20K" onClick={() => setStartAmountInput('20000')} color="#fff" />
                                                     <QuickTouchBtn label="30.000 UZS" sub="30K" onClick={() => setStartAmountInput('30000')} color="#fff" />
                                                     <QuickTouchBtn label="50.000 UZS" sub="50K" onClick={() => setStartAmountInput('50000')} color="#fff" />
-                                                    <QuickTouchBtn label="1 SOAT" sub="TIME" color="#7000ff" onClick={() => handleAction('start', 60)} />
-                                                    <QuickTouchBtn label="2 SOAT" sub="TIME" color="#7000ff" onClick={() => handleAction('start', 120)} />
-                                                    <QuickTouchBtn label="5 SOAT" sub="TIME" color="#7000ff" onClick={() => handleAction('start', 300)} />
+                                                    <QuickTouchBtn label="1 SOAT" sub="TIME" color="#a066ff" onClick={() => handleAction('start', 60)} />
+                                                    <QuickTouchBtn label="2 SOAT" sub="TIME" color="#a066ff" onClick={() => handleAction('start', 120)} />
+                                                    <QuickTouchBtn label="5 SOAT" sub="TIME" color="#a066ff" onClick={() => handleAction('start', 300)} />
                                                     <QuickTouchBtn label="VIP UNLIM" sub="GHOST" color="#39ff14" onClick={() => handleAction('start')} />
                                                 </div>
                                             </div>
@@ -359,13 +362,13 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 );
                             })()}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                {selectedPC.status !== 'free' && <motionBase.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '28px', borderRadius: '28px', background: 'rgba(255, 68, 68, 0.15)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '18px', letterSpacing: '2px' }}>STOP ⏹️</motionBase.button>}
-                                <motionBase.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '28px', borderRadius: '28px', background: selectedPC.status === 'busy' ? '#ffee32' : 'linear-gradient(45deg, #7000ff, #a000ff)', color: selectedPC.status === 'busy' ? '#000' : '#fff', border: 'none', fontWeight: '950', fontSize: '20px', gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto', boxShadow: selectedPC.status === 'free' ? '0 15px 50px rgba(112, 0, 255, 0.5)' : 'none' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'VAQTNI OCHISH 🚀'}</motionBase.button>
+                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '28px', borderRadius: '28px', background: 'rgba(255, 68, 68, 0.15)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '18px', letterSpacing: '2px' }}>STOP ⏹️</motion.button>}
+                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '28px', borderRadius: '28px', background: selectedPC.status === 'busy' ? '#ffee32' : 'linear-gradient(45deg, #7000ff, #a000ff)', color: selectedPC.status === 'busy' ? '#000' : '#fff', border: 'none', fontWeight: '950', fontSize: '20px', gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto', boxShadow: selectedPC.status === 'free' ? '0 15px 50px rgba(112, 0, 255, 0.5)' : 'none' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'VAQTNI OCHISH 🚀'}</motion.button>
                             </div>
-                        </motionBase.div>
-                    </motionBase.div>
+                        </motion.div>
+                    </motion.div>
                 )}
-            </AnimatePresenceBase>
+            </AnimatePresence>
 
             <nav style={{ position: 'fixed', bottom: '20px', left: '15px', right: '15px', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(30px)', padding: '12px 10px', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
                 {navItem('stats', 'Status', <LayoutGrid size={20} />)}
@@ -378,7 +381,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 };
 
 const QuickTouchBtn = ({ label, sub, onClick, color = '#fff' }) => (
-    <motionBase.button
+    <motion.button
         whileTap={{ scale: 0.94 }}
         onClick={onClick}
         style={{
@@ -395,7 +398,7 @@ const QuickTouchBtn = ({ label, sub, onClick, color = '#fff' }) => (
     >
         <span style={{ fontSize: '10px', fontWeight: '950', color: 'rgba(255,255,255,0.3)', letterSpacing: '2px' }}>{sub}</span>
         <span style={{ fontSize: '16px', fontWeight: '950', color }}>{label}</span>
-    </motionBase.button>
+    </motion.button>
 );
 
 const DashItem = ({ label, icon, value }) => (

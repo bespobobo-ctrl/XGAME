@@ -212,7 +212,8 @@ exports.addRoom = async (req, res, next) => {
                 name: `${i}-${name.substring(0, 5).toUpperCase().trim()}`,
                 status: 'free',
                 specs: specs || "Xarakteristikasi kiritilmagan",
-                RoomId: room.id
+                RoomId: room.id,
+                ClubId: clubId
             });
         }
 

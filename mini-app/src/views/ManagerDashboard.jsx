@@ -93,6 +93,20 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         setIsBroadcasting(false);
     };
 
+    const calculateSessionInfo = (pc, roomPrice = 15000) => {
+        const activeSession = pc.Sessions?.find(s => s.status === 'active' || s.status === 'paused');
+        if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0 };
+        const start = new Date(activeSession.startTime);
+        const effectiveNow = activeSession.status === 'paused' ? new Date(activeSession.pausedAt) : nowTime;
+        const diffSeconds = Math.max(0, Math.floor((effectiveNow - start) / 1000));
+        const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (diffSeconds % 60).toString().padStart(2, '0');
+        const cost = Math.floor((diffSeconds / 3600) * roomPrice);
+        const progress = activeSession.expectedMinutes ? (diffSeconds / (activeSession.expectedMinutes * 60)) * 100 : Math.min((diffSeconds / 3600) * 100, 100);
+        return { time: `${h}:${m}:${s}`, cost, progress };
+    };
+
     const renderPC = (pc, room) => {
         const isActive = pc.status === 'busy' || pc.status === 'paused';
         let elapsedTime = "00:00:00";

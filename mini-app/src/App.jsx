@@ -144,17 +144,6 @@ const App = () => {
                 <div onClick={() => setAdminTab('managers')} style={{ fontSize: '14px', fontWeight: 'bold', color: adminTab === 'managers' ? '#39ff14' : '#fff' }}>👤 Menejer</div>
                 <div onClick={logout} style={{ fontSize: '14px', fontWeight: 'bold', color: '#ff4444' }}>🚪 Chiqish</div>
               </motion.nav>
-            ) : view === 'managerDashboard' ? (
-              /* ⚙️ MANAGER NAVIGATION */
-              <motion.nav
-                initial={{ y: 100 }} animate={{ y: 0 }}
-                style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', background: 'rgba(112, 0, 255, 0.08)', border: '1px solid rgba(112, 0, 255, 0.2)', padding: '15px', borderRadius: '25px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100, boxShadow: '0 0 30px rgba(112,0,255,0.1)' }}
-              >
-                <div onClick={() => setManagerTab('stats')} style={{ fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', color: managerTab === 'stats' ? '#7000ff' : '#fff' }}>📊 Stat</div>
-                <div onClick={() => setManagerTab('rooms')} style={{ fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', color: managerTab === 'rooms' ? '#7000ff' : '#fff' }}>🗺️ Xarita</div>
-                <div onClick={() => setManagerTab('payments')} style={{ fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', color: managerTab === 'payments' ? '#7000ff' : '#fff' }}>💰 To'lov</div>
-                <div onClick={() => setManagerTab('settings')} style={{ fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', color: managerTab === 'settings' ? '#7000ff' : '#fff' }}>⚙️ Sozlamalar</div>
-              </motion.nav>
             ) : (view === 'home' || view === 'clubIntro' || view === 'userRegister' || view === 'managerLogin') ? (
               /* 🎮 USER NAVIGATION */
               <motion.nav

@@ -127,13 +127,13 @@ async function runBillingCycle(io) {
 async function checkUpcomingReservations(io) {
     const { broadcastMessage } = require('../utils/bot');
     const now = new Date();
-    const tenMinsLater = new Date(now.getTime() + 11 * 60000); // 11 daqiqa ichida
+    const tenMinsLater = new Date(now.getTime() + 11 * 60000);
 
     const reservations = await Session.findAll({
         where: {
             status: 'paused',
             reserveTime: { [Op.between]: [now, tenMinsLater] },
-            notifiedAt: null // Faqat bir marta xabar berish
+            notifiedAt: null
         },
         include: [
             { model: Computer, include: [Room] },
@@ -158,19 +158,124 @@ async function checkUpcomingReservations(io) {
             `⏰ <b>Vaqt:</b> ${rTime}\n\n` +
             `<i>Mijozga telefon qilib kelishini takidlang!</i>`;
 
-        // Telegramga yuborish
-        if (managerTgIds.length > 0) {
-            await broadcastMessage(managerTgIds, msg);
-        }
+        if (managerTgIds.length > 0) await broadcastMessage(managerTgIds, msg);
 
-        // Dashboardga yuborish (Socket)
-        if (io) {
-            io.emit('upcoming-alert', { pcName, guestName, guestPhone, rTime });
-        }
+        if (io) io.emit('upcoming-alert', { pcName, guestName, guestPhone, rTime });
 
         res.notifiedAt = new Date();
         await res.save();
         logger.info(`🔔 Alert sent for reservation ${res.id} (${pcName})`);
+    }
+
+    // 🧪 5 DAQIQA QOLGANDA (URGENT ALERT)
+    const fiveMinsLater = new Date(now.getTime() + 6 * 60000);
+    const urgentReservations = await Session.findAll({
+        where: {
+            status: 'paused',
+            reserveTime: { [Op.between]: [now, fiveMinsLater] },
+            notifiedAt: { [Op.ne]: null } // Oldin 10 min alerti ketgan
+        },
+        include: [{ model: Computer }, { model: User }]
+    });
+
+    for (const res of urgentReservations) {
+        const lastUrgent = `urgent_${res.id}`;
+        if (!global[lastUrgent]) {
+            const managers = await User.findAll({ where: { ClubId: res.ClubId, role: 'manager' } });
+            const managerTgIds = managers.map(m => m.telegramId).filter(id => id && !id.startsWith('MANAGER_'));
+            const pcName = res.Computer?.name || 'PC';
+            const guestName = res.User?.firstName || res.guestName || 'Mijoz';
+
+            const msg = `❗️ <b>BRONGA 5 DAQIQA QOLDI!</b>\n\n` +
+                `🖥 <b>PC:</b> ${pcName}\n` +
+                `👤 <b>Mijoz:</b> ${guestName}\n\n` +
+                `<i>Mijoz hozir kelishi kerak, tayyor turing!</i>`;
+
+            if (managerTgIds.length > 0) await broadcastMessage(managerTgIds, msg);
+            global[lastUrgent] = true;
+        }
+    }
+
+    // ⚠️ MUDDATI O'TGAN BRONLAR (10 DAQIQA O'TGANDA JARIMA)
+    await checkExpiredReservations(io);
+}
+
+/**
+ * ⚠️ BRON VAQTIDAN 10 DAQIQA O'TGANDA JARIMA VA PC NI BO'SHATISH
+ */
+async function checkExpiredReservations(io) {
+    const { User, Computer, Session, Transaction } = require('../database/index');
+    const { broadcastMessage } = require('../utils/bot');
+    const now = new Date();
+    const tenMinsAgo = new Date(now.getTime() - 11 * 60000);
+
+    const expired = await Session.findAll({
+        where: {
+            status: 'paused',
+            reserveTime: { [Op.lt]: tenMinsAgo },
+            endTime: null
+        },
+        include: [Computer, User]
+    });
+
+    for (const sess of expired) {
+        if (sess.reserveTime === null) continue; // Faqat bronlar uchun
+
+        const t = await sequelize.transaction();
+        try {
+            const pc = sess.Computer;
+            const user = sess.User;
+            const clubId = sess.ClubId;
+            const penaltyAmount = 5000;
+
+            let penaltySuccess = false;
+            if (user && user.id) {
+                const freshUser = await User.findByPk(user.id, { transaction: t, lock: true });
+                if (freshUser && freshUser.balance >= penaltyAmount) {
+                    freshUser.balance -= penaltyAmount;
+                    await freshUser.save({ transaction: t });
+
+                    await Transaction.create({
+                        UserId: freshUser.id, ClubId: clubId,
+                        amount: -penaltyAmount, type: 'penalty',
+                        description: `BRON KECHIKISHI JARIMASI (PC: ${pc?.name || 'PC'})`,
+                        status: 'approved'
+                    }, { transaction: t });
+                    penaltySuccess = true;
+                }
+            }
+
+            // PC va Sessionni tozalash
+            sess.status = 'completed';
+            sess.endTime = now;
+            await sess.save({ transaction: t });
+
+            if (pc) {
+                pc.status = 'free';
+                await pc.save({ transaction: t });
+            }
+
+            await t.commit();
+
+            // MENEJERGA HABAR YUBORISH
+            const managers = await User.findAll({ where: { ClubId: clubId, role: 'manager' } });
+            const managerTgIds = managers.map(m => m.telegramId).filter(id => id && !id.startsWith('MANAGER_'));
+
+            const msg = `🔴 <b>BRON BEKOR QILINDI (JARIMA)!</b>\n\n` +
+                `🖥 <b>PC:</b> ${pc?.name || 'PC'}\n` +
+                `👤 <b>Mijoz:</b> ${user?.username || sess.guestName || 'Mijoz'}\n` +
+                `💰 <b>Jarima:</b> ${penaltySuccess ? '5,000 UZS еchildi' : 'Balans yetarli emas'}\n\n` +
+                `<i>Mijoz 10 daqiqa ичида келмагани учун PC бўшатилди.</i>`;
+
+            if (managerTgIds.length > 0) broadcastMessage(managerTgIds, msg).catch(() => { });
+            if (io) io.emit('pc-status-updated', { pcId: pc?.id, clubId, status: 'free' });
+
+            logger.warn(`🚫 Reservation ${sess.id} expired. Penalty: ${penaltySuccess}`);
+
+        } catch (err) {
+            await t.rollback();
+            logger.error(`❌ Expired reservation processing error:`, err);
+        }
     }
 }
 

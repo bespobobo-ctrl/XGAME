@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock, Hash, Activity } from 'lucide-react';
+import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock, Hash, Activity, TimerReset, Banknote } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -64,16 +64,13 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
         if (!pc) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
         const price = roomPrice || 15000;
-        const pcNameNormalized = (pc.name || '').trim().toUpperCase();
         const sessions = pc.Sessions || [];
         const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
 
         if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
 
         if (activeSession.status === 'reserved') {
-            const globalRes = stats?.upcomingReservations?.find(r => (r.pc || '').trim().toUpperCase() === pcNameNormalized);
-            const rTimeStr = globalRes?.time || activeSession.reserveTime;
-            return { time: '--:--', cost: 0, progress: 0, remaining: '--:--', isCountdown: false, reservedInfo: { time: rTimeStr, user: activeSession.guestName || 'Mehmon' } };
+            return { time: '--:--', cost: 0, progress: 0, remaining: '--:--', isCountdown: false, reservedInfo: { time: activeSession.reserveTime, user: activeSession.guestName || 'Mehmon' } };
         }
 
         const start = new Date(activeSession.startTime);
@@ -225,6 +222,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             <AnimatePresence mode="wait">
                 {activeTab === 'stats' && (
                     <motion.div key="stats" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '15px' }}>
+                        {/* STATS CONTENT PRESERVED */}
                         <div style={{ background: 'linear-gradient(145deg, #0e0e0e, #050505)', padding: '40px 20px', borderRadius: '40px', textAlign: 'center', marginBottom: '15px', border: '1px solid rgba(112, 0, 255, 0.1)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
                             <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontWeight: '900', letterSpacing: '4px', marginBottom: '8px' }}>DAILY REVENUE</p>
                             <h2 style={{ fontSize: '56px', fontWeight: '950', margin: 0, color: '#fff' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h2>
@@ -254,6 +252,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
                     <motion.div key="rooms" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
+                        {/* ROOMS LIST PRESERVED */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
                             <h1 style={{ fontSize: '20px', fontWeight: '950', margin: 0, letterSpacing: '-0.5px' }}>XONALAR</h1>
                             <motion.button
@@ -276,26 +275,16 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 <Plus size={14} strokeWidth={3} /> QO'SHISH
                             </motion.button>
                         </div>
-
-                        {rooms.map((room) => {
+                        {rooms.map(room => {
                             const total = room.Computers?.length || 0;
                             const busy = room.Computers?.filter(pc => pc.status === 'busy' || pc.status === 'paused').length || 0;
                             const reserved = room.Computers?.filter(pc => pc.status === 'reserved').length || 0;
                             const free = total - busy - reserved;
-
                             return (
                                 <motion.div
                                     key={room.id}
                                     onClick={() => setSelectedViewRoom(room)}
-                                    style={{
-                                        background: room.isLocked ? 'rgba(255,68,68,0.03)' : '#090909',
-                                        borderRadius: '35px',
-                                        padding: '24px',
-                                        marginBottom: '15px',
-                                        border: `1px solid ${room.isLocked ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.04)'}`,
-                                        cursor: 'pointer',
-                                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-                                    }}
+                                    style={{ background: room.isLocked ? 'rgba(255,68,68,0.03)' : '#090909', borderRadius: '35px', padding: '24px', marginBottom: '15px', border: `1px solid ${room.isLocked ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.04)'}`, cursor: 'pointer' }}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <div>
@@ -311,14 +300,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                             <RoomAction onClick={e => handleDeleteRoom(e, room.id)} color="#ff4444" icon={<Trash2 size={15} />} />
                                         </div>
                                     </div>
-
-                                    {/* COMPACT SEGMENT BAR */}
                                     <div style={{ display: 'flex', gap: '5px', margin: '14px 0' }}>
                                         <div style={{ flex: busy || 1, background: '#ff00ff', height: '4px', borderRadius: '10px', opacity: busy > 0 ? 1 : 0.05 }} />
                                         <div style={{ flex: reserved || 1, background: '#ffaa00', height: '4px', borderRadius: '10px', opacity: reserved > 0 ? 1 : 0.05 }} />
                                         <div style={{ flex: free || 1, background: '#39ff14', height: '4px', borderRadius: '10px', opacity: free > 0 ? 1 : 0.05 }} />
                                     </div>
-
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', gap: '15px' }}>
                                             <MiniStat label="BAND" count={busy} color="#ff00ff" />
@@ -342,7 +328,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#0a0a0a', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ArrowLeft size={20} /></button>
                             <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '950' }}>{currentRoomFromState?.name?.toUpperCase()}</h1>
                         </div>
-
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '10px' }}>
                             {currentRoomFromState?.Computers?.map(pc => {
                                 const info = calculateSessionInfo(pc, currentRoomFromState.pricePerHour);
@@ -354,8 +339,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                         onClick={() => setSelectedPC({ ...pc, roomPrice: currentRoomFromState.pricePerHour })}
                                         style={{
                                             background: '#090909', border: `1px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.03)'}`,
-                                            borderRadius: '24px', padding: '18px 8px', textAlign: 'center', cursor: 'pointer',
-                                            opacity: currentRoomFromState.isLocked ? 0.4 : 1
+                                            borderRadius: '24px', padding: '18px 8px', textAlign: 'center', cursor: 'pointer', opacity: currentRoomFromState.isLocked ? 0.4 : 1
                                         }}
                                     >
                                         <div style={{ fontSize: '11px', fontWeight: '950', marginBottom: '4px' }}>{pc.name}</div>
@@ -366,37 +350,89 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                         </div>
                     </motion.div>
                 )}
+            </AnimatePresence>
 
-                {activeTab === 'users' && (
-                    <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
-                        <div style={{ position: 'relative', marginBottom: '20px' }}>
-                            <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={16} />
-                            <input placeholder="QIDIRISH..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '18px 45px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '25px', color: '#fff', fontSize: '12px', fontWeight: '900' }} />
-                        </div>
-                        {usersList.map(u => (
-                            <div key={u.id} style={{ background: '#0a0a0a', borderRadius: '30px', padding: '16px 20px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.02)' }}>
-                                <div><h4 style={{ margin: 0, fontSize: '14px', fontWeight: '950' }}>{u.username?.toUpperCase()}</h4><p style={{ fontSize: '11px', color: '#39ff14', fontWeight: '900', marginTop: '2px' }}>{u.balance?.toLocaleString()} UZS</p></div>
-                                <button onClick={() => setSelectedUser(u)} style={{ background: '#7000ff', border: 'none', color: '#fff', padding: '10px 18px', borderRadius: '15px', fontWeight: '950', fontSize: '10px' }}>BALANCE +</button>
-                            </div>
-                        ))}
-                    </motion.div>
-                )}
+            {/* 🔥 CLUBTIMER PREMIUM MODAL (REDESIGNED) */}
+            <AnimatePresence>
+                {selectedPC && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', p: '20px', backdropFilter: 'blur(30px)' }} onClick={() => setSelectedPC(null)}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} style={{ background: '#0e0e0e', width: '100%', maxWidth: '380px', borderRadius: '40px', padding: '30px', border: '1px solid rgba(112, 0, 255, 0.25)', boxShadow: '0 30px 100px rgba(0,0,0,0.8), 0 0 30px rgba(112, 0, 255, 0.1) inset' }} onClick={e => e.stopPropagation()}>
 
-                {activeTab === 'payments' && (
-                    <motion.div key="payments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
-                        {topupRequests.map(req => (
-                            <div key={req.id} style={{ background: '#0a0a0a', borderRadius: '40px', padding: '24px', marginBottom: '15px', border: '1px solid rgba(57,255,20,0.1)' }}>
-                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
-                                    <div style={{ background: 'rgba(57, 255, 20, 0.08)', padding: '12px', borderRadius: '14px' }}><CreditCard color="#39ff14" size={20} /></div>
-                                    <div><h4 style={{ margin: 0, fontSize: '16px', fontWeight: '950' }}>{req.User?.username}</h4><b style={{ color: '#39ff14', fontSize: '15px' }}>{req.amount?.toLocaleString()} UZS</b></div>
+                            {/* Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ background: '#7000ff', width: '4px', height: '24px', borderRadius: '2px' }} />
+                                    <div><h2 style={{ margin: 0, fontSize: '24px', fontWeight: '950', letterSpacing: '-0.5px' }}>{selectedPC.name}</h2><p style={{ margin: 0, fontSize: '10px', color: '#444', fontWeight: '900' }}>CONTROL PANEL</p></div>
                                 </div>
-                                {req.receiptImage && <img src={`${API_URL}/${req.receiptImage}`} alt="Check" style={{ width: '100%', borderRadius: '25px', marginBottom: '20px' }} />}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <button onClick={() => handleUpdateTopUp(req.id, 'approve')} style={{ background: '#39ff14', color: '#000', padding: '15px', borderRadius: '18px', border: 'none', fontWeight: '950', fontSize: '12px' }}>OK ✅</button>
-                                    <button onClick={() => handleUpdateTopUp(req.id, 'reject')} style={{ background: 'rgba(255,68,68,0.1)', color: '#ff4444', padding: '15px', borderRadius: '18px', border: 'none', fontSize: '12px', fontWeight: '900' }}>NO ❌</button>
-                                </div>
+                                <motion.button whileTap={{ scale: 0.85 }} onClick={() => setSelectedPC(null)} style={{ background: 'rgba(255,255,255,0.05)', p: '8px', borderRadius: '14px', border: 'none', color: '#555' }}><X size={20} /></motion.button>
                             </div>
-                        ))}
+
+                            {(() => {
+                                const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice);
+                                const s = selectedPC.status.toLowerCase();
+                                const themeColor = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#222';
+
+                                return (
+                                    <div style={{ marginBottom: '30px' }}>
+                                        {s !== 'free' && s !== 'reserved' && (
+                                            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', padding: '30px 20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                                <h1 style={{ fontSize: '56px', color: themeColor, fontWeight: '950', margin: 0, textShadow: `0 0 20px ${themeColor}30`, letterSpacing: '-3px' }}>{info.time}</h1>
+                                                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '15px' }}>
+                                                    <div><p style={{ fontSize: '8px', color: '#444', margin: 0, fontWeight: '900' }}>HISOBLANGAN</p><b style={{ fontSize: '16px' }}>{info.cost?.toLocaleString()} UZS</b></div>
+                                                    <div style={{ width: '1px', background: '#1a1a1a' }} />
+                                                    <div><p style={{ fontSize: '8px', color: '#444', margin: 0, fontWeight: '900' }}>TARIF</p><b style={{ fontSize: '16px' }}>{selectedPC.roomPrice?.toLocaleString()}</b></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {s === 'reserved' && (
+                                            <div style={{ background: 'rgba(255, 170, 0, 0.05)', padding: '30px', borderRadius: '35px', border: '1px solid rgba(255,170,0,0.2)', textAlign: 'center' }}>
+                                                <div style={{ background: '#ffaa00', width: '50px', height: '50px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}><UserIcon color="#000" size={24} /></div>
+                                                <h3 style={{ fontSize: '26px', margin: 0, fontWeight: '950' }}>{info.reservedInfo?.user}</h3>
+                                                <b style={{ fontSize: '18px', color: '#ffaa00' }}>{info.reservedInfo?.time}</b>
+                                            </div>
+                                        )}
+                                        {s === 'free' && (
+                                            <div>
+                                                <div style={{ position: 'relative', marginBottom: '15px' }}>
+                                                    <Banknote style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#222' }} size={24} />
+                                                    <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '25px 25px 25px 60px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '25px', color: '#39ff14', fontSize: '28px', fontWeight: '950' }} />
+                                                    <div style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', color: '#333', fontSize: '10px', fontWeight: '900' }}>UZS</div>
+                                                </div>
+                                                {/* QUICK ACTIONS GRID */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '20px' }}>
+                                                    {[10000, 20000, 30000, 50000].map(amt => (
+                                                        <motion.button key={amt} whileTap={{ scale: 0.95 }} onClick={() => setStartAmountInput(amt.toString())} style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: '15px', p: '12px 5px', color: '#666', fontSize: '10px', fontWeight: '950' }}>{amt / 1000}K</motion.button>
+                                                    ))}
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 60)} style={{ background: 'rgba(112,0,255,0.1)', border: '1px solid #7000ff15', borderRadius: '15px', p: '12px 5px', color: '#7000ff', fontSize: '10px', fontWeight: '950' }}>1 SOAT</motion.button>
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 120)} style={{ background: 'rgba(112,0,255,0.1)', border: '1px solid #7000ff15', borderRadius: '15px', p: '12px 5px', color: '#7000ff', fontSize: '10px', fontWeight: '950' }}>2 SOAT</motion.button>
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 300)} style={{ background: 'rgba(112,0,255,0.1)', border: '1px solid #7000ff15', borderRadius: '15px', p: '12px 5px', color: '#7000ff', fontSize: '10px', fontWeight: '950' }}>5 SOAT</motion.button>
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start')} style={{ background: 'rgba(57,255,20,0.1)', border: '1px solid #39ff1415', borderRadius: '15px', p: '12px 5px', color: '#39ff14', fontSize: '10px', fontWeight: '950' }}>VIP UNLIM</motion.button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Footer Actions */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('stop')} style={{ padding: '20px', borderRadius: '22px', background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '14px', letterSpacing: '1px' }}>STOP ⏹️</motion.button>}
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')}
+                                    style={{
+                                        padding: '20px', borderRadius: '22px',
+                                        background: selectedPC.status === 'busy' ? '#ffee32' : 'linear-gradient(45deg, #7000ff, #a000ff)',
+                                        color: selectedPC.status === 'busy' ? '#000' : '#fff', border: 'none',
+                                        fontWeight: '950', fontSize: '14px', letterSpacing: '1px',
+                                        gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto',
+                                        boxShadow: selectedPC.status === 'free' ? '0 10px 30px rgba(112, 0, 255, 0.4)' : 'none'
+                                    }}
+                                >
+                                    {selectedPC.status === 'busy' ? 'PAUZA ⏸️' : 'START 🚀'}
+                                </motion.button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -407,58 +443,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {navItem('users', 'Mijozlar', <Users size={20} />)}
                 {navItem('payments', 'To\'lov', <Wallet size={20} />)}
             </nav>
-
-            <AnimatePresence>
-                {selectedPC && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(20px)' }} onClick={() => setSelectedPC(null)}>
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#0a0a0a', width: '100%', padding: '40px 25px 60px', borderRadius: '45px 45px 0 0', borderTop: '1px solid rgba(255,255,255,0.05)' }} onClick={e => e.stopPropagation()}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '35px', alignItems: 'center' }}>
-                                <div><h1 style={{ margin: 0, fontSize: '32px', fontWeight: '950' }}>{selectedPC.name}</h1><p style={{ color: '#444', fontSize: '11px', fontWeight: '900' }}>{selectedPC.specs?.toUpperCase()}</p></div>
-                                <button onClick={() => setSelectedPC(null)} style={{ background: '#111', p: '12px', borderRadius: '20px', border: 'none', color: '#fff' }}><X size={24} /></button>
-                            </div>
-
-                            {(() => {
-                                const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice);
-                                const s = selectedPC.status.toLowerCase();
-                                const themeColor = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#222';
-
-                                return (
-                                    <div style={{ marginBottom: '40px', textAlign: 'center' }}>
-                                        {s !== 'free' && s !== 'reserved' && (
-                                            <>
-                                                <p style={{ fontSize: '11px', color: '#333', fontWeight: '950', letterSpacing: '3px' }}>TIME REMAINING</p>
-                                                <h1 style={{ fontSize: '72px', color: themeColor, fontWeight: '950', margin: '10px 0' }}>{info.time}</h1>
-                                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '14px 25px', borderRadius: '20px', display: 'inline-block', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <span style={{ color: '#444', fontSize: '11px' }}>COST: </span>
-                                                    <b style={{ fontSize: '18px' }}>{info.cost?.toLocaleString()} UZS</b>
-                                                </div>
-                                            </>
-                                        )}
-                                        {s === 'reserved' && (
-                                            <div style={{ background: 'rgba(255, 170, 0, 0.05)', padding: '30px', borderRadius: '40px', border: '1px solid rgba(255,170,0,0.2)' }}>
-                                                <p style={{ color: '#ffaa00', fontSize: '11px', fontWeight: '950', margin: '0 0 5px' }}>RESERVATION</p>
-                                                <h3 style={{ fontSize: '32px', margin: 0, fontWeight: '950' }}>{info.reservedInfo?.user}</h3>
-                                                <b style={{ fontSize: '20px', color: '#fff' }}>{info.reservedInfo?.time}</b>
-                                            </div>
-                                        )}
-                                        {s === 'free' && (
-                                            <div style={{ display: 'flex', gap: '12px' }}>
-                                                <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ flex: 1, padding: '25px', background: '#000', border: '1px solid #111', borderRadius: '30px', color: '#39ff14', fontSize: '28px', fontWeight: '950', textAlign: 'center' }} />
-                                                <button onClick={() => handleAction('start')} style={{ background: '#39ff14', color: '#000', border: 'none', width: '85px', borderRadius: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Play fill="#000" size={24} /></button>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                {selectedPC.status !== 'free' && <button onClick={() => handleAction('stop')} style={{ padding: '22px', borderRadius: '25px', background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '16px' }}>STOP ⏹️</button>}
-                                <button onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '22px', borderRadius: '25px', background: selectedPC.status === 'busy' ? '#ffee32' : '#7000ff', color: '#000', border: 'none', fontWeight: '950', fontSize: '16px', gridColumn: selectedPC.status === 'free' ? 'span 2' : 'auto' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'START 🚀'}</button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };

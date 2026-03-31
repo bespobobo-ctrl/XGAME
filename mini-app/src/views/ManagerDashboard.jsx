@@ -59,12 +59,24 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     }, [activeTab, searchQuery]);
 
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
+        // Hozirgi aktiv yoki bron seansni topish
         const activeSession = pc?.Sessions?.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
+
         if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
 
         if (activeSession.status === 'reserved') {
-            const rTime = activeSession.reserveTime ? new Date(activeSession.reserveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-            return { time: rTime, cost: 0, progress: 0, remaining: rTime, isCountdown: false, reservedInfo: { time: rTime, user: activeSession.User?.username || activeSession.guestName || 'Mehmon' } };
+            const timeStr = activeSession.reserveTime ? new Date(activeSession.reserveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+            return {
+                time: timeStr,
+                cost: 0,
+                progress: 0,
+                remaining: timeStr,
+                isCountdown: false,
+                reservedInfo: {
+                    time: timeStr,
+                    user: activeSession.User?.username || activeSession.guestName || 'Mehmon'
+                }
+            };
         }
 
         const start = new Date(activeSession.startTime);
@@ -314,8 +326,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                             <div style={{ background: '#ffaa00', padding: '15px', borderRadius: '20px' }}><UserIcon size={30} color="#000" /></div>
                                             <div>
                                                 <p style={{ margin: 0, fontSize: '10px', color: '#ffaa00', fontWeight: 'bold', letterSpacing: '1px' }}>BRONNI KIM QILDI?</p>
-                                                <h3 style={{ margin: 0, fontSize: '24px', fontWeight: '950' }}>{calculateSessionInfo(selectedPC).reservedInfo?.user}</h3>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}><Clock size={14} color="#ffaa00" /><b style={{ fontSize: '18px', color: '#fff' }}>{calculateSessionInfo(selectedPC).reservedInfo?.time}</b></div>
+                                                <h3 style={{ margin: 0, fontSize: '24px', fontWeight: '950' }}>{calculateSessionInfo(selectedPC).reservedInfo?.user || 'Noma\'lum'}</h3>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}><Clock size={14} color="#ffaa00" /><b style={{ fontSize: '18px', color: '#fff' }}>{calculateSessionInfo(selectedPC).reservedInfo?.time || '--:--'}</b></div>
                                             </div>
                                         </div>
                                     ) : (

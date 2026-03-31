@@ -166,8 +166,9 @@ exports.getRooms = async (req, res, next) => {
                 model: Computer,
                 include: [{
                     model: Session,
-                    where: { status: { [Op.in]: ['active', 'paused'] } },
-                    required: false
+                    where: { status: { [Op.in]: ['active', 'paused', 'reserved'] } },
+                    required: false,
+                    include: [{ model: User, attributes: ['id', 'username', 'phone'] }]
                 }]
             }],
             order: [

@@ -728,3 +728,73 @@ exports.updateTopUpStatus = async (req, res, next) => {
         next(error);
     }
 };
+// ═══════════════════════════════════════════════
+// 👤 USERS MANAGEMENT
+// ═══════════════════════════════════════════════
+
+exports.getUsers = async (req, res, next) => {
+    try {
+        const { q } = req.query;
+        const clubId = req.user.ClubId;
+        const where = {
+            ClubId: clubId,
+            role: 'customer'
+        };
+        if (q) {
+            where[Op.or] = [
+                { id: { [Op.like]: `%${q}%` } },
+                { username: { [Op.like]: `%${q}%` } },
+                { phone: { [Op.like]: `%${q}%` } }
+            ];
+        }
+        const users = await User.findAll({
+            where,
+            attributes: ['id', 'username', 'phone', 'balance', 'status'],
+            limit: 50,
+            order: [['id', 'DESC']]
+        });
+        res.json(users);
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.addUserBalance = async (req, res, next) => {
+    const t = await sequelize.transaction();
+    try {
+        const { id } = req.params;
+        const { amount, type, description } = req.body;
+        const clubId = req.user.ClubId;
+
+        const user = await User.findOne({ where: { id, ClubId: clubId }, transaction: t, lock: true });
+        if (!user) {
+            await t.rollback();
+            return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+        }
+
+        user.balance = (user.balance || 0) + parseInt(amount);
+        await user.save({ transaction: t });
+
+        await Transaction.create({
+            amount: parseInt(amount),
+            type: type || 'deposit',
+            status: 'approved',
+            ClubId: clubId,
+            UserId: user.id,
+            description: description || 'Balans qo\'shildi (Administrator)'
+        }, { transaction: t });
+
+        await t.commit();
+
+        // 📣 Bildirishnoma yuborish
+        if (user.telegramId) {
+            const bot = require('../utils/bot');
+            bot.broadcastMessage([user.telegramId], `✅ <b>HISOB TO'LDIRILDI!</b>\n\nBalansingizga <b>${parseInt(amount).toLocaleString()} UZS</b> qo'shildi.`).catch(() => { });
+        }
+
+        res.json({ success: true, balance: user.balance });
+    } catch (err) {
+        await t.rollback();
+        next(err);
+    }
+};

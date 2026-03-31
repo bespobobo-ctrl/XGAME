@@ -62,6 +62,8 @@ router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(mana
 router.get('/manager/topups', auth, authorize('manager'), asyncHandler(managerAppCtrl.getTopUpRequests));
 router.post('/manager/topups/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.updateTopUpStatus));
 router.patch('/manager/club/card', auth, authorize('manager'), asyncHandler(managerAppCtrl.updateClubCard));
+router.get('/manager/users', auth, authorize('manager'), asyncHandler(managerAppCtrl.getUsers));
+router.post('/manager/user/:id/balance', auth, authorize('manager'), asyncHandler(managerAppCtrl.addUserBalance));
 
 /**
  * 🎮 PLAYER DASHBOARD (Gamer Profile)

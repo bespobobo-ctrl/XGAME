@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, History, LayoutGrid, Users } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, History, LayoutGrid, Users, QrCode, Zap, Info } from 'lucide-react';
 
 const UserDashboard = ({ user, onLogout, setView }) => {
     const [profileData, setProfileData] = useState(null);
     const [roomsData, setRoomsData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('profile');
 
     const [stats, setStats] = useState({ rooms: 0, total: 0, free: 0, busy: 0 });
@@ -21,7 +20,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
     const [uploading, setUploading] = useState(false);
 
     const clubName = profileData?.user?.clubName || 'GAME ZONE';
-    const userName = profileData?.user?.name || user?.username || 'Gamer';
+    const userName = (profileData?.user?.name || user?.username || 'GAMER').toUpperCase();
 
     const fetchData = async () => {
         try {
@@ -59,144 +58,175 @@ const UserDashboard = ({ user, onLogout, setView }) => {
         setStats({ rooms: rooms.length, total, free, busy });
     };
 
+    const handleScanQR = () => {
+        if (!window.Telegram?.WebApp?.showScanQrPopup) {
+            alert("QR skanerlash faqat Telegram Mini App ichida ishlaydi");
+            return;
+        }
+        window.Telegram.WebApp.showScanQrPopup({ text: "PC ekranidagi QR kodni skanerlang" }, async (text) => {
+            if (!text) return true;
+            try {
+                const res = await callAPI('/api/player/pc/unlock-with-qr', { method: 'POST', body: JSON.stringify({ qrData: text }) });
+                if (res.success) { alert(res.message); fetchData(); return true; }
+                else { alert(res.error || res.message); return false; }
+            } catch (err) { alert("Xatolik!"); return false; }
+        });
+    };
+
     const handleReserve = async (pcId) => {
         if (!reserveTimeInput) return alert("Vaqtni tanlang!");
         setReserveLoading(true);
         try {
-            const res = await callAPI(`/api/player/pc/${pcId}/reserve`, {
-                method: 'POST',
-                body: JSON.stringify({ reserveTime: reserveTimeInput })
-            });
-            if (res.success) {
-                alert('Muvaffaqiyatli bron qilindi! 🎉');
-                setPcDetail(null);
-                fetchData();
-            } else { alert(res.error || res.message); }
-        } catch (error) { alert('Xatolik yuz berdi'); }
+            const res = await callAPI(`/api/player/pc/${pcId}/reserve`, { method: 'POST', body: JSON.stringify({ reserveTime: reserveTimeInput }) });
+            if (res.success) { alert('Muvaffaqiyatli bron qilindi! 🎉'); setPcDetail(null); fetchData(); }
+            else alert(res.error || res.message);
+        } catch (e) { alert('Xatolik!'); }
         finally { setReserveLoading(false); }
     };
 
+    const handleSubmitTopUp = async () => {
+        if (!receiptFile) return alert("Chekni tanlang!");
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('amount', topupAmount);
+            formData.append('receipt', receiptFile);
+            const res = await fetch(`${API_URL}/api/player/topup`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) { alert("Yuborildi! Tasdiqlashni kuting."); setActiveTab('profile'); fetchData(); }
+            else alert(data.error);
+        } catch (e) { alert("Xatolik!"); }
+        finally { setUploading(false); }
+    };
+
     const navItem = (id, label, icon) => (
-        <div onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === id ? '#7000ff' : '#666', cursor: 'pointer', transition: '0.3s' }}>
-            <span style={{ fontSize: '22px' }}>{icon}</span>
-            <span style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '4px' }}>{label}</span>
+        <div onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === id ? '#7000ff' : '#444', gap: '6px', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative' }}>
+            {activeTab === id && <motion.div layoutId="navGlow" style={{ position: 'absolute', top: '-15px', width: '30px', height: '2px', background: '#7000ff', boxShadow: '0 0 15px #7000ff' }} />}
+            {icon}
+            <span style={{ fontSize: '9px', fontWeight: '900', letterSpacing: '0.1px' }}>{label.toUpperCase()}</span>
         </div>
     );
 
+    if (loading && !profileData) return <div style={{ height: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '40px', height: '40px', border: '3px solid #111', borderTop: '3px solid #7000ff', borderRadius: '50%' }} /></div>;
+
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '20px', paddingBottom: '120px', minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+        <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '130px', fontFamily: '"Outfit", sans-serif', overflowX: 'hidden' }}>
+
+            {/* 💎 PREMIUM HEADER */}
+            <header style={{ padding: '25px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(15px)', zIndex: 100 }}>
                 <div>
-                    <h1 style={{ fontSize: '24px', margin: 0, fontWeight: '900' }}>{clubName.toUpperCase()}</h1>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <div style={{ width: '6px', height: '6px', background: '#39ff14', borderRadius: '50%' }} />
-                        <p style={{ color: '#555', margin: 0, fontSize: '9px', fontWeight: 'bold', letterSpacing: '1px' }}>ONLINE</p>
+                    <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '-0.5px' }}>{clubName}</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ width: '7px', height: '7px', background: '#39ff14', borderRadius: '50%', boxShadow: '0 0 10px #39ff14' }} />
+                        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#555' }}>SECURE ACCESS</span>
                     </div>
                 </div>
-                <button onClick={onLogout} style={{ background: '#ff444415', color: '#ff4444', border: 'none', padding: '10px 18px', borderRadius: '15px', fontWeight: 'bold', fontSize: '11px' }}>LOGOUT</button>
+                <button onClick={onLogout} style={{ background: '#111', color: '#ff4444', border: '1px solid #1a1a1a', padding: '10px 15px', borderRadius: '15px', fontSize: '10px', fontWeight: '900' }}>LOGOUT</button>
             </header>
 
-            <AnimatePresence mode='wait'>
+            <AnimatePresence mode="wait">
                 {activeTab === 'profile' && (
-                    <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <motion.div key="profile" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} style={{ padding: '0 20px' }}>
 
-                        {/* 🌟 USER HEADER */}
-                        <div>
-                            <h3 style={{ margin: 0, fontSize: '13px', color: '#444', fontWeight: 'bold' }}>XUSH KELIBSIZ,</h3>
-                            <h2 style={{ margin: 0, fontSize: '32px', fontWeight: '950', letterSpacing: '-1px' }}>{userName} ✨</h2>
+                        {/* 👤 GREETING */}
+                        <div style={{ marginBottom: '25px' }}>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#444', fontWeight: 'bold', letterSpacing: '1px' }}>WELCOME BACK,</p>
+                            <h2 style={{ margin: 0, fontSize: '36px', fontWeight: '900', letterSpacing: '-1.5px' }}>{userName}</h2>
                         </div>
 
-                        {/* 📊 CLUB LIVE STATS (ROOMS, FREE, BUSY) */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                        {/* ⚡ INSTANT QR ACCESS (RE-ADDED & PREMIUM) */}
+                        <motion.button
+                            whileTap={{ scale: 0.96 }}
+                            onClick={handleScanQR}
+                            style={{ width: '100%', background: 'linear-gradient(135deg, #7000ff, #5000cc)', border: 'none', borderRadius: '35px', padding: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', boxShadow: '0 10px 30px -5px rgba(112,0,255,0.4)', marginBottom: '25px' }}
+                        >
+                            <QrCode size={26} color="#fff" />
+                            <span style={{ fontSize: '17px', fontWeight: '950', color: '#fff', letterSpacing: '0.5px' }}>SKANERLASH VA KIRISH</span>
+                        </motion.button>
+
+                        {/* 💳 BALANCE BOX (LUXURY) */}
+                        <div style={{ background: 'linear-gradient(145deg, #121212, #050505)', borderRadius: '40px', padding: '30px', border: '1px solid #1a1a1a', marginBottom: '25px', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', bottom: '-40px', right: '-20px', width: '120px', height: '120px', background: '#7000ff', filter: 'blur(70px)', opacity: 0.15 }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CreditCard size={14} color="#7000ff" /><span style={{ fontSize: '11px', color: '#444', fontWeight: 'bold' }}>ACCOUNT BALANCE</span></div>
+                                <div style={{ background: '#7000ff15', color: '#7000ff', padding: '6px 12px', borderRadius: '10px', fontSize: '10px', fontWeight: '900' }}>ACTIVE</div>
+                            </div>
+                            <h1 style={{ margin: 0, fontSize: '46px', fontWeight: '900', letterSpacing: '-2px' }}>{profileData?.user?.balance?.toLocaleString()} <span style={{ fontSize: '16px', color: '#333' }}>UZS</span></h1>
+                            <button onClick={() => setActiveTab('topup')} style={{ marginTop: '25px', width: '100%', padding: '18px', background: '#fff', color: '#000', borderRadius: '22px', fontWeight: '950', fontSize: '13px', border: 'none' }}>+ TO'LDIRISH</button>
+                        </div>
+
+                        {/* 📊 QUICK STATS */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '25px' }}>
                             {[
-                                { l: 'XONALAR', v: stats.rooms, i: <LayoutGrid size={16} />, c: '#7000ff' },
-                                { l: 'BO\'SH PC', v: stats.free, i: <Monitor size={16} />, c: '#39ff14' },
-                                { l: 'BAND PC', v: stats.busy, i: <Users size={16} />, c: '#ff00ff' }
-                            ].map((item, i) => (
-                                <div key={i} style={{ background: '#111', padding: '15px 10px', borderRadius: '22px', border: '1px solid #1a1a1a', textAlign: 'center' }}>
-                                    <div style={{ color: item.c, marginBottom: '5px', display: 'flex', justifyContent: 'center' }}>{item.i}</div>
-                                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '900' }}>{item.v}</h4>
-                                    <p style={{ margin: 0, fontSize: '8px', color: '#444', fontWeight: 'bold' }}>{item.l}</p>
+                                { l: 'ROOMS', v: stats.rooms, c: '#7000ff' },
+                                { l: 'FREE PC', v: stats.free, c: '#39ff14' },
+                                { l: 'BUSY PC', v: stats.busy, c: '#ff00ff' }
+                            ].map((s, i) => (
+                                <div key={i} style={{ background: '#111', padding: '15px 5px', borderRadius: '22px', textAlign: 'center', border: '1px solid #1a1a1a' }}>
+                                    <h4 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: s.c }}>{s.v}</h4>
+                                    <p style={{ margin: 0, fontSize: '8px', color: '#444', fontWeight: 'bold' }}>{s.l}</p>
                                 </div>
                             ))}
                         </div>
 
-                        {/* 💰 BALANCE CARD */}
-                        <div style={{ background: 'linear-gradient(135deg, #111, #080808)', borderRadius: '30px', padding: '30px', border: '1px solid #1a1a1a', position: 'relative', overflow: 'hidden shadow-2xl' }}>
-                            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: '#7000ff', filter: 'blur(60px)', opacity: 0.2 }} />
-                            <p style={{ margin: 0, fontSize: '12px', color: '#7000ff', fontWeight: 'bold', letterSpacing: '1px' }}>HISOBINGIZ</p>
-                            <h2 style={{ margin: '10px 0 25px', fontSize: '42px', fontWeight: '950' }}>{profileData?.user?.balance?.toLocaleString()} <span style={{ fontSize: '14px', color: '#444' }}>UZS</span></h2>
-                            <button onClick={() => setActiveTab('topup')} style={{ width: '100%', padding: '18px', background: '#7000ff', color: '#fff', border: 'none', borderRadius: '20px', fontWeight: '900', fontSize: '14px' }}>+ BALANSNI TO'LDIRISH</button>
-                        </div>
-
-                        {/* 🕒 RECENT COMPUTERS (LAST 3) */}
-                        <div style={{ background: '#111', borderRadius: '30px', padding: '25px', border: '1px solid #1a1a1a' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                                <History size={18} color="#7000ff" />
-                                <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', letterSpacing: '0.5px' }}>OXIRGI O'TIRGAN PC-LAR</h4>
+                        {/* 🕒 RECENT COMPUTERS (PROFESSIONAL LIST) */}
+                        <div style={{ background: '#0a0a0a', borderRadius: '40px', padding: '25px', border: '1px solid #131313' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><History size={18} color="#7000ff" /><span style={{ fontSize: '11px', fontWeight: 'bold', color: '#444' }}>RECENTLY USED</span></div>
+                                <ChevronRight size={14} color="#222" />
                             </div>
-                            {(() => {
-                                const sessions = profileData?.user?.Sessions || [];
-                                const recentUniquePCs = [];
-                                const seenIds = new Set();
-                                for (let s of sessions) {
-                                    if (s.Computer && !seenIds.has(s.Computer.id)) {
-                                        recentUniquePCs.push(s.Computer);
-                                        seenIds.add(s.Computer.id);
-                                    }
-                                    if (recentUniquePCs.length >= 3) break;
-                                }
-
-                                if (recentUniquePCs.length === 0) return <p style={{ fontSize: '12px', color: '#444', textAlign: 'center' }}>Hali foydalanilmagan</p>;
-
-                                return (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        {recentUniquePCs.map(pc => {
-                                            const status = (pc.status || '').toLowerCase();
-                                            const isFree = status === 'free' || status === 'available';
-                                            return (
-                                                <div key={pc.id} style={{ background: '#000', padding: '15px 20px', borderRadius: '22px', border: '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                        <Monitor size={20} color={isFree ? '#39ff14' : '#ff00ff'} />
-                                                        <div>
-                                                            <div style={{ fontSize: '14px', fontWeight: '900' }}>{pc.name}</div>
-                                                            <div style={{ fontSize: '9px', color: isFree ? '#39ff14' : '#ff00ff', fontWeight: 'bold' }}>{isFree ? 'HOZIR BO\'SH' : 'HOZIR BAND'}</div>
-                                                        </div>
-                                                    </div>
-                                                    {isFree && <button onClick={() => setPcDetail(pc)} style={{ background: '#39ff1415', color: '#39ff14', border: 'none', padding: '8px 15px', borderRadius: '12px', fontSize: '11px', fontWeight: '900' }}>BRON QILISH</button>}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {(() => {
+                                    const uniqueRecent = [];
+                                    const seen = new Set();
+                                    (profileData?.user?.Sessions || []).forEach(s => {
+                                        if (s.Computer && !seen.has(s.Computer.id)) { uniqueRecent.push(s.Computer); seen.add(s.Computer.id); }
+                                    });
+                                    return uniqueRecent.slice(0, 3).map(pc => {
+                                        const isFree = (pc.status || '').toLowerCase() === 'free' || (pc.status || '').toLowerCase() === 'available';
+                                        return (
+                                            <div key={pc.id} onClick={() => isFree && setPcDetail(pc)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#000', padding: '15px 20px', borderRadius: '22px', border: '1.5px solid #131313', cursor: isFree ? 'pointer' : 'default' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <div style={{ width: '40px', height: '40px', background: isFree ? '#39ff1411' : '#ff00ff11', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Monitor size={20} color={isFree ? '#39ff14' : '#ff00ff'} /></div>
+                                                    <div><div style={{ fontSize: '15px', fontWeight: '900' }}>{pc.name}</div><div style={{ fontSize: '9px', color: isFree ? '#39ff14' : '#ff00ff', fontWeight: 'bold' }}>{isFree ? 'READY TO BOOK' : 'IN USE'}</div></div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })()}
+                                                {isFree && <div style={{ background: '#111', padding: '8px', borderRadius: '12px' }}><CalendarClock size={16} color="#7000ff" /></div>}
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
                         </div>
                     </motion.div>
                 )}
 
                 {activeTab === 'map' && (
-                    <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <h2 style={{ fontSize: '24px', fontWeight: '950', marginBottom: '10px' }}>KOMPYUTERLAR XARITASI</h2>
+                    <motion.div key="map" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ padding: '0 20px' }}>
+                        <h2 style={{ fontSize: '28px', fontWeight: '900', marginBottom: '25px', letterSpacing: '-1px' }}>VIRTUAL MAP</h2>
                         {roomsData.map(room => (
-                            <div key={room.id} style={{ background: '#111', borderRadius: '30px', border: '1px solid #1a1a1a', overflow: 'hidden' }}>
+                            <div key={room.id} style={{ background: '#0a0a0a', borderRadius: '40px', overflow: 'hidden', border: '1px solid #131313', marginBottom: '15px' }}>
                                 <div onClick={() => setOpenRoomId(openRoomId === room.id ? null : room.id)} style={{ padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                                     <div>
-                                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '900' }}>{room.name.toUpperCase()}</h3>
-                                        <p style={{ margin: '5px 0 0', fontSize: '10px', color: '#555', fontWeight: 'bold' }}>{room.pricePerHour.toLocaleString()} UZS/SOAT</p>
+                                        <h3 style={{ margin: 0, fontSize: '19px', fontWeight: '900' }}>{(room.name || '').toUpperCase()}</h3>
+                                        <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#444', fontWeight: 'bold' }}>{room.Computers?.length} UNITS • {room.pricePerHour.toLocaleString()} UZS/H</p>
                                     </div>
-                                    <ChevronRight style={{ transform: openRoomId === room.id ? 'rotate(90deg)' : 'none', transition: '0.3s' }} color="#333" />
+                                    <motion.div animate={{ rotate: openRoomId === room.id ? 90 : 0 }}><ChevronRight size={18} color="#222" /></motion.div>
                                 </div>
                                 <AnimatePresence>
                                     {openRoomId === room.id && (
                                         <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden', padding: '0 20px 25px' }}>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '12px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '10px' }}>
                                                 {room.Computers?.map(pc => {
-                                                    const status = (pc.status || '').toLowerCase();
-                                                    const isAvailable = status === 'free' || status === 'available';
+                                                    const isAvailable = (pc.status || '').toLowerCase() === 'free' || (pc.status || '').toLowerCase() === 'available';
                                                     return (
-                                                        <motion.div key={pc.id} whileTap={{ scale: 0.95 }} onClick={() => setPcDetail(pc)} style={{ background: '#000', border: `1px solid ${isAvailable ? '#39ff1422' : '#ff00ff22'}`, borderRadius: '20px', padding: '18px 5px', textAlign: 'center', cursor: 'pointer' }}>
-                                                            <Monitor size={26} color={isAvailable ? '#39ff14' : '#ff00ff'} style={{ filter: `drop-shadow(0 0 5px ${isAvailable ? '#39ff1444' : '#ff00ff44'})` }} />
-                                                            <div style={{ fontSize: '11px', fontWeight: '900', marginTop: '8px' }}>{pc.name}</div>
+                                                        <motion.div key={pc.id} whileTap={{ scale: 0.95 }} onClick={() => setPcDetail(pc)} style={{ background: '#000', border: '1.5px solid #131313', borderRadius: '25px', padding: '20px 5px', textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
+                                                            {isAvailable && <div style={{ position: 'absolute', top: '10px', right: '10px', width: '5px', height: '5px', background: '#39ff14', borderRadius: '50%', boxShadow: '0 0 8px #39ff14' }} />}
+                                                            <Monitor size={26} color={isAvailable ? '#39ff14' : '#ff00ff'} />
+                                                            <div style={{ fontSize: '11px', fontWeight: '950', marginTop: '10px' }}>{pc.name}</div>
                                                         </motion.div>
                                                     );
                                                 })}
@@ -210,65 +240,64 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                 )}
 
                 {activeTab === 'topup' && (
-                    <motion.div key="topup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <button onClick={() => setActiveTab('profile')} style={{ background: '#111', border: '1px solid #1a1a1a', color: '#fff', width: '45px', height: '45px', borderRadius: '15px' }}><ArrowLeft size={20} /></button>
-                            <h2 style={{ fontSize: '24px', fontWeight: '900' }}>HISOBNI TO'LDIRISH</h2>
+                    <motion.div key="topup" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ padding: '0 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}>
+                            <button onClick={() => setActiveTab('profile')} style={{ background: '#111', border: 'none', color: '#fff', width: '45px', height: '45px', borderRadius: '18px' }}><ArrowLeft size={18} /></button>
+                            <h2 style={{ fontSize: '26px', fontWeight: '900', letterSpacing: '-1px' }}>PAYMENT SETUP</h2>
                         </div>
-                        <div style={{ background: 'linear-gradient(135deg, #111, #050505)', borderRadius: '30px', padding: '30px', border: '1px solid #1a1a1a' }}>
-                            <h4 style={{ margin: '0 0 20px', fontSize: '12px', color: '#7000ff', fontWeight: 'bold' }}>TO'LOV MA'LUMOTLARI</h4>
-                            <div style={{ background: '#000', padding: '25px', borderRadius: '25px', marginBottom: '20px', border: '1px solid #1a1a1a' }}>
-                                <p style={{ margin: 0, fontSize: '10px', color: '#444', fontWeight: 'bold', marginBottom: '8px' }}>KARTA RAQAMI:</p>
-                                <h4 style={{ fontSize: '20px', letterSpacing: '2px', fontWeight: '900', margin: 0 }}>{profileData?.club?.cardNumber || 'MA\'LUMOT YO\'Q'}</h4>
-                                <p style={{ margin: '15px 0 0', fontSize: '13px', fontWeight: 'bold', color: '#888' }}>EGASI: {profileData?.club?.cardOwner || 'MA\'LUMOT YO\'Q'}</p>
+                        <div style={{ background: 'linear-gradient(135deg, #1c1c1e, #0a0a0a)', borderRadius: '40px', padding: '30px', border: '1px solid #222' }}>
+                            <div style={{ background: '#000', padding: '25px', borderRadius: '30px', border: '1.5px dashed #333', marginBottom: '25px' }}>
+                                <p style={{ margin: '0 0 10px', fontSize: '10px', color: '#444', fontWeight: 'bold' }}>CARD NUMBER:</p>
+                                <h3 style={{ margin: 0, fontSize: '20px', letterSpacing: '4px', fontWeight: '900' }}>{profileData?.club?.cardNumber || '---- ---- ---- ----'}</h3>
+                                <p style={{ margin: '15px 0 0', fontSize: '13px', fontWeight: 'bold', color: '#7000ff' }}>EGASI: {profileData?.club?.cardOwner || 'N/A'}</p>
                             </div>
-                            <div style={{ marginBottom: '25px' }}><label style={{ fontSize: '11px', color: '#444', marginBottom: '8px', display: 'block' }}>O'TKAZILGAN SUMMA:</label><input type="number" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} style={{ width: '100%', padding: '20px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '20px', color: '#fff', fontSize: '22px', fontWeight: '900' }} /></div>
-                            <div style={{ marginBottom: '30px' }}><label style={{ fontSize: '11px', color: '#444', marginBottom: '8px', display: 'block' }}>CHEKNI YUKLASH:</label>
-                                <div style={{ position: 'relative', width: '100%' }}>
-                                    <input type="file" accept="image/*" onChange={e => setReceiptFile(e.target.files[0])} style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 10 }} />
-                                    <div style={{ padding: '30px', background: receiptFile ? '#39ff1408' : '#000', border: `2px dashed ${receiptFile ? '#39ff14' : '#1a1a1a'}`, borderRadius: '25px', textAlign: 'center' }}>
-                                        {receiptFile ? <div style={{ color: '#39ff14', fontWeight: 'bold' }}>✅ {receiptFile.name}</div> : <div style={{ color: '#444' }}><ImageIcon size={28} style={{ marginBottom: '10px' }} /><br />GALEREYADAN TANLASH</div>}
+                            <div style={{ marginBottom: '20px' }}><label style={{ fontSize: '11px', color: '#444', marginBottom: '10px', display: 'block' }}>SUMMA (UZS):</label><input type="number" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} style={{ width: '100%', padding: '22px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '25px', color: '#fff', fontSize: '24px', fontWeight: '900', textAlign: 'center' }} /></div>
+                            <div style={{ marginBottom: '30px' }}><label style={{ fontSize: '11px', color: '#444', marginBottom: '10px', display: 'block' }}>CHEK (SCREENSHOT):</label>
+                                <div style={{ position: 'relative' }}>
+                                    <input type="file" accept="image/*" onChange={e => setReceiptFile(e.target.files[0])} style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 1, cursor: 'pointer' }} />
+                                    <div style={{ padding: '30px', background: receiptFile ? '#39ff1408' : '#000', border: `2px dashed ${receiptFile ? '#39ff14' : '#1a1a1a'}`, borderRadius: '30px', textAlign: 'center' }}>
+                                        {receiptFile ? <span style={{ color: '#39ff14', fontSize: '13px', fontWeight: '900' }}>✅ {receiptFile.name}</span> : <div style={{ color: '#444' }}><ImageIcon size={30} style={{ marginBottom: '10px' }} /><br /><span style={{ fontSize: '11px' }}>UPLOAD RECEIPT</span></div>}
                                     </div>
                                 </div>
                             </div>
-                            <button onClick={handleSubmitTopUp} disabled={uploading} style={{ width: '100%', padding: '22px', background: '#7000ff', color: '#fff', borderRadius: '22px', fontWeight: '950', fontSize: '16px' }}>{uploading ? 'YUKLANMOQDA...' : 'TASDIQLASHGA YUBORISH'}</button>
+                            <button onClick={handleSubmitTopUp} disabled={uploading} style={{ width: '100%', padding: '25px', background: '#7000ff', color: '#fff', borderRadius: '25px', fontWeight: '950', fontSize: '15px', border: 'none', boxShadow: '0 10px 20px rgba(112,0,255,0.3)' }}>{uploading ? 'PROCESSING...' : 'PROCESS PAYMENT'}</button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* 🕒 RESERVATION MODAL (MAP & HISTORY) */}
+            {/* 🕰️ RESERVATION MODAL (LUXURY) */}
             <AnimatePresence>
                 {pcDetail && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={(e) => e.target === e.currentTarget && setPcDetail(null)}>
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#111', width: '100%', padding: '35px 25px', borderRadius: '40px 40px 0 0', borderTop: '1px solid #1a1a1a' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
-                                <div><h2 style={{ margin: 0, fontSize: '32px', fontWeight: '950' }}>{pcDetail.name}</h2><p style={{ margin: 0, fontSize: '12px', color: (pcDetail.status || '').toLowerCase().includes('free') || (pcDetail.status || '').toLowerCase().includes('available') ? '#39ff14' : '#ff00ff', fontWeight: 'bold' }}>{(pcDetail.status || 'O\'CHIQ').toUpperCase()}</p></div>
-                                <button onClick={() => setPcDetail(null)} style={{ background: '#222', border: 'none', color: '#fff', padding: '12px', borderRadius: '15px' }}><X size={22} /></button>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={(e) => e.target === e.currentTarget && setPcDetail(null)}>
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#0a0a0a', width: '100%', padding: '40px 25px', borderRadius: '45px 45px 0 0', borderTop: '1.5px solid #131313' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '35px' }}>
+                                <div><h1 style={{ margin: 0, fontSize: '38px', fontWeight: '950', letterSpacing: '-1.5px' }}>{pcDetail.name}</h1><p style={{ margin: 0, fontSize: '12px', color: '#7000ff', fontWeight: 'bold' }}>VIP RESERVATION SYSTEM</p></div>
+                                <button onClick={() => setPcDetail(null)} style={{ background: '#111', color: '#fff', width: '50px', height: '50px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={24} /></button>
                             </div>
-
                             {((pcDetail.status || '').toLowerCase() === 'free' || (pcDetail.status || '').toLowerCase() === 'available') ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div>
-                                        <label style={{ fontSize: '12px', color: '#444', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>BRON QILISH VAQTINI TANLANG:</label>
-                                        <input type="time" value={reserveTimeInput} onChange={e => setReserveTimeInput(e.target.value)} style={{ width: '100%', padding: '25px', background: '#000', border: '2px solid #1a1a1a', borderRadius: '25px', color: '#fff', fontSize: '36px', textAlign: 'center', fontWeight: '900', fontFamily: 'monospace' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                                    <div style={{ background: '#000', padding: '30px', borderRadius: '35px', border: '1.5px solid #131313' }}>
+                                        <p style={{ margin: '0 0 15px', fontSize: '11px', color: '#444', fontWeight: 'bold', textAlign: 'center' }}>SELECT BOOKING TIME</p>
+                                        <input type="time" value={reserveTimeInput} onChange={e => setReserveTimeInput(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '58px', textAlign: 'center', fontWeight: '900', fontFamily: 'monospace', outline: 'none' }} />
                                     </div>
-                                    <button onClick={() => handleReserve(pcDetail.id)} disabled={reserveLoading} style={{ width: '100%', padding: '25px', background: '#39ff14', color: '#000', borderRadius: '25px', fontWeight: '950', fontSize: '18px' }}>{reserveLoading ? 'YUBORILMOQDA...' : 'BRON QILISH ✅'}</button>
+                                    <button onClick={() => handleReserve(pcDetail.id)} disabled={reserveLoading} style={{ width: '100%', padding: '25px', background: '#fff', color: '#000', borderRadius: '30px', fontWeight: '950', fontSize: '17px', border: 'none' }}>{reserveLoading ? '...' : 'BOOK NOW ✅'}</button>
                                 </div>
                             ) : (
-                                <p style={{ textAlign: 'center', padding: '30px', color: '#444', fontWeight: 'bold' }}>Ushbu PC hozirda band. Iltimos boshqasini tanlang.</p>
+                                <div style={{ textAlign: 'center', padding: '40px' }}><Info size={40} color="#333" style={{ marginBottom: '15px' }} /><p style={{ margin: 0, fontSize: '14px', color: '#444', fontWeight: 'bold' }}>Ushbu PC hozirda band yoki o'chiq.</p></div>
                             )}
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: 'rgba(18,18,18,0.85)', border: '1px solid rgba(255,255,255,0.05)', padding: '15px 25px', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', backdropFilter: 'blur(20px)', zIndex: 100, boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }}>
-                {navItem('profile', 'Asosiy', <LayoutGrid size={24} />)}
-                {navItem('map', 'Xarita', <Monitor size={24} />)}
-                {navItem('topup', 'Hisob', <CreditCard size={24} />)}
+            {/* 📍 BOTTOM NAV (PREMIUM) */}
+            <nav style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', background: 'rgba(12,12,14,0.7)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.05)', padding: '18px 0', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', zIndex: 100, boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+                {navItem('profile', 'Home', <Zap size={22} color={activeTab === 'profile' ? '#7000ff' : '#444'} />)}
+                {navItem('map', 'Explore', <LayoutGrid size={22} color={activeTab === 'map' ? '#7000ff' : '#444'} />)}
+                {navItem('topup', 'Wallet', <CreditCard size={22} color={activeTab === 'topup' ? '#7000ff' : '#444'} />)}
             </nav>
-        </motion.div>
+        </div>
     );
 };
 

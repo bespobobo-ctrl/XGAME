@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock } from 'lucide-react';
+import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock, Hash, Activity } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -165,7 +165,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 })
             });
             if (res.success) {
-                alert(editingRoom ? "Xona tahrirlandi!" : "Xona muvaffaqiyatli qo'shildi!");
                 setShowAddRoomModal(false); setEditingRoom(null); fetchData();
             } else alert(res.error || "Xatolik!");
         } catch (e) { alert("Xatolik!"); }
@@ -173,11 +172,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const handleDeleteRoom = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm("Haqiqatan ham ushbu xonani va undagi barcha kompyuterlarni o'chirib yubormoqchimisiz?")) return;
+        if (!window.confirm("Haqiqatan ham ushbu xonani o'chirmoqchimisiz?")) return;
         try {
             const res = await callAPI(`/api/manager/room/${id}`, { method: 'DELETE' });
             if (res.success) fetchData();
-            else alert(res.error || "O'chirishda xatolik!");
         } catch (e) { alert("Xatolik!"); }
     };
 
@@ -186,140 +184,259 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         try {
             const res = await callAPI(`/api/manager/room/${id}/lock`, { method: 'POST' });
             if (res.success) fetchData();
-            else alert(res.error || "Xatolik!");
         } catch (e) { alert("Xatolik!"); }
     };
 
     const navItem = (id, label, icon) => (
-        <div onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === id ? '#7000ff' : '#444', gap: '4px', cursor: 'pointer' }}>
-            {icon}
-            <span style={{ fontSize: '8px', fontWeight: '900' }}>{label.toUpperCase()}</span>
-        </div>
+        <motion.div
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setActiveTab(id)}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                color: activeTab === id ? '#7000ff' : '#555',
+                gap: '6px',
+                cursor: 'pointer',
+                position: 'relative'
+            }}
+        >
+            {activeTab === id && (
+                <motion.div layoutId="navGlow" style={{ position: 'absolute', top: '-15px', width: '25px', height: '4px', background: '#7000ff', borderRadius: '4px', boxShadow: '0 0 10px #7000ff' }} />
+            )}
+            <div style={{ padding: '8px', borderRadius: '14px', background: activeTab === id ? 'rgba(112, 0, 255, 0.1)' : 'transparent' }}>
+                {icon}
+            </div>
+            <span style={{ fontSize: '9px', fontWeight: '900', letterSpacing: '0.5px' }}>{label.toUpperCase()}</span>
+        </motion.div>
     );
 
-    if (loading && !stats) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505' }}><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '40px', height: '40px', border: '3px solid #111', borderTop: '3px solid #7000ff', borderRadius: '50%' }} /></div>;
+    if (loading && !stats) return (
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+            <motion.div
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                style={{ fontSize: '24px', fontWeight: '950', color: '#7000ff', letterSpacing: '3px', marginBottom: '20px' }}
+            >GAMEZONE</motion.div>
+            <div style={{ width: '100px', height: '2px', background: '#111', borderRadius: '2px', overflow: 'hidden' }}>
+                <motion.div animate={{ x: [-100, 100] }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '50px', height: '100%', background: '#7000ff', boxShadow: '0 0 10px #7000ff' }} />
+            </div>
+        </div>
+    );
 
     const currentRoomFromState = rooms.find(r => r.id === selectedViewRoom?.id);
     const roomReservations = currentRoomFromState?.Computers?.filter(pc => pc.status === 'reserved').map(pc => ({ pc, info: calculateSessionInfo(pc).reservedInfo })).filter(r => r.info);
 
     return (
-        <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', paddingBottom: '130px', fontFamily: '"Outfit", sans-serif' }}>
+        <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '140px', fontFamily: '"Outfit", sans-serif', overflowX: 'hidden' }}>
 
-            <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)', zIndex: 100 }}>
-                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '950' }}>{(stats?.clubName || 'GAMEZONE').toUpperCase()}</h1>
-                <button onClick={onLogout} style={{ background: '#111', color: '#ff4444', padding: '10px 18px', borderRadius: '15px', border: 'none' }}>CHIQUISH</button>
+            {/* 💎 PREMIUM HEADER */}
+            <header style={{ padding: '25px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(30px)', zIndex: 100, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '8px', height: '25px', background: '#7000ff', borderRadius: '4px', boxShadow: '0 0 15px #7000ff' }} />
+                    <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '950', letterSpacing: '-0.5px' }}>{(stats?.clubName || 'GAMEZONE').toUpperCase()}</h1>
+                </div>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={onLogout} style={{ background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', padding: '10px 20px', borderRadius: '18px', border: '1px solid rgba(255,68,68,0.2)', fontSize: '12px', fontWeight: '900' }}>CHIQISH</motion.button>
             </header>
 
             <AnimatePresence mode="wait">
                 {activeTab === 'stats' && (
-                    <motion.div key="stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '20px' }}>
-                        <div style={{ background: 'linear-gradient(135deg, #7000ff, #3000cc)', padding: '50px 20px', borderRadius: '45px', textAlign: 'center', marginBottom: '25px' }}>
-                            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>UMUMIY TUSHUM</p>
-                            <h2 style={{ fontSize: '64px', fontWeight: '950', margin: 0 }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h2>
+                    <motion.div key="stats" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ padding: '20px' }}>
+                        {/* MAIN REVENUE CARD */}
+                        <div style={{ background: 'linear-gradient(145deg, #0f0f0f, #050505)', padding: '50px 20px', borderRadius: '50px', textAlign: 'center', marginBottom: '25px', border: '1px solid rgba(112, 0, 255, 0.15)', boxShadow: '0 30px 60px rgba(0,0,0,0.4), inset 0 0 30px rgba(112, 0, 255, 0.05)', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(112, 0, 255, 0.1) 0%, transparent 70%)' }} />
+                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontWeight: '900', letterSpacing: '4px', marginBottom: '10px' }}>DAILY REVENUE</p>
+                            <h2 style={{ fontSize: '68px', fontWeight: '950', margin: 0, background: 'linear-gradient(to bottom, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h2>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mt: '15px', background: 'rgba(57, 255, 20, 0.1)', p: '8px 16px', borderRadius: '12px', color: '#39ff14', fontSize: '10px', fontWeight: '900' }}>
+                                <Activity size={12} /> BARCHA TRANZAKSIYALAR
+                            </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
-                            <div style={{ background: '#111', p: '25px', borderRadius: '35px', textAlign: 'center' }}><p style={{ fontSize: '9px', color: '#444' }}>KASSA (NAQD)</p><b>{stats?.revenue?.cashPcRevenue?.toLocaleString()}</b></div>
-                            <div style={{ background: '#111', p: '25px', borderRadius: '35px', textAlign: 'center' }}><p style={{ fontSize: '9px', color: '#444' }}>MIJOZLARNI OCHISHI</p><b>{stats?.revenue?.userPcRevenue?.toLocaleString()}</b></div>
+
+                        {/* MINI STATS */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                            <div style={{ background: '#0a0a0a', p: '25px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                <DollarSign size={16} color="#7000ff" style={{ marginBottom: '10px' }} />
+                                <p style={{ fontSize: '9px', color: '#444', fontWeight: '900' }}>NAQD KASSA</p>
+                                <b style={{ fontSize: '18px' }}>{stats?.revenue?.cashPcRevenue?.toLocaleString()}</b>
+                            </div>
+                            <div style={{ background: '#0a0a0a', p: '25px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                <Zap size={16} color="#39ff14" style={{ marginBottom: '10px' }} />
+                                <p style={{ fontSize: '9px', color: '#444', fontWeight: '900' }}>ONLINE TARAFI</p>
+                                <b style={{ fontSize: '18px' }}>{stats?.revenue?.userPcRevenue?.toLocaleString()}</b>
+                            </div>
                         </div>
-                        <div style={{ background: '#111', p: '25px', borderRadius: '35px', display: 'flex', justifyContent: 'space-between', marginBottom: '25px' }}>
-                            <div><p style={{ fontSize: '9px', color: '#444' }}>ADMIN PC</p><b>{stats?.revenue?.adminPcRevenue?.toLocaleString()}</b></div>
-                            <div style={{ textAlign: 'right' }}><p style={{ fontSize: '9px', color: '#444' }}>SAOTBAY (O'RT.)</p><b style={{ color: '#39ff14' }}>{Math.round(stats?.revenue?.avgHourly || 0).toLocaleString()} UZS</b></div>
+
+                        <div style={{ background: '#0a0a0a', p: '25px', borderRadius: '40px', display: 'flex', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}><Monitor size={14} color="#555" /><p style={{ fontSize: '9px', color: '#444', fontWeight: '900', margin: 0 }}>ADMIN PC</p></div>
+                                <b style={{ fontSize: '18px' }}>{stats?.revenue?.adminPcRevenue?.toLocaleString()}</b>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end', marginBottom: '4px' }}><TrendingUp size={14} color="#39ff14" /><p style={{ fontSize: '9px', color: '#444', fontWeight: '900', margin: 0 }}>O'RT. SOATBAY</p></div>
+                                <b style={{ color: '#39ff14', fontSize: '18px' }}>{Math.round(stats?.revenue?.avgHourly || 0).toLocaleString()} UZS</b>
+                            </div>
                         </div>
                     </motion.div>
                 )}
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
-                    <motion.div key="rooms" style={{ padding: '20px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-                            <h2 style={{ fontSize: '24px', fontWeight: '950' }}>XONALAR</h2>
+                    <motion.div key="rooms" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <BarChart3 size={24} color="#7000ff" />
+                                <h1 style={{ fontSize: '26px', fontWeight: '950', margin: 0 }}>XONALAR</h1>
+                            </div>
+
+                            {/* 🚀 HYPER PREMIUM ADD BUTTON */}
                             <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                whileHover={{ scale: 1.08, y: -2 }}
+                                whileTap={{ scale: 0.92 }}
                                 onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }}
                                 style={{
-                                    background: 'linear-gradient(135deg, #7000ff 0%, #a000ff 100%)',
-                                    p: '10px 22px',
-                                    borderRadius: '25px',
+                                    background: 'linear-gradient(45deg, #7000ff 0%, #a000ff 100%)',
+                                    padding: '12px 24px',
+                                    borderRadius: '20px',
                                     border: 'none',
                                     color: '#fff',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px',
-                                    fontWeight: '900',
-                                    fontSize: '12px',
-                                    boxShadow: '0 8px 25px rgba(112, 0, 255, 0.4)',
-                                    textShadow: '0 0 10px rgba(255,255,255,0.3)'
+                                    gap: '10px',
+                                    fontWeight: '950',
+                                    fontSize: '13px',
+                                    boxShadow: '0 10px 30px rgba(112, 0, 255, 0.5), 0 0 10px rgba(160, 0, 255, 0.3)',
+                                    cursor: 'pointer'
                                 }}
                             >
-                                <div style={{ background: 'rgba(255,255,255,0.2)', p: '4px', borderRadius: '50%', display: 'flex' }}><Plus size={16} /></div>
-                                QO'SHISH
+                                <div style={{ background: 'rgba(255,255,255,0.25)', padding: '5px', borderRadius: '10px', display: 'flex' }}><Plus size={16} strokeWidth={3} /></div>
+                                <span style={{ letterSpacing: '0.5px' }}>QO'SHISH</span>
                             </motion.button>
                         </div>
-                        {rooms.map(room => {
+
+                        {rooms.map((room, idx) => {
                             const total = room.Computers?.length || 0;
                             const busy = room.Computers?.filter(pc => pc.status === 'busy' || pc.status === 'paused').length || 0;
                             const reserved = room.Computers?.filter(pc => pc.status === 'reserved').length || 0;
                             const free = total - busy - reserved;
 
                             return (
-                                <div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? '#1a1010' : '#111', borderRadius: '40px', padding: '30px', marginBottom: '15px', border: room.isLocked ? '1.5px solid #ff444430' : '1.5px solid #1a1a1a', cursor: 'pointer', position: 'relative' }}>
+                                <motion.div
+                                    key={room.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    onClick={() => setSelectedViewRoom(room)}
+                                    style={{
+                                        background: room.isLocked ? 'rgba(255,68,68,0.05)' : '#0a0a0a',
+                                        borderRadius: '45px',
+                                        padding: '30px',
+                                        marginBottom: '18px',
+                                        border: `1.5px solid ${room.isLocked ? 'rgba(255,68,68,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    {/* Accent line */}
+                                    <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '40px', height: '3px', background: room.isLocked ? '#ff4444' : '#7000ff', borderRadius: '0 0 4px 4px', opacity: 0.5 }} />
+
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <h3 style={{ fontSize: '24px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>
-                                                {room.isLocked && <Lock size={16} color="#ff4444" />}
+                                                <h3 style={{ fontSize: '26px', fontWeight: '950', margin: 0, letterSpacing: '-0.5px' }}>{room.name?.toUpperCase()}</h3>
+                                                {room.isLocked && <Lock size={18} color="#ff4444" />}
                                             </div>
-                                            <p style={{ fontSize: '12px', color: '#444' }}>{total} PC • {room.pricePerHour.toLocaleString()} UZS/SOAT</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                                                <div style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '10px', color: '#666', fontWeight: '900' }}>{total} UNITS</div>
+                                                <div style={{ width: '4px', height: '4px', background: '#222', borderRadius: '50%' }} />
+                                                <div style={{ fontSize: '12px', color: '#7000ff', fontWeight: '900' }}>{room.pricePerHour.toLocaleString()} UZS</div>
+                                            </div>
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={(e) => handleLockRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: room.isLocked ? '#39ff14' : '#ffee32' }}>{room.isLocked ? <Unlock size={18} /> : <Lock size={18} />}</button>
-                                            <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#fff' }}><Pencil size={18} /></button>
-                                            <button onClick={(e) => handleDeleteRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#ff4444' }}><Trash2 size={18} /></button>
+                                            <button onClick={(e) => handleLockRoom(e, room.id)} style={{ background: 'rgba(255,255,255,0.03)', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', color: room.isLocked ? '#39ff14' : '#ffee32', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{room.isLocked ? <Unlock size={18} /> : <Lock size={18} />}</button>
+                                            <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} style={{ background: 'rgba(255,255,255,0.03)', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Pencil size={18} /></button>
+                                            <button onClick={(e) => handleDeleteRoom(e, room.id)} style={{ background: 'rgba(255, 68, 68, 0.05)', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255, 68, 68, 0.1)', color: '#ff4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={18} /></button>
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '12px', margin: '20px 0' }}>
-                                        <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BAND</p><b style={{ color: busy > 0 ? '#ff00ff' : '#444' }}>{busy}</b></div>
-                                        <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BRON</p><b style={{ color: reserved > 0 ? '#ffaa00' : '#444' }}>{reserved}</b></div>
-                                        <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BO'SH</p><b style={{ color: free > 0 ? '#39ff14' : '#444' }}>{free}</b></div>
+                                    {/* PRETTIER OCCUPANCY BAR */}
+                                    <div style={{ display: 'flex', gap: '8px', margin: '25px 0' }}>
+                                        <div style={{ flex: busy || 1, background: '#ff00ff', height: '6px', borderRadius: '10px', boxShadow: '0 0 10px rgba(255,0,255,0.3)', opacity: busy > 0 ? 1 : 0.1 }} />
+                                        <div style={{ flex: reserved || 1, background: '#ffaa00', height: '6px', borderRadius: '10px', boxShadow: '0 0 10px rgba(255,170,0,0.3)', opacity: reserved > 0 ? 1 : 0.1 }} />
+                                        <div style={{ flex: free || 1, background: '#39ff14', height: '6px', borderRadius: '10px', boxShadow: '0 0 10px rgba(57,255,20,0.3)', opacity: free > 0 ? 1 : 0.1 }} />
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #1a1a1a', paddingTop: '15px' }}>
-                                        <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI ISH</p><b style={{ color: '#fff' }}>{room.todayHours || 0} soat</b></div>
-                                        <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI TUSHUM</p><b style={{ color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '25px' }}>
+                                        <div style={{ textAlign: 'center' }}><p style={{ fontSize: '8px', color: '#444', fontWeight: '900', margin: '0 0 4px' }}>BAND</p><b style={{ color: busy > 0 ? '#ff00ff' : '#222', fontSize: '16px' }}>{busy}</b></div>
+                                        <div style={{ textAlign: 'center' }}><p style={{ fontSize: '8px', color: '#444', fontWeight: '900', margin: '0 0 4px' }}>BRON</p><b style={{ color: reserved > 0 ? '#ffaa00' : '#222', fontSize: '16px' }}>{reserved}</b></div>
+                                        <div style={{ textAlign: 'center' }}><p style={{ fontSize: '8px', color: '#444', fontWeight: '900', margin: '0 0 4px' }}>BO'SH</p><b style={{ color: free > 0 ? '#39ff14' : '#222', fontSize: '16px' }}>{free}</b></div>
                                     </div>
-                                </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '20px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Clock size={12} color="#444" /><div><p style={{ fontSize: '9px', color: '#444', margin: 0 }}>ISH VAQTI</p><b style={{ fontSize: '14px' }}>{room.todayHours || 0} SOAT</b></div></div>
+                                        <div style={{ textAlign: 'right' }}><p style={{ fontSize: '9px', color: '#444', margin: 0 }}>TUSHUM</p><b style={{ fontSize: '14px', color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
+                                    </div>
+                                </motion.div>
                             );
                         })}
                     </motion.div>
                 )}
 
                 {activeTab === 'rooms' && selectedViewRoom && (
-                    <motion.div key="room-detail" style={{ padding: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-                            <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', width: '45px', height: '45px', borderRadius: '15px', border: 'none', color: '#fff' }}><ArrowLeft /></button>
-                            <h2>{currentRoomFromState?.name?.toUpperCase()}</h2>
+                    <motion.div key="room-detail" initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
+                            <motion.button whileTap={{ x: -5 }} onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', width: '50px', height: '50px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ArrowLeft /></motion.button>
+                            <div>
+                                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '950', letterSpacing: '-1px' }}>{currentRoomFromState?.name?.toUpperCase()}</h1>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '8px', height: '8px', background: '#39ff14', borderRadius: '50%', boxShadow: '0 0 10px #39ff14' }} /> <span style={{ fontSize: '10px', color: '#555', fontWeight: '900' }}>ACTIVE MONITORING</span></div>
+                            </div>
                         </div>
-                        {currentRoomFromState?.isLocked && <div style={{ background: '#ff444415', color: '#ff4444', padding: '15px', borderRadius: '15px', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>⚠️ USHBU XONA QULFLANGAN</div>}
+
+                        {currentRoomFromState?.isLocked && (
+                            <div style={{ background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', padding: '20px', borderRadius: '25px', marginBottom: '25px', textAlign: 'center', border: '1px solid rgba(255, 68, 68, 0.2)', fontWeight: '950', fontSize: '14px' }}>
+                                ⚠️ BU XONA VAQTINCHA QULFLANGAN
+                            </div>
+                        )}
+
                         {roomReservations.length > 0 && roomReservations.map((res, i) => (
-                            <motion.div key={i} whileTap={{ scale: 0.98 }} onClick={() => setSelectedPC({ ...res.pc, roomPrice: currentRoomFromState.pricePerHour })} style={{ background: '#ffaa0020', borderLeft: '4px solid #ffaa00', padding: '15px', borderRadius: '12px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
-                                <div><p style={{ fontWeight: '950', color: '#ffaa00', margin: 0 }}>{res.pc.name} BRON!</p><p style={{ fontSize: '10px', margin: 0 }}>{res.info.time} • {res.info.user}</p></div>
+                            <motion.div key={i} whileTap={{ scale: 0.98 }} onClick={() => setSelectedPC({ ...res.pc, roomPrice: currentRoomFromState.pricePerHour })} style={{ background: 'rgba(255, 170, 0, 0.1)', border: '1px solid rgba(255, 170, 0, 0.2)', padding: '20px', borderRadius: '22px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <div style={{ background: '#ffaa00', p: '10px', borderRadius: '12px' }}><CalendarClock color="#000" size={20} /></div>
+                                    <div><p style={{ fontWeight: '950', color: '#ffaa00', margin: 0, fontSize: '16px' }}>{res.pc.name} BRON!</p><p style={{ fontSize: '10px', margin: '2px 0 0', color: '#555' }}>{res.info.time} • {res.info.user}</p></div>
+                                </div>
                                 <ChevronRight color="#ffaa00" />
                             </motion.div>
                         ))}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))', gap: '15px' }}>
                             {currentRoomFromState?.Computers?.map(pc => {
                                 const info = calculateSessionInfo(pc, currentRoomFromState.pricePerHour);
                                 const s = pc.status.toLowerCase();
-                                const theme = s === 'busy' ? { color: info.isCountdown ? '#39ff14' : '#ff00ff', icon: <MonitorPlay size={20} />, label: info.time } :
-                                    s === 'paused' ? { color: '#ffee32', icon: <Clock size={20} />, label: 'PAUZA' } :
-                                        s === 'reserved' ? { color: '#ffaa00', icon: <CalendarClock size={20} />, label: info.reservedInfo?.time || 'BRON' } :
-                                            { color: '#444', icon: <Monitor size={20} />, label: 'BO\'SH' };
+                                const theme = s === 'busy' ? { color: info.isCountdown ? '#39ff14' : '#ff00ff', icon: <MonitorPlay size={22} />, label: info.time } :
+                                    s === 'paused' ? { color: '#ffee32', icon: <Clock size={22} />, label: 'PAUZA' } :
+                                        s === 'reserved' ? { color: '#ffaa00', icon: <CalendarClock size={22} />, label: info.reservedInfo?.time || 'BRON' } :
+                                            { color: '#333', icon: <Monitor size={22} />, label: 'BO\'SH' };
+
                                 return (
-                                    <motion.div key={pc.id} onClick={() => setSelectedPC({ ...pc, roomPrice: currentRoomFromState.pricePerHour })} style={{ background: '#0a0a0a', border: `1.5px solid ${s !== 'free' ? theme.color : '#1a1a1a'}`, borderRadius: '22px', padding: '15px 5px', textAlign: 'center', cursor: 'pointer', opacity: currentRoomFromState.isLocked ? 0.6 : 1 }}>
-                                        <div style={{ color: theme.color, marginBottom: '6px' }}>{theme.icon}</div>
-                                        <div style={{ fontSize: '10px', fontWeight: '900' }}>{pc.name}</div>
-                                        <div style={{ fontSize: '8px', color: (s !== 'free') ? theme.color : '#444' }}>{theme.label}</div>
+                                    <motion.div
+                                        key={pc.id}
+                                        whileTap={{ scale: 0.92 }}
+                                        onClick={() => setSelectedPC({ ...pc, roomPrice: currentRoomFromState.pricePerHour })}
+                                        style={{
+                                            background: '#0a0a0a',
+                                            border: `1.5px solid ${s !== 'free' ? theme.color : 'rgba(255,255,255,0.03)'}`,
+                                            borderRadius: '30px',
+                                            padding: '22px 10px',
+                                            textAlign: 'center',
+                                            cursor: 'pointer',
+                                            boxShadow: s !== 'free' ? `0 10px 20px ${theme.color}15` : 'none',
+                                            opacity: currentRoomFromState.isLocked ? 0.4 : 1
+                                        }}
+                                    >
+                                        <div style={{ color: theme.color, marginBottom: '10px', opacity: s === 'free' ? 0.3 : 1 }}>{theme.icon}</div>
+                                        <div style={{ fontSize: '11px', fontWeight: '950', marginBottom: '2px' }}>{pc.name}</div>
+                                        <div style={{ fontSize: '8px', fontWeight: '900', color: (s !== 'free') ? theme.color : '#333' }}>{theme.label}</div>
                                     </motion.div>
                                 );
                             })}
@@ -328,104 +445,134 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
 
                 {activeTab === 'users' && (
-                    <motion.div key="users" style={{ padding: '20px' }}>
-                        <div style={{ position: 'relative', marginBottom: '20px' }}>
-                            <Search style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
-                            <input placeholder="Mijozni qidirish..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '18px 50px', background: '#111', border: '1px solid #1a1a1a', borderRadius: '25px', color: '#fff' }} />
+                    <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '20px' }}>
+                        <div style={{ position: 'relative', marginBottom: '25px' }}>
+                            <Search style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={20} />
+                            <input placeholder="MIJOZ QIDIRISH..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '22px 55px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '30px', color: '#fff', fontSize: '13px', fontWeight: '900', letterSpacing: '1px' }} />
                         </div>
                         {usersList.map(u => (
-                            <div key={u.id} style={{ background: '#111', borderRadius: '30px', padding: '20px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div><h4 style={{ margin: 0 }}>{u.username?.toUpperCase()}</h4><p style={{ fontSize: '11px', color: '#39ff14' }}>{u.balance?.toLocaleString()} UZS</p></div>
-                                <button onClick={() => setSelectedUser(u)} style={{ background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '15px', fontWeight: '700' }}>BALANS +</button>
-                            </div>
+                            <motion.div key={u.id} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ background: '#0a0a0a', borderRadius: '35px', padding: '20px 25px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.02)' }}>
+                                <div>
+                                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '950' }}>{u.username?.toUpperCase()}</h4>
+                                    <p style={{ fontSize: '12px', color: '#39ff14', fontWeight: '950', marginTop: '4px' }}>{u.balance?.toLocaleString()} UZS</p>
+                                </div>
+                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setSelectedUser(u)} style={{ background: 'linear-gradient(to right, #7000ff, #a000ff)', border: 'none', color: '#fff', padding: '12px 22px', borderRadius: '18px', fontWeight: '950', fontSize: '11px', boxShadow: '0 5px 15px rgba(112,0,255,0.3)' }}>TO'LDIRISH</motion.button>
+                            </motion.div>
                         ))}
                     </motion.div>
                 )}
 
                 {activeTab === 'payments' && (
-                    <motion.div key="payments" style={{ padding: '20px' }}>
+                    <motion.div key="payments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '20px' }}>
                         {topupRequests.map(req => (
-                            <div key={req.id} style={{ background: '#111', borderRadius: '35px', padding: '25px', marginBottom: '15px' }}>
-                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
-                                    <div style={{ background: '#39ff1410', p: '12px', borderRadius: '15px' }}><CreditCard color="#39ff14" /></div>
-                                    <div><h4 style={{ margin: 0 }}>{req.User?.username}</h4><p style={{ margin: 0, color: '#39ff14', fontWeight: '900' }}>{req.amount?.toLocaleString()} UZS</p></div>
+                            <div key={req.id} style={{ background: '#0a0a0a', borderRadius: '45px', padding: '30px', marginBottom: '20px', border: '1px solid rgba(57,255,20,0.1)' }}>
+                                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '25px' }}>
+                                    <div style={{ background: 'rgba(57, 255, 20, 0.1)', padding: '15px', borderRadius: '18px' }}><CreditCard color="#39ff14" size={28} /></div>
+                                    <div>
+                                        <p style={{ fontSize: '10px', color: '#444', fontWeight: '900', margin: 0 }}>TO'LOV SO'ROVI</p>
+                                        <h4 style={{ margin: '4px 0', fontSize: '20px', fontWeight: '950' }}>{req.User?.username}</h4>
+                                        <b style={{ color: '#39ff14', fontSize: '18px', fontWeight: '950' }}>{req.amount?.toLocaleString()} UZS</b>
+                                    </div>
                                 </div>
-                                {req.receiptImage && <img src={`${API_URL}/${req.receiptImage}`} alt="Check" style={{ width: '100%', borderRadius: '20px', marginBottom: '15px' }} />}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                    <button onClick={() => handleUpdateTopUp(req.id, 'approve')} style={{ background: '#39ff14', color: '#000', p: '15px', borderRadius: '15px', border: 'none', fontWeight: '900' }}>TASDIQLASH</button>
-                                    <button onClick={() => handleUpdateTopUp(req.id, 'reject')} style={{ background: '#ff444420', color: '#ff4444', p: '15px', borderRadius: '15px', border: 'none' }}>RAD ETISH</button>
+                                {req.receiptImage && <img src={`${API_URL}/${req.receiptImage}`} alt="Check" style={{ width: '100%', borderRadius: '30px', marginBottom: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }} />}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleUpdateTopUp(req.id, 'approve')} style={{ background: '#39ff14', color: '#000', padding: '20px', borderRadius: '22px', border: 'none', fontWeight: '950', fontSize: '14px' }}>TASDIQLASH</motion.button>
+                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleUpdateTopUp(req.id, 'reject')} style={{ background: 'rgba(255,68,68,0.1)', color: '#ff4444', padding: '20px', borderRadius: '22px', border: 'none', fontSize: '14px', fontWeight: '900' }}>RAD ETISH</motion.button>
                                 </div>
                             </div>
                         ))}
-                        {topupRequests.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#333' }}>To'lov so'rovlari yo'q</div>}
+                        {topupRequests.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '100px 40px', color: '#222', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+                                <div style={{ width: '60px', height: '60px', background: '#0a0a0a', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><BellRing color="#111" size={30} /></div>
+                                <p style={{ fontWeight: '900', fontSize: '11px', letterSpacing: '1px' }}>YANGI SO'ROVLAR MAVJUD EMAS</p>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* MODALS */}
+            {/* 🛸 FLOATING BOTTOM NAVIGATION */}
+            <nav style={{ position: 'fixed', bottom: '25px', left: '15px', right: '15px', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(35px)', padding: '15px 10px', borderRadius: '40px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 30px 60px rgba(0,0,0,0.8)' }}>
+                {navItem('stats', 'Status', <LayoutGrid size={22} />)}
+                {navItem('rooms', 'Xarita', <Monitor size={22} />)}
+                {navItem('users', 'Mijozlar', <Users size={22} />)}
+                {navItem('payments', 'To\'lov', <Wallet size={22} />)}
+            </nav>
+
+            {/* 💎 MODALS */}
             <AnimatePresence>
                 {selectedUser && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setSelectedUser(null)}>
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px', borderRadius: '35px 35px 0 0' }} onClick={e => e.stopPropagation()}>
-                            <h2 style={{ fontWeight: '900' }}>BALANS TO'LDIRISH</h2>
-                            <input type="number" placeholder="Summani kiriting..." value={addBalanceAmount} onChange={e => setAddBalanceAmount(e.target.value)} style={{ width: '100%', padding: '20px', background: '#000', borderRadius: '20px', color: '#39ff14', fontSize: '24px', margin: '20px 0', border: '1px solid #1a1a1a' }} />
-                            <button onClick={() => handleAddUserBalance(selectedUser.id, addBalanceAmount)} style={{ width: '100%', padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900' }}>TASDIQLASH 💰</button>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(20px)' }} onClick={() => setSelectedUser(null)}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: '#0a0a0a', width: '90%', padding: '40px 30px', borderRadius: '50px', border: '1px solid rgba(112, 0, 255, 0.2)' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                <div style={{ background: 'rgba(112,0,255,0.1)', w: '60px', h: '60px', borderRadius: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px' }}><Wallet color="#7000ff" size={32} /></div>
+                                <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '950' }}>BALANS TO'LDIRISH</h2>
+                                <p style={{ color: '#444', fontSize: '12px', marginTop: '8px' }}>{selectedUser.username?.toUpperCase()} uchun</p>
+                            </div>
+                            <input type="number" placeholder="SUMMANI KIRITING..." value={addBalanceAmount} onChange={e => setAddBalanceAmount(e.target.value)} style={{ width: '100%', padding: '25px', background: '#000', borderRadius: '25px', color: '#39ff14', fontSize: '28px', textAlign: 'center', fontWeight: '950', border: '1px solid #111', marginBottom: '25px' }} />
+                            <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAddUserBalance(selectedUser.id, addBalanceAmount)} style={{ width: '100%', padding: '22px', background: '#39ff14', color: '#000', borderRadius: '25px', fontWeight: '950', fontSize: '16px', boxShadow: '0 10px 30px rgba(57,255,20,0.3)' }}>TASDIQLASH 💰</motion.button>
                         </motion.div>
                     </motion.div>
                 )}
 
                 {showAddRoomModal && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowAddRoomModal(false)}>
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px', borderRadius: '35px 35px 0 0' }} onClick={e => e.stopPropagation()}>
-                            <h2 style={{ fontWeight: '900' }}>{editingRoom ? 'TAHRIRLASH' : 'YANGI XONA'}</h2>
-                            <div style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
-                                <label style={{ fontSize: '12px', color: '#444' }}>XONA NOMI</label>
-                                <input placeholder="Nomi" value={newRoomData.name} onChange={e => setNewRoomData({ ...newRoomData, name: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff', border: '1px solid #1a1a1a' }} />
-                                <label style={{ fontSize: '12px', color: '#444' }}>NARXI (1 SOAT UCHUN)</label>
-                                <input type="number" placeholder="Narxi" value={newRoomData.pricePerHour} onChange={e => setNewRoomData({ ...newRoomData, pricePerHour: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff', border: '1px solid #1a1a1a' }} />
-                                <label style={{ fontSize: '12px', color: '#444' }}>PCLAR SONI</label>
-                                <input type="number" placeholder="PC soni" value={newRoomData.pcCount} onChange={e => setNewRoomData({ ...newRoomData, pcCount: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff', border: '1px solid #1a1a1a' }} />
-                                <button onClick={handleAddRoom} style={{ padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900', marginTop: '10px' }}>SAQLASH 🏢</button>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowAddRoomModal(false)}>
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#0a0a0a', width: '100%', padding: '40px 25px 60px', borderRadius: '50px 50px 0 0', borderTop: '1px solid rgba(112, 0, 255, 0.2)' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '950' }}>{editingRoom ? 'TAHRIRLASH' : 'YANGI XONA'}</h2>
+                                <button onClick={() => setShowAddRoomModal(false)} style={{ background: '#111', p: '10px', borderRadius: '15px', border: 'none', color: '#fff' }}><X size={24} /></button>
+                            </div>
+                            <div style={{ display: 'grid', gap: '20px' }}>
+                                <div><p style={{ fontSize: '10px', color: '#444', fontWeight: '900', marginBottom: '8px' }}>XONA NOMI</p><input value={newRoomData.name} onChange={e => setNewRoomData({ ...newRoomData, name: e.target.value })} style={{ width: '100%', padding: '22px', background: '#000', borderRadius: '22px', color: '#fff', border: '1px solid #111' }} /></div>
+                                <div><p style={{ fontSize: '10px', color: '#444', fontWeight: '900', marginBottom: '8px' }}>NARXI (UZS/SOAT)</p><input type="number" value={newRoomData.pricePerHour} onChange={e => setNewRoomData({ ...newRoomData, pricePerHour: e.target.value })} style={{ width: '100%', padding: '22px', background: '#000', borderRadius: '22px', color: '#fff', border: '1px solid #111' }} /></div>
+                                <div><p style={{ fontSize: '10px', color: '#444', fontWeight: '900', marginBottom: '8px' }}>KOMPYUTERLAR SONI</p><input type="number" value={newRoomData.pcCount} onChange={e => setNewRoomData({ ...newRoomData, pcCount: e.target.value })} style={{ width: '100%', padding: '22px', background: '#000', borderRadius: '22px', color: '#fff', border: '1px solid #111' }} /></div>
+                                <motion.button whileTap={{ scale: 0.95 }} onClick={handleAddRoom} style={{ padding: '25px', background: '#7000ff', color: '#fff', borderRadius: '25px', fontWeight: '950', fontSize: '16px', boxShadow: '0 15px 40px rgba(112,0,255,0.4)', marginTop: '10px' }}>SAQLASH 🏢</motion.button>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
 
                 {selectedPC && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(10px)' }} onClick={() => setSelectedPC(null)}>
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px 60px', borderRadius: '50px 50px 0 0', borderTop: '2px solid #222' }} onClick={e => e.stopPropagation()}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '35px', alignItems: 'center' }}>
-                                <div><h1 style={{ margin: 0, fontSize: '32px', fontWeight: '950' }}>{selectedPC.name}</h1><p style={{ color: '#444', fontSize: '11px', margin: '5px 0 0' }}>{selectedPC.specs}</p></div>
-                                <button onClick={() => setSelectedPC(null)} style={{ background: '#222', p: '12px', borderRadius: '20px', border: 'none', color: '#fff' }}><X size={24} /></button>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(20px)' }} onClick={() => setSelectedPC(null)}>
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#0a0a0a', width: '100%', padding: '45px 25px 65px', borderRadius: '55px 55px 0 0', borderTop: '1px solid rgba(255,255,255,0.05)' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', p: '14px', borderRadius: '20px' }}><Hash color="#7000ff" size={24} /></div>
+                                    <div><h1 style={{ margin: 0, fontSize: '36px', fontWeight: '950', letterSpacing: '-1px' }}>{selectedPC.name}</h1><p style={{ color: '#444', fontSize: '11px', fontWeight: '900', marginTop: '4px' }}>{selectedPC.specs?.toUpperCase()}</p></div>
+                                </div>
+                                <motion.button whileTap={{ scale: 0.92 }} onClick={() => setSelectedPC(null)} style={{ background: '#111', p: '14px', borderRadius: '22px', border: '1px solid #222', color: '#fff' }}><X size={26} /></motion.button>
                             </div>
 
                             {(() => {
                                 const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice);
                                 const s = selectedPC.status.toLowerCase();
-                                const themeColor = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#444';
+                                const themeColor = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#222';
 
                                 return (
-                                    <div style={{ marginBottom: '40px' }}>
+                                    <div style={{ marginBottom: '45px' }}>
                                         {s !== 'free' && s !== 'reserved' && (
-                                            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                                <p style={{ fontSize: '12px', color: '#444', fontWeight: '900', letterSpacing: '2px' }}>QOLGAN VAQT</p>
-                                                <h1 style={{ fontSize: '72px', color: themeColor, fontWeight: '950', margin: '10px 0', textShadow: `0 0 30px ${themeColor}40` }}>{info.time}</h1>
-                                                <div style={{ background: '#0a0a0a', p: '15px', borderRadius: '20px', display: 'inline-block', border: '1px solid #1a1a1a' }}>
-                                                    <span style={{ color: '#444', fontSize: '11px' }}>HISOBLANGAN: </span>
-                                                    <b style={{ fontSize: '18px' }}>{info.cost?.toLocaleString()} UZS</b>
+                                            <div style={{ textAlign: 'center', marginBottom: '35px' }}>
+                                                <p style={{ fontSize: '12px', color: '#444', fontWeight: '950', letterSpacing: '4px' }}>REMAINING TIME</p>
+                                                <h1 style={{ fontSize: '88px', color: themeColor, fontWeight: '950', margin: '15px 0', textShadow: `0 0 50px ${themeColor}50`, letterSpacing: '-3px' }}>{info.time}</h1>
+                                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '18px 30px', borderRadius: '25px', display: 'inline-flex', alignItems: 'center', gap: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <span style={{ color: '#555', fontSize: '12px', fontWeight: '900' }}>LIVE COST:</span>
+                                                    <b style={{ fontSize: '22px', color: '#fff' }}>{info.cost?.toLocaleString()} UZS</b>
                                                 </div>
                                             </div>
                                         )}
                                         {s === 'reserved' && (
-                                            <div style={{ background: '#ffaa0015', border: '1.5px solid #ffaa0030', padding: '30px', borderRadius: '40px', display: 'flex', alignItems: 'center', gap: '25px', marginBottom: '30px' }}>
-                                                <div style={{ background: '#ffaa00', p: '20px', borderRadius: '25px' }}><UserIcon color="#000" size={35} /></div>
-                                                <div><p style={{ color: '#ffaa00', fontSize: '11px', fontWeight: 'bold', margin: '0 0 5px' }}>BRON</p><h3 style={{ fontSize: '32px', margin: 0, fontWeight: '950' }}>{info.reservedInfo?.user}</h3><b style={{ fontSize: '20px' }}>{info.reservedInfo?.time}</b></div>
+                                            <div style={{ background: 'rgba(255, 170, 0, 0.05)', border: '1.5px solid rgba(255, 170, 0, 0.2)', padding: '35px', borderRadius: '45px', display: 'flex', alignItems: 'center', gap: '30px', marginBottom: '35px' }}>
+                                                <div style={{ background: '#ffaa00', p: '24px', borderRadius: '25px', boxShadow: '0 0 30px rgba(255,170,0,0.3)' }}><UserIcon color="#000" size={40} /></div>
+                                                <div><p style={{ color: '#ffaa00', fontSize: '11px', fontWeight: '950', margin: '0 0 5px', letterSpacing: '1px' }}>RESERVATION</p><h3 style={{ fontSize: '36px', margin: 0, fontWeight: '950', letterSpacing: '-1px' }}>{info.reservedInfo?.user}</h3><b style={{ fontSize: '24px', color: '#fff' }}>{info.reservedInfo?.time}</b></div>
                                             </div>
                                         )}
                                         {s === 'free' && (
-                                            <div style={{ display: 'flex', gap: '15px' }}>
-                                                <input type="number" placeholder="Summani kiriting..." value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ flex: 1, padding: '25px', background: '#000', border: '1px solid #222', borderRadius: '30px', color: '#39ff14', fontSize: '24px', fontWeight: '950' }} />
-                                                <button onClick={() => handleAction('start')} style={{ background: '#39ff14', color: '#000', border: 'none', width: '80px', borderRadius: '30px' }}><Play fill="#000" size={24} /></button>
+                                            <div style={{ display: 'flex', gap: '15px', marginBottom: '10px' }}>
+                                                <div style={{ flex: 1, position: 'relative' }}>
+                                                    <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '30px', background: '#000', border: '1px solid #111', borderRadius: '35px', color: '#39ff14', fontSize: '32px', fontWeight: '950', textAlign: 'center' }} />
+                                                    <p style={{ position: 'absolute', bottom: '-25px', left: '50%', transform: 'translateX(-50%)', fontSize: '9px', color: '#333', fontWeight: '900' }}>NARXGA QARAB VAQTNI HISОBLAYDI</p>
+                                                </div>
+                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ background: '#39ff14', color: '#000', border: 'none', width: '100px', borderRadius: '35px', boxShadow: '0 10px 30px rgba(57,255,20,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Play fill="#000" size={30} /></motion.button>
                                             </div>
                                         )}
                                     </div>
@@ -433,20 +580,14 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             })()}
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                {selectedPC.status !== 'free' && <button onClick={() => handleAction('stop')} style={{ padding: '25px', borderRadius: '30px', background: '#ff444420', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '18px' }}>STOP ⏹️</button>}
-                                <button onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '25px', borderRadius: '30px', background: selectedPC.status === 'busy' ? '#ffee32' : '#39ff14', color: '#000', border: 'none', fontWeight: '950', fontSize: '18px', gridColumn: selectedPC.status === 'free' ? 'span 2' : 'auto' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'START 🚀'}</button>
+                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('stop')} style={{ padding: '28px', borderRadius: '30px', background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', border: '1px solid rgba(255, 68, 68, 0.2)', fontWeight: '950', fontSize: '18px', letterSpacing: '1px' }}>STOP ⏹️</motion.button>}
+                                <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '28px', borderRadius: '30px', background: selectedPC.status === 'busy' ? '#ffee32' : '#7000ff', color: '#000', border: 'none', fontWeight: '950', fontSize: '18px', letterSpacing: '1px', gridColumn: selectedPC.status === 'free' ? 'span 2' : 'auto' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'VAQTNI OCHISH 🚀'}</motion.button>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <nav style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', background: 'rgba(10,10,12,0.85)', padding: '18px 0', borderRadius: '45px', display: 'flex', justifyContent: 'space-around', zIndex: 100, border: '1.5px solid #222', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
-                {navItem('stats', 'Status', <LayoutGrid size={24} />)}
-                {navItem('rooms', 'Xarita', <Monitor size={24} />)}
-                {navItem('users', 'Mijozlar', <Users size={24} />)}
-                {navItem('payments', 'To\'lov', <Wallet size={24} />)}
-            </nav>
         </div>
     );
 };

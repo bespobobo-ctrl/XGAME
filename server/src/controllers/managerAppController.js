@@ -160,6 +160,12 @@ exports.broadcast = async (req, res, next) => {
 exports.getRooms = async (req, res, next) => {
     try {
         const clubId = req.user.ClubId;
+        const now = new Date();
+        const startOfDay = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+        startOfDay.setUTCHours(0, 0, 0, 0);
+        // UTC ga o'girib search qilamiz
+        const startUtc = new Date(startOfDay.getTime() - (5 * 60 * 60 * 1000));
+
         const rooms = await Room.findAll({
             where: { ClubId: clubId },
             include: [{
@@ -168,21 +174,49 @@ exports.getRooms = async (req, res, next) => {
                     model: Session,
                     required: false,
                     where: {
-                        status: { [Op.in]: ['active', 'paused', 'reserved'] }
+                        [Op.or]: [
+                            { status: { [Op.in]: ['active', 'paused', 'reserved'] } },
+                            {
+                                status: 'completed',
+                                endTime: { [Op.gte]: startUtc }
+                            }
+                        ]
                     },
-                    include: [{
-                        model: User,
-                        as: 'User',
-                        attributes: ['id', 'username', 'phone']
-                    }]
+                    include: [{ model: User, as: 'User', attributes: ['id', 'username', 'firstName'] }]
                 }]
             }],
-            order: [
-                ['id', 'ASC'],
-                [Computer, 'name', 'ASC']
-            ]
+            order: [['id', 'ASC']]
         });
-        res.json(rooms);
+
+        // 📈 Xona statistikasini frontendga tayyorlab beramiz
+        const enrichedRooms = rooms.map(room => {
+            let roomRevenue = 0;
+            let roomMinutes = 0;
+            const price = room.pricePerHour || 15000;
+
+            room.Computers.forEach(pc => {
+                const sessions = pc.Sessions || [];
+                sessions.forEach(sess => {
+                    if (sess.status === 'completed') {
+                        roomRevenue += (sess.totalCost || 0);
+                        roomMinutes += (sess.totalMinutes || 0);
+                    } else if (sess.status === 'active' || sess.status === 'paused') {
+                        // Aktiv sessiyaning hozirgacha bo'lgan tushumi
+                        const diffMs = (sess.pausedAt ? new Date(sess.pausedAt) : new Date()) - new Date(sess.startTime);
+                        const mins = Math.max(0, Math.floor(diffMs / 60000));
+                        roomRevenue += Math.floor((mins / 60) * price);
+                        roomMinutes += mins;
+                    }
+                });
+            });
+
+            const rJson = room.toJSON();
+            rJson.todayRevenue = roomRevenue;
+            rJson.todayHours = (roomMinutes / 60).toFixed(1);
+            return rJson;
+        });
+
+        res.json(enrichedRooms);
     } catch (err) {
         next(err);
     }

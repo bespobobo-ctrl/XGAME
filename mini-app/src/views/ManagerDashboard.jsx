@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info, UserPlus, Coins, Timer, Zap } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info, UserPlus, Coins, Timer, Zap, AlertTriangle, BellRing } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -66,12 +66,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         const effectiveNow = activeSession.status === 'paused' ? new Date(activeSession.pausedAt || Date.now()) : nowTime;
         const diffSeconds = Math.max(0, Math.floor((effectiveNow - start) / 1000));
 
-        // Cost calculation
         const cost = Math.floor((diffSeconds / 3600) * roomPrice);
         const progress = activeSession.expectedMinutes ? Math.min((diffSeconds / (activeSession.expectedMinutes * 60)) * 100, 100) : Math.min((diffSeconds / 3600) * 100, 100);
 
         if (activeSession.expectedMinutes) {
-            // Count DOWN mode
             const totalSeconds = activeSession.expectedMinutes * 60;
             const remainingSec = Math.max(0, totalSeconds - diffSeconds);
             const rh = Math.floor(remainingSec / 3600).toString().padStart(2, '0');
@@ -79,7 +77,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             const rs = (remainingSec % 60).toString().padStart(2, '0');
             return { time: `${rh}:${rm}:${rs}`, cost, progress, remaining: `${rh}:${rm}:${rs}`, isCountdown: true };
         } else {
-            // Count UP mode
             const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
             const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
             const s = (diffSeconds % 60).toString().padStart(2, '0');
@@ -95,7 +92,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         let finalMinutes = expectedMinutes;
         const amount = parseInt(startAmountInput);
         if (action === 'start' && !expectedMinutes && amount > 0) {
-            // Calculate minutes from specific amount input
             finalMinutes = Math.floor((amount / selectedPC.roomPrice) * 60);
         }
 
@@ -171,6 +167,29 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 <button onClick={onLogout} style={{ background: '#111', border: 'none', color: '#ff4444', padding: '10px 18px', borderRadius: '15px', fontSize: '11px', fontWeight: 'bold' }}>CHIQISH</button>
             </header>
 
+            {/* 🚨 NOTIFICATIONS BAR (Dynamic) */}
+            <div style={{ padding: '0 20px', display: 'grid', gap: '10px' }}>
+                {stats?.lowBalanceAlerts?.map((alert, i) => (
+                    <motion.div key={i} initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ background: 'rgba(255, 68, 68, 0.1)', border: '1px solid rgba(255, 68, 68, 0.3)', padding: '15px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ background: '#ff4444', padding: '10px', borderRadius: '12px' }}><BellRing size={20} color="#fff" /></div>
+                        <div>
+                            <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold', color: '#fff' }}>{alert.pc} • PUL QOLMADI!</p>
+                            <p style={{ margin: 0, fontSize: '10px', color: '#ff4444' }}>{alert.user}: {alert.balance?.toLocaleString()} UZS</p>
+                        </div>
+                    </motion.div>
+                ))}
+
+                {stats?.upcomingReservations?.filter(r => r.isUrgent).map((res, i) => (
+                    <motion.div key={i} animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }} style={{ background: 'rgba(255, 170, 0, 0.15)', border: '1px solid rgba(255, 170, 0, 0.5)', padding: '15px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ background: '#ffaa00', padding: '10px', borderRadius: '12px' }}><AlertTriangle size={20} color="#000" /></div>
+                        <div>
+                            <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold', color: '#fff' }}>BRON VAQTI YAQIN! ({res.pc})</p>
+                            <p style={{ margin: 0, fontSize: '10px', color: '#ffaa00' }}>{new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {res.user}</p>
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+
             <AnimatePresence mode="wait">
                 {activeTab === 'stats' && (
                     <motion.div key="stats" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ padding: '20px' }}>
@@ -193,6 +212,22 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 <h3 style={{ margin: '5px 0 0', fontSize: '14px', color: '#fff', fontWeight: '950' }}>{stats?.revenue?.userPcRevenue?.toLocaleString()}</h3>
                             </div>
                         </div>
+
+                        {/* 📅 UPCOMING RESERVATIONS LIST */}
+                        {stats?.upcomingReservations?.length > 0 && (
+                            <div style={{ marginBottom: '30px' }}>
+                                <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#444', marginBottom: '15px', letterSpacing: '1px' }}>BUGUNGI BRONLAR</h3>
+                                {stats?.upcomingReservations.map((res, i) => (
+                                    <div key={i} style={{ background: '#111', border: res.isUrgent ? '1px solid #ffaa0050' : '1px solid #1a1a1a', padding: '15px 20px', borderRadius: '25px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '900' }}>{res.pc} • {res.user}</h4>
+                                            <p style={{ margin: 0, fontSize: '10px', color: '#444' }}>Vaqti: {new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        </div>
+                                        {res.isUrgent && <div style={{ background: '#ffaa0030', color: '#ffaa00', padding: '5px 12px', borderRadius: '10px', fontSize: '10px', fontWeight: 'bold' }}>VAQT OZ QOLDI</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                             {[
@@ -312,7 +347,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                             <Banknote style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
                                             <input type="number" placeholder="Summa..." value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '22px 18px 22px 45px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '25px', color: '#39ff14', fontSize: '18px', fontWeight: 'bold' }} />
                                         </div>
-                                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ background: '#39ff14', color: '#000', width: '70px', height: '70px', borderRadius: '25px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 20px rgba(57,255,20,0.3)' }}><Play size={30} fill="#000" /></motion.button>
+                                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ background: '#39ff14', color: '#000', width: '70px', height: '70px', borderRadius: '25px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Play size={30} fill="#000" /></motion.button>
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                                         {[30, 60, 120, null].map(v => (
@@ -326,7 +361,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
-            {/* BOTTOM NAV */}
             <nav style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', background: 'rgba(10,10,12,0.8)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.05)', padding: '18px 0', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', zIndex: 100, boxShadow: '0 20px 40px rgba(0,0,0,0.8)' }}>
                 {navItem('stats', 'Status', <LayoutGrid size={22} color={activeTab === 'stats' ? '#7000ff' : '#444'} />)}
                 {navItem('rooms', 'Xarita', <Monitor size={22} color={activeTab === 'rooms' ? '#7000ff' : '#444'} />)}

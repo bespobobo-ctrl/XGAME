@@ -21,8 +21,6 @@ exports.getStats = async (req, res, next) => {
         const clubId = req.user.ClubId;
         const now = new Date();
         const dStart = getTashkentDayStart();
-        const wStart = startOfWeek(now, { weekStartsOn: 1 });
-        const mStart = startOfMonth(now);
 
         const allRooms = await Room.findAll({ where: { ClubId: clubId } });
         const allRoomIds = allRooms.map(r => r.id);
@@ -30,51 +28,65 @@ exports.getStats = async (req, res, next) => {
         const [allTransactions, allSessions, allComputers, club] = await Promise.all([
             Transaction.findAll({ where: { ClubId: clubId, createdAt: { [Op.gte]: dStart } } }),
             Session.findAll({
-                where: { ClubId: clubId, startTime: { [Op.gte]: dStart } },
-                include: [{ model: Computer, include: [Room] }]
+                where: {
+                    ClubId: clubId, [Op.or]: [
+                        { startTime: { [Op.gte]: dStart } },
+                        { status: { [Op.in]: ['active', 'paused', 'reserved'] } }
+                    ]
+                },
+                include: [{ model: Computer, include: [Room] }, { model: User }]
             }),
             Computer.findAll({ where: { RoomId: { [Op.in]: allRoomIds } } }),
             Club.findByPk(clubId)
         ]);
 
+        // 📅 RESERVATIONS & NOTIFICATIONS
+        const upcomingReservations = [];
+        const lowBalanceAlerts = [];
+
+        allSessions.forEach(s => {
+            // Reserve logic
+            if (s.status === 'reserved' || (s.reserveTime && s.status === 'active')) {
+                const rTime = new Date(s.reserveTime);
+                const diffMin = (rTime - now) / 60000;
+                if (diffMin > -60 && diffMin < 60) { // Bugungi bronlar
+                    upcomingReservations.push({
+                        id: s.id,
+                        pc: s.Computer?.name,
+                        user: s.User?.username || s.guestName || 'Mehmon',
+                        time: s.reserveTime,
+                        isUrgent: diffMin <= 5 && diffMin > 0
+                    });
+                }
+            }
+
+            // Low Balance Logic (10,000 UZS)
+            if (s.status === 'active' && s.User) {
+                const pph = s.Computer?.Room?.pricePerHour || 15000;
+                const elapsedH = (now - new Date(s.startTime)) / 3600000;
+                const cost = Math.round(elapsedH * pph);
+                const remainingBalance = (s.User.balance || 0) - cost;
+
+                if (remainingBalance < 10000 && remainingBalance > 0) {
+                    lowBalanceAlerts.push({
+                        pc: s.Computer?.name,
+                        user: s.User.username,
+                        balance: remainingBalance
+                    });
+                }
+            }
+        });
+
         // 💰 REVENUE BREAKDOWN
-        let cashTopups = 0; // Admin qo'shgan naqd pul (deposit)
-        let adminPcRevenue = 0; // Admin yoqgan (UserId null) PC lardan tushum
-        let userPcRevenue = 0; // Mijoz balansi orqali tushum
+        let cashTopups = 0;
+        let adminPcRevenue = 0;
+        let userPcRevenue = 0;
 
         allTransactions.forEach(t => {
             if (t.type === 'deposit') cashTopups += t.amount;
             if (t.type === 'pc_payment') {
                 if (t.UserId) userPcRevenue += t.amount;
                 else adminPcRevenue += t.amount;
-            }
-        });
-
-        // 🏠 ROOM STATS
-        const roomStats = {};
-        allRooms.forEach(r => {
-            roomStats[r.id] = {
-                id: r.id,
-                name: r.name,
-                totalMinutes: 0,
-                adminRevenue: 0,
-                userRevenue: 0,
-                pcCount: r.pcCount
-            };
-        });
-
-        allSessions.forEach(s => {
-            const rid = s.Computer?.RoomId;
-            if (roomStats[rid]) {
-                const duration = s.status === 'completed' ? (s.totalMinutes || 0) : ((now - new Date(s.startTime)) / 60000);
-                roomStats[rid].totalMinutes += duration;
-
-                // Real-time (active) or completed financial check
-                const pph = allRooms.find(r => r.id === rid)?.pricePerHour || 15000;
-                const cost = s.status === 'completed' ? (s.totalCost || 0) : Math.round((duration / 60) * pph);
-
-                if (s.UserId) roomStats[rid].userRevenue += cost;
-                else roomStats[rid].adminRevenue += cost;
             }
         });
 
@@ -85,17 +97,30 @@ exports.getStats = async (req, res, next) => {
         res.json({
             clubName: club?.name || 'GAME CLUB',
             totalPCs: allComputers.length, busyPCs, freePCs, reservedPCs,
+            upcomingReservations: upcomingReservations.sort((a, b) => new Date(a.time) - new Date(b.time)),
+            lowBalanceAlerts,
             revenue: {
                 day: adminPcRevenue + userPcRevenue,
                 cashTopups,
                 adminPcRevenue,
                 userPcRevenue
             },
-            roomStats: Object.values(roomStats).map(rs => ({
-                ...rs,
-                totalHours: Math.round(rs.totalMinutes / 60),
-                totalRevenue: rs.adminRevenue + rs.userRevenue
-            }))
+            roomStats: allRooms.map(r => {
+                const rSessions = allSessions.filter(s => s.Computer?.RoomId === r.id);
+                let adminRev = 0, userRev = 0, mins = 0;
+                rSessions.forEach(rs => {
+                    const dur = rs.status === 'completed' ? (rs.totalMinutes || 0) : ((now - new Date(rs.startTime)) / 60000);
+                    mins += dur;
+                    const cost = rs.status === 'completed' ? (rs.totalCost || 0) : Math.round((dur / 60) * r.pricePerHour);
+                    if (rs.UserId) userRev += cost; else adminRev += cost;
+                });
+                return {
+                    id: r.id, name: r.name, pcCount: r.pcCount,
+                    totalHours: Math.round(mins / 60),
+                    totalRevenue: adminRev + userRev,
+                    adminRevenue: adminRev, userRevenue: userRev
+                };
+            })
         });
     } catch (err) {
         next(err);

@@ -45,11 +45,12 @@ exports.getStats = async (req, res, next) => {
         const lowBalanceAlerts = [];
 
         allSessions.forEach(s => {
-            // Reserve logic
+            // BUGUNGI BARCHA BRONLAR (Today's all reservations)
             if (s.status === 'reserved' || (s.reserveTime && s.status === 'active')) {
                 const rTime = new Date(s.reserveTime);
-                const diffMin = (rTime - now) / 60000;
-                if (diffMin > -60 && diffMin < 60) { // Bugungi bronlar
+
+                // Faqat bugungi (Start of day dan keyin) bronlarni ko'rsatamiz
+                if (rTime >= dStart) {
                     upcomingReservations.push({
                         id: s.id,
                         pc: s.Computer?.name,

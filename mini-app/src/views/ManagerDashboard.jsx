@@ -148,7 +148,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     };
 
     const navItem = (id, label, icon) => (
-        <div onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === id ? '#7000ff' : '#444', gap: '4px', cursor: 'pointer', transition: 'all 0.3s ease', position: 'relative' }}>
+        <div onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === id ? '#7000ff' : '#646464', gap: '4px', cursor: 'pointer', transition: 'all 0.3s ease', position: 'relative' }}>
             {activeTab === id && <motion.div layoutId="navGlow" style={{ position: 'absolute', top: '-15px', width: '30px', height: '2px', background: '#7000ff', boxShadow: '0 0 15px #7000ff' }} />}
             {icon}
             <span style={{ fontSize: '9px', fontWeight: '900' }}>{(label || '').toUpperCase()}</span>
@@ -167,28 +167,25 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 <button onClick={onLogout} style={{ background: '#111', border: 'none', color: '#ff4444', padding: '10px 18px', borderRadius: '15px', fontSize: '11px', fontWeight: 'bold' }}>CHIQISH</button>
             </header>
 
-            {/* 🚨 NOTIFICATIONS BAR (Dynamic) */}
-            <div style={{ padding: '0 20px', display: 'grid', gap: '10px' }}>
-                {stats?.lowBalanceAlerts?.map((alert, i) => (
-                    <motion.div key={i} initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ background: 'rgba(255, 68, 68, 0.1)', border: '1px solid rgba(255, 68, 68, 0.3)', padding: '15px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ background: '#ff4444', padding: '10px', borderRadius: '12px' }}><BellRing size={20} color="#fff" /></div>
-                        <div>
-                            <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold', color: '#fff' }}>{alert.pc} • PUL QOLMADI!</p>
-                            <p style={{ margin: 0, fontSize: '10px', color: '#ff4444' }}>{alert.user}: {alert.balance?.toLocaleString()} UZS</p>
-                        </div>
+            {/* 🚨 ALERT CENTER (Fixed Top) */}
+            <AnimatePresence>
+                {(stats?.lowBalanceAlerts?.length > 0 || stats?.upcomingReservations?.some(r => r.isUrgent)) && (
+                    <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ padding: '10px 20px', display: 'grid', gap: '8px', zIndex: 90 }}>
+                        {stats?.lowBalanceAlerts?.map((alert, i) => (
+                            <div key={`bal-${i}`} style={{ background: '#ff444415', border: '1.5px solid #ff444450', padding: '12px 15px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity }} style={{ background: '#ff4444', padding: '8px', borderRadius: '10px' }}><BellRing size={16} color="#fff" /></motion.div>
+                                <div style={{ flex: 1 }}><p style={{ margin: 0, fontSize: '11px', fontWeight: '900' }}>{alert.pc}: PULI TUGAYAPTI!</p><p style={{ margin: 0, fontSize: '9px', color: '#ff4444' }}>Mijoz: {alert.user} • {alert.balance?.toLocaleString()} so'm</p></div>
+                            </div>
+                        ))}
+                        {stats?.upcomingReservations?.filter(r => r.isUrgent).map((res, i) => (
+                            <div key={`res-${i}`} style={{ background: '#ffaa0015', border: '1.5px solid #ffaa0050', padding: '12px 15px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity }} style={{ background: '#ffaa00', padding: '8px', borderRadius: '10px' }}><AlertTriangle size={16} color="#000" /></motion.div>
+                                <div style={{ flex: 1 }}><p style={{ margin: 0, fontSize: '11px', fontWeight: '900', color: '#ffaa00' }}>BRONGA 5 MIN QOLDI! ({res.pc})</p><p style={{ margin: 0, fontSize: '9px', color: '#ffaa00' }}>Vaqt: {new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {res.user}</p></div>
+                            </div>
+                        ))}
                     </motion.div>
-                ))}
-
-                {stats?.upcomingReservations?.filter(r => r.isUrgent).map((res, i) => (
-                    <motion.div key={i} animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }} style={{ background: 'rgba(255, 170, 0, 0.15)', border: '1px solid rgba(255, 170, 0, 0.5)', padding: '15px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ background: '#ffaa00', padding: '10px', borderRadius: '12px' }}><AlertTriangle size={20} color="#000" /></div>
-                        <div>
-                            <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold', color: '#fff' }}>BRON VAQTI YAQIN! ({res.pc})</p>
-                            <p style={{ margin: 0, fontSize: '10px', color: '#ffaa00' }}>{new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {res.user}</p>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
+                )}
+            </AnimatePresence>
 
             <AnimatePresence mode="wait">
                 {activeTab === 'stats' && (
@@ -213,21 +210,21 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             </div>
                         </div>
 
-                        {/* 📅 UPCOMING RESERVATIONS LIST */}
-                        {stats?.upcomingReservations?.length > 0 && (
-                            <div style={{ marginBottom: '30px' }}>
-                                <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#444', marginBottom: '15px', letterSpacing: '1px' }}>BUGUNGI BRONLAR</h3>
-                                {stats?.upcomingReservations.map((res, i) => (
-                                    <div key={i} style={{ background: '#111', border: res.isUrgent ? '1px solid #ffaa0050' : '1px solid #1a1a1a', padding: '15px 20px', borderRadius: '25px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '900' }}>{res.pc} • {res.user}</h4>
-                                            <p style={{ margin: 0, fontSize: '10px', color: '#444' }}>Vaqti: {new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                        </div>
-                                        {res.isUrgent && <div style={{ background: '#ffaa0030', color: '#ffaa00', padding: '5px 12px', borderRadius: '10px', fontSize: '10px', fontWeight: 'bold' }}>VAQT OZ QOLDI</div>}
+                        {/* 📅 UPCOMING RESERVATIONS SECTION */}
+                        <div style={{ marginBottom: '35px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}><CalendarClock size={16} color="#7000ff" /><h3 style={{ fontSize: '14px', fontWeight: '950', margin: 0, letterSpacing: '1px' }}>BUGUNGI BRONLAR</h3></div>
+
+                            {(!stats?.upcomingReservations || stats.upcomingReservations.length === 0) ? (
+                                <div style={{ background: '#0a0a0a', border: '1px dashed #111', padding: '25px', borderRadius: '30px', textAlign: 'center' }}><p style={{ margin: 0, fontSize: '12px', color: '#333', fontWeight: 'bold' }}>Bugun uchun bronlar yo'q</p></div>
+                            ) : (
+                                stats.upcomingReservations.map((res, i) => (
+                                    <div key={i} style={{ background: '#111', border: res.isUrgent ? '1.5px solid #ffaa0050' : '1px solid #1a1a1a', padding: '20px', borderRadius: '30px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div><h4 style={{ margin: 0, fontSize: '16px', fontWeight: '950' }}>{res.pc} • {res.user}</h4><p style={{ margin: 0, fontSize: '11px', color: '#444', marginTop: '3px' }}>Vaqt: {new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p></div>
+                                        {res.isUrgent ? <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity }} style={{ background: '#ffaa00', color: '#000', padding: '8px 15px', borderRadius: '15px', fontSize: '10px', fontWeight: '950' }}>DIQQAT!</motion.div> : <ChevronRight size={18} color="#222" />}
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                ))
+                            )}
+                        </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                             {[
@@ -362,10 +359,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             </AnimatePresence>
 
             <nav style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', background: 'rgba(10,10,12,0.8)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.05)', padding: '18px 0', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', zIndex: 100, boxShadow: '0 20px 40px rgba(0,0,0,0.8)' }}>
-                {navItem('stats', 'Status', <LayoutGrid size={22} color={activeTab === 'stats' ? '#7000ff' : '#444'} />)}
-                {navItem('rooms', 'Xarita', <Monitor size={22} color={activeTab === 'rooms' ? '#7000ff' : '#444'} />)}
-                {navItem('users', 'Mijozlar', <Users size={22} color={activeTab === 'users' ? '#7000ff' : '#444'} />)}
-                {navItem('payments', 'To\'lov', <Wallet size={22} color={activeTab === 'payments' ? '#7000ff' : '#444'} />)}
+                {navItem('stats', 'Status', <LayoutGrid size={22} color={activeTab === 'stats' ? '#7000ff' : '#646464'} />)}
+                {navItem('rooms', 'Xarita', <Monitor size={22} color={activeTab === 'rooms' ? '#7000ff' : '#646464'} />)}
+                {navItem('users', 'Mijozlar', <Users size={22} color={activeTab === 'users' ? '#7000ff' : '#646464'} />)}
+                {navItem('payments', 'To\'lov', <Wallet size={22} color={activeTab === 'payments' ? '#7000ff' : '#646464'} />)}
             </nav>
         </div>
     );

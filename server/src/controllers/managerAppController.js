@@ -179,11 +179,44 @@ exports.getRooms = async (req, res, next) => {
             }],
             order: [
                 ['id', 'ASC'],
-                [Computer, 'name', 'ASC'],
-                [Computer, Session, 'startTime', 'DESC']
+                [Computer, 'name', 'ASC']
             ]
         });
         res.json(rooms);
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.addRoom = async (req, res, next) => {
+    try {
+        const clubId = req.user.ClubId;
+        const { name, pricePerHour, pcCount, specs } = req.body;
+
+        if (!name || !pricePerHour || !pcCount) {
+            return res.status(400).json({ error: "Barcha maydonlarni to'ldiring!" });
+        }
+
+        const room = await Room.create({
+            name,
+            pricePerHour: parseInt(pricePerHour),
+            pcCount: parseInt(pcCount),
+            ClubId: clubId
+        });
+
+        // Avtomatik PC larni yaratish (Auto-create PCs)
+        const pcsToCreate = [];
+        for (let i = 1; i <= parseInt(pcCount); i++) {
+            pcsToCreate.push({
+                name: `${i}-${name.substring(0, 3).toUpperCase()}`,
+                status: 'free',
+                specs: specs || "Xarakteristikasi kiritilmagan",
+                RoomId: room.id
+            });
+        }
+        await Computer.bulkCreate(pcsToCreate);
+
+        res.json({ success: true, room });
     } catch (err) {
         next(err);
     }

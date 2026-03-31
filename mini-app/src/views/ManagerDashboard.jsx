@@ -219,6 +219,15 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     return (
         <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '110px', fontFamily: '"Outfit", sans-serif', overflowX: 'hidden' }}>
 
+            {/* FORCE BRIGHT COLORS FOR MODAL BUTTONS VIA GLOBAL CSS */}
+            <style>
+                {`
+                .vibrant-btn-label { color: #ffffff !important; opacity: 1 !important; text-shadow: 0 0 1px #fff; }
+                .neon-purple { color: #b480ff !important; opacity: 1 !important; text-shadow: 0 0 10px rgba(180,128,255,0.4); }
+                .neon-green { color: #39ff14 !important; opacity: 1 !important; text-shadow: 0 0 10px rgba(57,255,20,0.4); }
+                `}
+            </style>
+
             <header style={{ padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(30px)', zIndex: 100, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '6px', height: '22px', background: '#7000ff', borderRadius: '3px', boxShadow: '0 0 12px #7000ff' }} />
@@ -269,7 +278,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 <motion.div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? 'rgba(255,68,68,0.03)' : '#090909', borderRadius: '35px', padding: '24px', marginBottom: '15px', border: `1px solid ${room.isLocked ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.04)'}`, cursor: 'pointer' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><h3 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>{room.isLocked && <Lock size={15} color="#ff4444" />}</div><p style={{ fontSize: '11px', color: '#888', marginTop: '2px', fontWeight: '600' }}>{room.Computers?.length} PC • {room.pricePerHour.toLocaleString()} UZS/SOAT</p></div>
-                                        <div style={{ display: 'flex', gap: '6px' }}><RoomAction onClick={e => handleLockRoom(e, room.id)} color={room.isLocked ? '#39ff14' : '#ffee32'} icon={room.isLocked ? <Unlock size={15} /> : <Lock size={15} />} /><RoomAction onClick={e => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} icon={<Pencil size={15} />} /><RoomAction onClick={e => handleDeleteRoom(e, room.id)} color="#ff4444" icon={<Trash2 size={15} />} /></div>
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <RoomAction onClick={e => handleLockRoom(e, room.id)} color={room.isLocked ? '#39ff14' : '#ffee32'} icon={room.isLocked ? <Unlock size={15} /> : <Lock size={15} />} />
+                                            <RoomAction onClick={e => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} icon={<Pencil size={15} />} color="#fff" />
+                                            <RoomAction onClick={e => handleDeleteRoom(e, room.id)} color="#ff4444" icon={<Trash2 size={15} />} />
+                                        </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '5px', margin: '14px 0' }}><div style={{ flex: busy || 1, background: '#ff00ff', height: '4px', borderRadius: '10px', opacity: busy > 0 ? 1 : 0.05 }} /><div style={{ flex: reserved || 1, background: '#ffaa00', height: '4px', borderRadius: '10px', opacity: reserved > 0 ? 1 : 0.05 }} /><div style={{ flex: free || 1, background: '#39ff14', height: '4px', borderRadius: '10px', opacity: free > 0 ? 1 : 0.05 }} /></div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '15px' }}><MiniStat label="BAND" count={busy} color="#ff00ff" /><MiniStat label="BRON" count={reserved} color="#ffaa00" /><MiniStat label="BO'SH" count={free} color="#39ff14" /></div><div style={{ textAlign: 'right' }}><p style={{ fontSize: '8px', color: '#fff', margin: 0, fontWeight: '900', letterSpacing: '1px' }}>TUSHUM</p><b style={{ fontSize: '13px', color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div></div>
@@ -304,9 +317,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(45px)' }} onClick={() => setSelectedPC(null)}>
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#0a0a0a', width: '100%', padding: '30px 25px 60px', borderRadius: '50px 50px 0 0', borderTop: '2px solid rgba(112, 0, 255, 0.4)', boxShadow: '0 -20px 80px rgba(112, 0, 255, 0.15)' }} onClick={e => e.stopPropagation()}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                                <div><h1 style={{ margin: 0, fontSize: '30px', fontWeight: '950', color: '#fff !important' }}>{selectedPC.name}</h1><p style={{ color: '#aaa', fontSize: '11px', fontWeight: '900' }}>{(selectedPC.specs || 'PREMIUM PC').toUpperCase()}</p></div>
+                                <div><h1 style={{ margin: 0, fontSize: '30px', fontWeight: '950', color: '#fff' }}>{selectedPC.name}</h1><p style={{ color: '#aaa', fontSize: '11px', fontWeight: '900' }}>{(selectedPC.specs || 'PREMIUM PC').toUpperCase()}</p></div>
                                 <div style={{ textAlign: 'right', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                    <div style={{ textAlign: 'right' }}><p style={{ fontSize: '8px', color: '#888', margin: 0, fontWeight: '900', letterSpacing: '1px' }}>REAL TIME</p><b style={{ fontSize: '16px', color: '#fff !important' }}>{formatTashkentTime(new Date(nowTime))}</b></div>
+                                    <div style={{ textAlign: 'right' }}><p style={{ fontSize: '8px', color: '#888', margin: 0, fontWeight: '900', letterSpacing: '1px' }}>REAL TIME</p><b style={{ fontSize: '16px', color: '#fff' }}>{formatTashkentTime(new Date(nowTime))}</b></div>
                                     <button onClick={() => setSelectedPC(null)} style={{ background: '#1c1c1c', width: '45px', height: '45px', borderRadius: '16px', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={22} /></button>
                                 </div>
                             </div>
@@ -320,37 +333,37 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                         {s !== 'free' && s !== 'reserved' && (
                                             <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', padding: '35px 20px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.06)' }}>
                                                 <p style={{ fontSize: '11px', color: '#aaa', fontWeight: '950', letterSpacing: '5px' }}>TIME REMAINING</p>
-                                                <h1 style={{ fontSize: '88px', color: `${themeColor} !important`, fontWeight: '950', margin: '5px 0', letterSpacing: '-5px', textShadow: `0 0 40px ${themeColor}30` }}>{info.time}</h1>
+                                                <h1 style={{ fontSize: '88px', color: themeColor, fontWeight: '950', margin: '5px 0', letterSpacing: '-5px', textShadow: `0 0 40px ${themeColor}30` }}>{info.time}</h1>
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginTop: '20px' }}>
-                                                    <div><p style={{ fontSize: '9px', color: '#aaa', margin: 0, fontWeight: '900' }}>BOSHLAHDY</p><b style={{ fontSize: '16px', color: '#fff !important' }}>{info.startTime || '--:--'}</b></div>
+                                                    <div><p style={{ fontSize: '9px', color: '#aaa', margin: 0, fontWeight: '900' }}>BOSHLAHDY</p><b style={{ fontSize: '16px', color: '#fff' }}>{info.startTime || '--:--'}</b></div>
                                                     <div style={{ width: '1px', background: '#222', height: '30px', margin: '5px auto' }} />
-                                                    <div><p style={{ fontSize: '9px', color: '#aaa', margin: 0, fontWeight: '900' }}>HISOBLAHDY</p><b style={{ fontSize: '24px', color: '#fff !important' }}>{info.cost?.toLocaleString()}</b></div>
+                                                    <div><p style={{ fontSize: '9px', color: '#aaa', margin: 0, fontWeight: '900' }}>HISOBLAHDY</p><b style={{ fontSize: '24px', color: '#fff' }}>{info.cost?.toLocaleString()}</b></div>
                                                 </div>
                                             </div>
                                         )}
                                         {s === 'reserved' && (
                                             <div style={{ background: 'rgba(255, 170, 0, 0.08)', padding: '40px', borderRadius: '45px', border: '1px solid rgba(255,170,0,0.3)', textAlign: 'center' }}>
                                                 <UserIcon color="#ffaa00" size={45} style={{ marginBottom: '15px' }} />
-                                                <h3 style={{ fontSize: '30px', margin: 0, fontWeight: '950', color: '#fff !important' }}>{info.reservedInfo?.user}</h3>
-                                                <b style={{ fontSize: '22px', color: '#ffaa00 !important' }}>{formatTashkentTime(new Date(info.reservedInfo?.time))}</b>
+                                                <h3 style={{ fontSize: '30px', margin: 0, fontWeight: '950', color: '#fff' }}>{info.reservedInfo?.user}</h3>
+                                                <b style={{ fontSize: '22px', color: '#ffaa00' }}>{formatTashkentTime(new Date(info.reservedInfo?.time))}</b>
                                             </div>
                                         )}
                                         {s === 'free' && (
                                             <div style={{ width: '100%' }}>
                                                 <div style={{ position: 'relative', marginBottom: '20px' }}>
                                                     <Banknote style={{ position: 'absolute', left: '25px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={32} />
-                                                    <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '30px 20px 30px 70px', background: '#000', border: '1px solid #222', borderRadius: '30px', color: '#39ff14 !important', fontSize: '36px', fontWeight: '950', textAlign: 'left' }} />
-                                                    <div style={{ position: 'absolute', right: '25px', top: '50%', transform: 'translateY(-50%)', color: '#fff !important', fontWeight: '950' }}>UZS</div>
+                                                    <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '30px 20px 30px 70px', background: '#000', border: '1px solid #222', borderRadius: '30px', color: '#39ff14', fontSize: '36px', fontWeight: '950', textAlign: 'left' }} />
+                                                    <div style={{ position: 'absolute', right: '25px', top: '50%', transform: 'translateY(-50%)', color: '#fff', fontWeight: '950' }}>UZS</div>
                                                 </div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '25px' }}>
-                                                    <QuickTouchBtn label="10.000 UZS" sub="10K" onClick={() => setStartAmountInput('10000')} type="amount" />
-                                                    <QuickTouchBtn label="20.000 UZS" sub="20K" onClick={() => setStartAmountInput('20000')} type="amount" />
-                                                    <QuickTouchBtn label="30.000 UZS" sub="30K" onClick={() => setStartAmountInput('30000')} type="amount" />
-                                                    <QuickTouchBtn label="50.000 UZS" sub="50K" onClick={() => setStartAmountInput('50000')} type="amount" />
-                                                    <QuickTouchBtn label="1 SOAT" sub="TIME" onClick={() => handleAction('start', 60)} type="time" theme="#b480ff" />
-                                                    <QuickTouchBtn label="2 SOAT" sub="TIME" onClick={() => handleAction('start', 120)} type="time" theme="#b480ff" />
-                                                    <QuickTouchBtn label="5 SOAT" sub="TIME" onClick={() => handleAction('start', 300)} type="time" theme="#b480ff" />
-                                                    <QuickTouchBtn label="VIP UNLIM" sub="GHOST" onClick={() => handleAction('start')} type="time" theme="#39ff14" />
+                                                    <QuickTouchBtn label="10.000 UZS" sub="10K" onClick={() => setStartAmountInput('10000')} className="vibrant-btn-label" />
+                                                    <QuickTouchBtn label="20.000 UZS" sub="20K" onClick={() => setStartAmountInput('20000')} className="vibrant-btn-label" />
+                                                    <QuickTouchBtn label="30.000 UZS" sub="30K" onClick={() => setStartAmountInput('30000')} className="vibrant-btn-label" />
+                                                    <QuickTouchBtn label="50.000 UZS" sub="50K" onClick={() => setStartAmountInput('50000')} className="vibrant-btn-label" />
+                                                    <QuickTouchBtn label="1 SOAT" sub="TIME" onClick={() => handleAction('start', 60)} className="neon-purple" />
+                                                    <QuickTouchBtn label="2 SOAT" sub="TIME" onClick={() => handleAction('start', 120)} className="neon-purple" />
+                                                    <QuickTouchBtn label="5 SOAT" sub="TIME" onClick={() => handleAction('start', 300)} className="neon-purple" />
+                                                    <QuickTouchBtn label="VIP UNLIM" sub="GHOST" onClick={() => handleAction('start')} className="neon-green" />
                                                 </div>
                                             </div>
                                         )}
@@ -358,8 +371,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 );
                             })()}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '28px', borderRadius: '28px', background: 'rgba(255, 68, 68, 0.15)', color: '#ff4444 !important', border: 'none', fontWeight: '950', fontSize: '18px', letterSpacing: '2px' }}>STOP ⏹️</motion.button>}
-                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '28px', borderRadius: '28px', background: selectedPC.status === 'busy' ? '#ffee32' : 'linear-gradient(45deg, #7000ff, #a000ff)', color: `${selectedPC.status === 'busy' ? '#000' : '#fff'} !important`, border: 'none', fontWeight: '950', fontSize: '20px', gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto', boxShadow: selectedPC.status === 'free' ? '0 15px 50px rgba(112, 0, 255, 0.5)' : 'none' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'VAQTNI OCHISH 🚀'}</motion.button>
+                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '28px', borderRadius: '28px', background: 'rgba(255, 68, 68, 0.15)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '18px', letterSpacing: '2px' }}>STOP ⏹️</motion.button>}
+                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '28px', borderRadius: '28px', background: selectedPC.status === 'busy' ? '#ffee32' : 'linear-gradient(45deg, #7000ff, #a000ff)', color: selectedPC.status === 'busy' ? '#000' : '#fff', border: 'none', fontWeight: '950', fontSize: '20px', gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto', boxShadow: selectedPC.status === 'free' ? '0 15px 50px rgba(112, 0, 255, 0.5)' : 'none' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'VAQTNI OCHISH 🚀'}</motion.button>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -376,36 +389,35 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     );
 };
 
-const QuickTouchBtn = ({ label, sub, onClick, type, theme = '#ffffff' }) => {
-    const isAmount = type === 'amount';
-    const finalColor = isAmount ? '#ffffff' : theme;
-    return (
-        <motion.button
-            whileTap={{ scale: 0.94 }}
-            onClick={onClick}
-            style={{
-                background: isAmount ? 'rgba(255,255,255,0.08)' : 'rgba(180,128,255,0.05)',
-                border: `1px solid ${isAmount ? 'rgba(255,255,255,0.15)' : theme + '40'}`,
-                borderRadius: '25px',
-                padding: '20px 10px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                color: `${finalColor} !important`
-            }}
-        >
-            <span style={{ fontSize: '10px', fontWeight: '900', color: 'rgba(255,255,255,0.4) !important', letterSpacing: '2px', pointerEvents: 'none' }}>{sub}</span>
-            <span style={{ fontSize: '17px', fontWeight: '950', color: `${finalColor} !important`, textShadow: isAmount ? 'none' : `0 0 10px ${finalColor}80`, pointerEvents: 'none' }}>{label}</span>
-        </motion.button>
-    );
-};
+const QuickTouchBtn = ({ label, sub, onClick, className }) => (
+    <motion.button
+        whileTap={{ scale: 0.94 }}
+        onClick={onClick}
+        style={{
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '25px',
+            padding: '20px 10px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px'
+        }}
+    >
+        <span style={{ fontSize: '10px', fontWeight: '950', color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', pointerEvents: 'none' }}>{sub}</span>
+        <span className={className} style={{ fontSize: '17px', fontWeight: '950', pointerEvents: 'none' }}>{label}</span>
+    </motion.button>
+);
 
 const DashItem = ({ label, icon, value }) => (
-    <div><div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>{icon}<p style={{ fontSize: '8px', color: '#aaa', fontWeight: '900', margin: 0 }}>{label}</p></div><b style={{ fontSize: '16px', color: '#fff !important' }}>{value}</b></div>
+    <div><div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>{icon}<p style={{ fontSize: '8px', color: '#aaa', fontWeight: '900', margin: 0 }}>{label}</p></div><b style={{ fontSize: '16px', color: '#fff' }}>{value}</b></div>
 );
-const RoomAction = ({ icon, onClick, color = '#fff' }) => (<button onClick={onClick} style={{ background: 'rgba(255,255,255,0.03)', width: '38px', height: '38px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', color: `${color} !important`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</button>);
-const MiniStat = ({ label, count, color }) => (<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '4px', height: '4px', background: color, borderRadius: '50%', boxShadow: `0 0 6px ${color}` }} /><span style={{ fontSize: '10px', color: count > 0 ? `${color} !important` : '#555 !important', fontWeight: '950' }}>{count}</span></div>);
+const RoomAction = ({ icon, onClick, color = '#fff' }) => (
+    <button onClick={onClick} style={{ background: 'rgba(255,255,255,0.03)', width: '38px', height: '38px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {React.cloneElement(icon, { color: color })}
+    </button>
+);
+const MiniStat = ({ label, count, color }) => (<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '4px', height: '4px', background: color, borderRadius: '50%', boxShadow: `0 0 6px ${color}` }} /><span style={{ fontSize: '10px', color: count > 0 ? color : '#333', fontWeight: '950' }}>{count}</span></div>);
 
 export default ManagerDashboard;

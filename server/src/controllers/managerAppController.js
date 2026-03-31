@@ -45,20 +45,18 @@ exports.getStats = async (req, res, next) => {
         const lowBalanceAlerts = [];
 
         allSessions.forEach(s => {
-            // BUGUNGI BARCHA BRONLAR (Today's all reservations)
-            if (s.status === 'reserved' || (s.reserveTime && s.status === 'active')) {
-                const rTime = new Date(s.reserveTime);
+            // BUGUNGI BARCHA BRONLAR
+            if (s.status === 'reserved' || s.reserveTime) {
+                const rTime = s.reserveTime ? new Date(s.reserveTime) : null;
+                const diffMin = rTime ? (rTime - now) / 60000 : null;
 
-                // Faqat bugungi (Start of day dan keyin) bronlarni ko'rsatamiz
-                if (rTime >= dStart) {
-                    upcomingReservations.push({
-                        id: s.id,
-                        pc: s.Computer?.name,
-                        user: s.User?.username || s.guestName || 'Mehmon',
-                        time: s.reserveTime,
-                        isUrgent: diffMin <= 5 && diffMin > 0
-                    });
-                }
+                upcomingReservations.push({
+                    id: s.id,
+                    pc: s.Computer?.name,
+                    user: s.User?.username || s.guestName || 'Mehmon',
+                    time: s.reserveTime,
+                    isUrgent: diffMin !== null && diffMin <= 10 && diffMin > 0
+                });
             }
 
             // Low Balance Logic (10,000 UZS)
@@ -98,7 +96,7 @@ exports.getStats = async (req, res, next) => {
         res.json({
             clubName: club?.name || 'GAME CLUB',
             totalPCs: allComputers.length, busyPCs, freePCs, reservedPCs,
-            upcomingReservations: upcomingReservations.sort((a, b) => new Date(a.time) - new Date(b.time)),
+            upcomingReservations: upcomingReservations.sort((a, b) => (a.time ? new Date(a.time) : 0) - (b.time ? new Date(b.time) : 0)),
             lowBalanceAlerts,
             revenue: {
                 day: adminPcRevenue + userPcRevenue,

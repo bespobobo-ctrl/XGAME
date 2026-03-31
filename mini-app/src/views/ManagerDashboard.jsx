@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info, UserPlus, Coins, Timer } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info, UserPlus, Coins, Timer, Zap } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -60,16 +60,31 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
         const activeSession = pc?.Sessions?.find(s => s.status === 'active' || s.status === 'paused');
-        if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0 };
+        if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false };
+
         const start = new Date(activeSession.startTime);
         const effectiveNow = activeSession.status === 'paused' ? new Date(activeSession.pausedAt || Date.now()) : nowTime;
         const diffSeconds = Math.max(0, Math.floor((effectiveNow - start) / 1000));
-        const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
-        const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
-        const s = (diffSeconds % 60).toString().padStart(2, '0');
+
+        // Cost calculation
         const cost = Math.floor((diffSeconds / 3600) * roomPrice);
         const progress = activeSession.expectedMinutes ? Math.min((diffSeconds / (activeSession.expectedMinutes * 60)) * 100, 100) : Math.min((diffSeconds / 3600) * 100, 100);
-        return { time: `${h}:${m}:${s}`, cost, progress };
+
+        if (activeSession.expectedMinutes) {
+            // Count DOWN mode
+            const totalSeconds = activeSession.expectedMinutes * 60;
+            const remainingSec = Math.max(0, totalSeconds - diffSeconds);
+            const rh = Math.floor(remainingSec / 3600).toString().padStart(2, '0');
+            const rm = Math.floor((remainingSec % 3600) / 60).toString().padStart(2, '0');
+            const rs = (remainingSec % 60).toString().padStart(2, '0');
+            return { time: `${rh}:${rm}:${rs}`, cost, progress, remaining: `${rh}:${rm}:${rs}`, isCountdown: true };
+        } else {
+            // Count UP mode
+            const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (diffSeconds % 60).toString().padStart(2, '0');
+            return { time: `${h}:${m}:${s}`, cost, progress, remaining: `${h}:${m}:${s}`, isCountdown: false };
+        }
     };
 
     const handleAction = async (action, expectedMinutes = null) => {
@@ -80,7 +95,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         let finalMinutes = expectedMinutes;
         const amount = parseInt(startAmountInput);
         if (action === 'start' && !expectedMinutes && amount > 0) {
-            // Calculate minutes from amount
+            // Calculate minutes from specific amount input
             finalMinutes = Math.floor((amount / selectedPC.roomPrice) * 60);
         }
 
@@ -116,19 +131,19 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const renderPC = (pc, room) => {
         const status = (pc?.status || 'free').toLowerCase();
         const isActive = status === 'busy' || status === 'paused';
-        const { time, progress } = calculateSessionInfo(pc, room?.pricePerHour || 15000);
+        const { time, progress, isCountdown } = calculateSessionInfo(pc, room?.pricePerHour || 15000);
 
         const getStatusTheme = () => {
-            if (status === 'busy') return { color: '#ff00ff', icon: <MonitorPlay size={22} />, label: time };
+            if (status === 'busy') return { color: isCountdown ? '#39ff14' : '#ff00ff', icon: <MonitorPlay size={22} />, label: time };
             if (status === 'paused') return { color: '#ffee32', icon: <Clock size={22} />, label: `PAUZA` };
             if (status === 'reserved') return { color: '#ffaa00', icon: <CalendarClock size={22} />, label: 'BRON' };
-            return { color: '#39ff14', icon: <Monitor size={22} />, label: 'BO\'SH' };
+            return { color: '#fff', icon: <Monitor size={22} />, label: 'BO\'SH' };
         };
         const { color, icon, label } = getStatusTheme();
 
         return (
             <motion.div key={pc.id} whileTap={{ scale: 0.95 }} onClick={() => setSelectedPC({ ...pc, roomPrice: room?.pricePerHour || 15000 })} style={{ background: '#111', border: `1.5px solid ${isActive ? color : '#1a1a1a'}`, borderRadius: '25px', padding: '18px 5px', textAlign: 'center', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
-                {isActive && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', background: color, width: `${progress}%` }} />}
+                {isActive && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', background: color, width: `${progress}%`, transition: 'width 1s linear' }} />}
                 <div style={{ color: color, marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{pc.name}</div>
                 <div style={{ fontSize: '9px', fontWeight: 'bold', color: isActive ? color : '#444', marginTop: '2px' }}>{label}</div>
@@ -151,9 +166,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     return (
         <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', paddingBottom: '130px', fontFamily: '"Outfit", sans-serif' }}>
 
-            <header style={{ padding: '25px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)', zIndex: 100, borderBottom: '1px solid #111' }}>
+            <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)', zIndex: 100 }}>
                 <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '950' }}>{(stats?.clubName || 'GAMEZONE').toUpperCase()} <span style={{ color: '#39ff14', fontSize: '10px' }}>●</span></h2>
-                <button onClick={onLogout} style={{ background: '#111', border: '1px solid #222', color: '#ff4444', padding: '10px 18px', borderRadius: '15px', fontSize: '11px', fontWeight: 'bold' }}>CHIQISH</button>
+                <button onClick={onLogout} style={{ background: '#111', border: 'none', color: '#ff4444', padding: '10px 18px', borderRadius: '15px', fontSize: '11px', fontWeight: 'bold' }}>CHIQISH</button>
             </header>
 
             <AnimatePresence mode="wait">
@@ -222,7 +237,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {activeTab === 'rooms' && selectedViewRoom && (
                     <motion.div key="room-detail" style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}>
-                            <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', border: '1px solid #222', color: '#fff', width: '45px', height: '45px', borderRadius: '15px' }}><ArrowLeft size={20} /></button>
+                            <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', border: 'none', color: '#fff', width: '45px', height: '45px', borderRadius: '15px' }}><ArrowLeft size={20} /></button>
                             <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '950' }}>{currentRoomFromState?.name?.toUpperCase()}</h2>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
@@ -285,20 +300,23 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                             {(selectedPC.status === 'busy' || selectedPC.status === 'paused') ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                    <div style={{ background: '#000', padding: '20px', borderRadius: '20px', textAlign: 'center' }}><p style={{ fontSize: '10px', color: '#444' }}>VAQT</p><h3>{calculateSessionInfo(selectedPC, selectedPC.roomPrice).time}</h3></div>
-                                    <div style={{ background: '#000', padding: '20px', borderRadius: '20px', textAlign: 'center' }}><p style={{ fontSize: '10px', color: '#444' }}>SUMMA</p><h3 style={{ color: '#39ff14' }}>{calculateSessionInfo(selectedPC, selectedPC.roomPrice).cost?.toLocaleString()}</h3></div>
+                                    <div style={{ background: '#000', padding: '20px', borderRadius: '20px', textAlign: 'center' }}><p style={{ fontSize: '10px', color: '#444' }}>QOLGAN VAQT</p><h3 style={{ color: '#39ff14' }}>{calculateSessionInfo(selectedPC, selectedPC.roomPrice).time}</h3></div>
+                                    <div style={{ background: '#000', padding: '20px', borderRadius: '20px', textAlign: 'center' }}><p style={{ fontSize: '10px', color: '#444' }}>SARAF SUMMA</p><h3>{calculateSessionInfo(selectedPC, selectedPC.roomPrice).cost?.toLocaleString()}</h3></div>
                                     <button onClick={() => handleAction('stop')} style={{ gridColumn: 'span 1', padding: '20px', borderRadius: '20px', background: '#ff444415', color: '#ff4444', border: 'none', fontWeight: '950' }}>STOP ⏹️</button>
                                     <button onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'resume')} style={{ gridColumn: 'span 1', padding: '20px', borderRadius: '20px', background: '#ffee32', color: '#000', border: 'none', fontWeight: '950' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'DAVOM'}</button>
                                 </div>
                             ) : (
                                 <div>
-                                    <div style={{ position: 'relative', marginBottom: '20px' }}>
-                                        <Banknote style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
-                                        <input type="number" placeholder="Necha so'mlik o'ynaydi? (Summa...)" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '18px 18px 18px 45px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '20px', color: '#39ff14', fontSize: '18px', fontWeight: 'bold' }} />
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
+                                        <div style={{ position: 'relative', flex: 1 }}>
+                                            <Banknote style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
+                                            <input type="number" placeholder="Summa..." value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '22px 18px 22px 45px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '25px', color: '#39ff14', fontSize: '18px', fontWeight: 'bold' }} />
+                                        </div>
+                                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ background: '#39ff14', color: '#000', width: '70px', height: '70px', borderRadius: '25px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 20px rgba(57,255,20,0.3)' }}><Play size={30} fill="#000" /></motion.button>
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                                         {[30, 60, 120, null].map(v => (
-                                            <button key={v} onClick={() => handleAction('start', v)} style={{ background: v ? '#111' : '#39ff14', color: v ? '#fff' : '#000', padding: '22px 0', borderRadius: '20px', border: 'none', fontWeight: '950' }}>{v ? `${v}m` : '∞'}</button>
+                                            <button key={v} onClick={() => handleAction('start', v)} style={{ background: v ? '#111' : '#39ff1415', color: v ? '#fff' : '#39ff14', padding: '22px 0', borderRadius: '20px', border: '1px solid #1a1a1a', fontWeight: '950' }}>{v ? `${v}m` : '∞'}</button>
                                         ))}
                                     </div>
                                 </div>

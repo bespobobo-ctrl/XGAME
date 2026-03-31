@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { io } from 'socket.io-client';
+// 🛰️ USE CDN VERSION TO AVOID SERVER BUILD ERRORS
+const { io } = await import('https://cdn.socket.io/4.7.2/socket.io.esm.min.js').catch(() => ({ io: null }));
+
 import { callAPI, API_URL } from '../api';
 import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock, Hash, Activity, TimerReset, Banknote, Phone, Contact2 } from 'lucide-react';
 
@@ -50,17 +52,23 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         const dataInterval = setInterval(fetchData, 5000);
         const timerInterval = setInterval(() => setNowTime(Date.now()), 1000);
 
-        // 🛰️ SOCKET SETUP
-        const socket = io(API_URL || 'https://server.respect-game.uz', { transports: ['websocket'] });
-        socket.on('upcoming-alert', (data) => {
-            setGlobalAlert(data);
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(() => { });
-            setTimeout(() => setGlobalAlert(null), 15000);
-        });
-        socket.on('pc-status-updated', fetchData);
+        let socket = null;
+        if (io) {
+            socket = io(API_URL || 'https://server.respect-game.uz', { transports: ['websocket'] });
+            socket.on('upcoming-alert', (data) => {
+                setGlobalAlert(data);
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                audio.play().catch(() => { });
+                setTimeout(() => setGlobalAlert(null), 15000);
+            });
+            socket.on('pc-status-updated', fetchData);
+        }
 
-        return () => { clearInterval(dataInterval); clearInterval(timerInterval); socket.disconnect(); };
+        return () => {
+            clearInterval(dataInterval);
+            clearInterval(timerInterval);
+            if (socket) socket.disconnect();
+        };
     }, [activeTab]);
 
     const formatTashkentTime = (dateStr) => {
@@ -109,7 +117,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const handleAction = async (action, expectedMinutes = null) => {
         if (!selectedPC || actionLoading) return;
 
-        // 🛡️ REZERVA VALIDATION
         if (action === 'reserve') {
             if (!resName || !resPhone || !resTime) { alert("Ism, Tel va Vaqtni kiriting!"); return; }
         }
@@ -159,7 +166,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 `}
             </style>
 
-            {/* 🛎️ GLOBAL NOTIFICATION TOAST */}
             <AnimatePresence>
                 {globalAlert && (
                     <motion.div initial={{ y: -100, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -100, opacity: 0 }} style={{ position: 'fixed', top: 0, left: '15px', right: '15px', zIndex: 5000, background: 'linear-gradient(90deg, #7000ff, #000)', padding: '20px', borderRadius: '30px', border: '1px solid #fff', boxShadow: '0 20px 60px rgba(112,0,255,0.5)', display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -190,7 +196,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px', background: 'rgba(57, 255, 20, 0.08)', padding: '6px 12px', borderRadius: '10px', color: '#39ff14', fontSize: '9px', fontWeight: '900' }}> <Activity size={10} /> ACTUAL MONITORING </div>
                         </div>
 
-                        {/* 📅 UPCOMING RESERVATIONS IN STATS TAB */}
                         {stats?.upcomingReservations?.length > 0 && (
                             <div style={{ marginBottom: '20px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingLeft: '10px' }}>
@@ -274,11 +279,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                             {isReserveMode ? (
                                 <div key="reserve-form">
-                                    <div style={{ position: 'relative' }}> <Contact2 className="res-icon" style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
+                                    <div style={{ position: 'relative' }}> <Contact2 style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
                                         <input className="res-input" placeholder="Mijoz ismi" value={resName} onChange={e => setResName(e.target.value)} /> </div>
-                                    <div style={{ position: 'relative' }}> <Phone className="res-icon" style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
+                                    <div style={{ position: 'relative' }}> <Phone style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
                                         <input className="res-input" placeholder="Tel raqami" value={resPhone} onChange={e => setResPhone(e.target.value)} /> </div>
-                                    <div style={{ position: 'relative' }}> <Clock className="res-icon" style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
+                                    <div style={{ position: 'relative' }}> <Clock style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
                                         <input className="res-input" type="time" value={resTime} onChange={e => setResTime(e.target.value)} /> </div>
 
                                     <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('reserve')} style={{ width: '100%', padding: '25px', borderRadius: '25px', background: '#ffaa00', color: '#000', border: 'none', fontSize: '18px', fontWeight: '950', marginTop: '10px' }}>BRONNI BAND QILISH 🔓</motion.button>

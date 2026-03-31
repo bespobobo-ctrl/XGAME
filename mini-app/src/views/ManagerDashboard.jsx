@@ -42,13 +42,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             if (Array.isArray(t)) setTopupRequests(t);
             if (activeTab === 'users' && Array.isArray(u)) setUsersList(u);
 
-            // Sync selected PC to get fresh session status & latest room price
             if (selectedPC) {
                 const allPCs = (Array.isArray(r) ? r : []).flatMap(rm => rm.Computers || []);
                 const freshPC = allPCs.find(p => p.id === selectedPC.id);
                 if (freshPC) {
                     const room = (Array.isArray(r) ? r : []).find(rm => rm.id === freshPC.RoomId);
-                    // QAT'IY XONA NARXI (pricePerHour)
                     setSelectedPC({ ...freshPC, roomPrice: room?.pricePerHour || 15000 });
                 }
             }
@@ -93,8 +91,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         const start = new Date(activeSession.startTime);
         const effectiveNow = activeSession.status === 'paused' ? new Date(activeSession.pausedAt || Date.now()) : nowTime;
         const diffSeconds = Math.max(0, Math.floor((effectiveNow - start) / 1000));
-
-        // NARXNI HISОBLASH (PRICE BASED CALCULATION)
         const cost = Math.floor((diffSeconds / 3600) * price);
         const progress = activeSession.expectedMinutes ? Math.min((diffSeconds / (activeSession.expectedMinutes * 60)) * 100, 100) : 0;
 
@@ -119,7 +115,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         let finalMinutes = expectedMinutes;
         const amount = parseInt(startAmountInput);
         if (action === 'start' && !expectedMinutes && amount > 0) {
-            // NARXNI TO'G'RI HISОBLASH (AMOUNT TO MINUTES)
             finalMinutes = Math.floor((amount / selectedPC.roomPrice) * 60);
         }
         try {
@@ -236,8 +231,29 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {activeTab === 'rooms' && !selectedViewRoom && (
                     <motion.div key="rooms" style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-                            <h2 style={{ fontSize: '24px' }}>XONALAR</h2>
-                            <button onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }} style={{ background: '#7000ff', p: '12px 20px', borderRadius: '20px', border: 'none', color: '#fff' }}><Plus size={16} /> QO'SHISH</button>
+                            <h2 style={{ fontSize: '24px', fontWeight: '950' }}>XONALAR</h2>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }}
+                                style={{
+                                    background: 'linear-gradient(135deg, #7000ff 0%, #a000ff 100%)',
+                                    p: '10px 22px',
+                                    borderRadius: '25px',
+                                    border: 'none',
+                                    color: '#fff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    fontWeight: '900',
+                                    fontSize: '12px',
+                                    boxShadow: '0 8px 25px rgba(112, 0, 255, 0.4)',
+                                    textShadow: '0 0 10px rgba(255,255,255,0.3)'
+                                }}
+                            >
+                                <div style={{ background: 'rgba(255,255,255,0.2)', p: '4px', borderRadius: '50%', display: 'flex' }}><Plus size={16} /></div>
+                                QO'SHISH
+                            </motion.button>
                         </div>
                         {rooms.map(room => {
                             const total = room.Computers?.length || 0;

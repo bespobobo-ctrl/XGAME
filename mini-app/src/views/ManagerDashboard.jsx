@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { io } from 'socket.io-client';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock, Hash, Activity, TimerReset, Banknote } from 'lucide-react';
+import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock, Hash, Activity, TimerReset, Banknote, Phone, Contact2 } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -14,33 +15,23 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [actionLoading, setActionLoading] = useState(false);
     const [selectedViewRoom, setSelectedViewRoom] = useState(null);
     const [startAmountInput, setStartAmountInput] = useState('');
+    const [globalAlert, setGlobalAlert] = useState(null);
 
-    // Room Management
-    const [showAddRoomModal, setShowAddRoomModal] = useState(false);
-    const [editingRoom, setEditingRoom] = useState(null);
-    const [newRoomData, setNewRoomData] = useState({ name: '', pricePerHour: '', pcCount: '', specs: '' });
-
-    // Payments & Users
-    const [topupRequests, setTopupRequests] = useState([]);
-    const [usersList, setUsersList] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [addBalanceAmount, setAddBalanceAmount] = useState('');
+    // Reservation Fields
+    const [isReserveMode, setIsReserveMode] = useState(false);
+    const [resName, setResName] = useState('');
+    const [resPhone, setResPhone] = useState('');
+    const [resTime, setResTime] = useState('');
 
     const fetchData = async () => {
         try {
             const timestamp = Date.now();
-            const [s, r, t, u] = await Promise.all([
+            const [s, r] = await Promise.all([
                 callAPI(`/api/manager/stats?t=${timestamp}`),
-                callAPI(`/api/manager/rooms?t=${timestamp}`),
-                callAPI(`/api/manager/topups?t=${timestamp}`),
-                activeTab === 'users' ? callAPI(`/api/manager/users?q=${searchQuery || ''}&t=${timestamp}`) : Promise.resolve([])
+                callAPI(`/api/manager/rooms?t=${timestamp}`)
             ]);
-
             if (s && !s.error) setStats(s);
             if (Array.isArray(r)) setRooms(r);
-            if (Array.isArray(t)) setTopupRequests(t);
-            if (activeTab === 'users' && Array.isArray(u)) setUsersList(u);
 
             if (selectedPC) {
                 const allPCs = (Array.isArray(r) ? r : []).flatMap(rm => rm.Computers || []);
@@ -56,10 +47,21 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     useEffect(() => {
         fetchData();
-        const dataInterval = setInterval(fetchData, 4000);
+        const dataInterval = setInterval(fetchData, 5000);
         const timerInterval = setInterval(() => setNowTime(Date.now()), 1000);
-        return () => { clearInterval(dataInterval); clearInterval(timerInterval); };
-    }, [activeTab, searchQuery]);
+
+        // 🛰️ SOCKET SETUP
+        const socket = io(API_URL || 'https://server.respect-game.uz', { transports: ['websocket'] });
+        socket.on('upcoming-alert', (data) => {
+            setGlobalAlert(data);
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(() => { });
+            setTimeout(() => setGlobalAlert(null), 15000);
+        });
+        socket.on('pc-status-updated', fetchData);
+
+        return () => { clearInterval(dataInterval); clearInterval(timerInterval); socket.disconnect(); };
+    }, [activeTab]);
 
     const formatTashkentTime = (dateStr) => {
         if (!dateStr) return '--:--';
@@ -106,127 +108,70 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const handleAction = async (action, expectedMinutes = null) => {
         if (!selectedPC || actionLoading) return;
+
+        // 🛡️ REZERVA VALIDATION
+        if (action === 'reserve') {
+            if (!resName || !resPhone || !resTime) { alert("Ism, Tel va Vaqtni kiriting!"); return; }
+        }
+
         setActionLoading(true);
         let finalMinutes = expectedMinutes;
         const amount = parseInt(startAmountInput);
         if (action === 'start' && !expectedMinutes && amount > 0) {
             finalMinutes = Math.floor((amount / selectedPC.roomPrice) * 60);
         }
+
         try {
             const res = await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
-                method: 'POST', body: JSON.stringify({ action, expectedMinutes: finalMinutes })
+                method: 'POST', body: JSON.stringify({
+                    action,
+                    expectedMinutes: finalMinutes,
+                    reserveTime: resTime,
+                    guestName: resName,
+                    guestPhone: resPhone
+                })
             });
             if (res.success) {
-                setTimeout(fetchData, 400);
-                if (['stop', 'start', 'pause'].includes(action)) { setSelectedPC(null); setStartAmountInput(''); }
-            }
+                fetchData();
+                setSelectedPC(null); setStartAmountInput(''); setIsReserveMode(false);
+                setResName(''); setResPhone(''); setResTime('');
+            } else { alert(res.error || "Xatolik!"); }
         } catch (e) { alert("Xatolik!"); }
         finally { setActionLoading(false); }
     };
 
-    const handleUpdateTopUp = async (id, status) => {
-        try {
-            const res = await callAPI(`/api/manager/topups/${id}/action`, {
-                method: 'POST', body: JSON.stringify({ status })
-            });
-            if (res.success) fetchData();
-        } catch (e) { alert("Xatolik!"); }
-    };
-
-    const handleAddUserBalance = async (id, amount) => {
-        try {
-            const res = await callAPI(`/api/manager/user/${id}/balance`, {
-                method: 'POST', body: JSON.stringify({ amount: parseInt(amount) })
-            });
-            if (res.success) {
-                setSelectedUser(null); setAddBalanceAmount(''); fetchData();
-            }
-        } catch (e) { alert("Xatolik!"); }
-    };
-
-    const handleAddRoom = async () => {
-        if (!newRoomData.name || !newRoomData.pricePerHour || !newRoomData.pcCount) {
-            alert("Barcha maydonlarni to'ldiring!"); return;
-        }
-        try {
-            const url = editingRoom ? `/api/manager/room/${editingRoom.id}` : '/api/manager/rooms';
-            const res = await callAPI(url, {
-                method: editingRoom ? 'PUT' : 'POST', body: JSON.stringify({
-                    name: newRoomData.name,
-                    pricePerHour: parseInt(newRoomData.pricePerHour),
-                    pcCount: parseInt(newRoomData.pcCount),
-                    specs: newRoomData.specs || 'Standard'
-                })
-            });
-            if (res.success) {
-                setShowAddRoomModal(false); setEditingRoom(null); fetchData();
-            } else alert(res.error || "Xatolik!");
-        } catch (e) { alert("Xatolik!"); }
-    };
-
-    const handleDeleteRoom = async (e, id) => {
-        e.stopPropagation();
-        if (!window.confirm("Haqiqatan ham ushbu xonani o'chirmoqchimisiz?")) return;
-        try {
-            const res = await callAPI(`/api/manager/room/${id}`, { method: 'DELETE' });
-            if (res.success) fetchData();
-        } catch (e) { alert("Xatolik!"); }
-    };
-
-    const handleLockRoom = async (e, id) => {
-        e.stopPropagation();
-        try {
-            const res = await callAPI(`/api/manager/room/${id}/lock`, { method: 'POST' });
-            if (res.success) fetchData();
-        } catch (e) { alert("Xatolik!"); }
-    };
-
     const navItem = (id, label, icon) => (
-        <motion.div
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setActiveTab(id)}
-            style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                color: activeTab === id ? '#7000ff' : '#555',
-                gap: '4px',
-                cursor: 'pointer',
-                position: 'relative'
-            }}
-        >
-            {activeTab === id && (
-                <motion.div layoutId="navGlow" style={{ position: 'absolute', top: '-15px', width: '20px', height: '3px', background: '#7000ff', borderRadius: '4px', boxShadow: '0 0 10px #7000ff' }} />
-            )}
-            <div style={{ padding: '6px', borderRadius: '12px', background: activeTab === id ? 'rgba(112, 0, 255, 0.1)' : 'transparent' }}>
-                {icon}
-            </div>
+        <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.9 }} onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === id ? '#7000ff' : '#555', gap: '4px', cursor: 'pointer', position: 'relative' }}>
+            {activeTab === id && (<motion.div layoutId="navGlow" style={{ position: 'absolute', top: '-15px', width: '20px', height: '3px', background: '#7000ff', borderRadius: '4px', boxShadow: '0 0 10px #7000ff' }} />)}
+            <div style={{ padding: '6px', borderRadius: '12px', background: activeTab === id ? 'rgba(112, 0, 255, 0.1)' : 'transparent' }}>{icon}</div>
             <span style={{ fontSize: '8px', fontWeight: '900', letterSpacing: '0.5px' }}>{label.toUpperCase()}</span>
         </motion.div>
     );
 
-    if (loading && !stats) return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-            <motion.div
-                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-                style={{ fontSize: '20px', fontWeight: '950', color: '#7000ff', letterSpacing: '4px' }}
-            >GAMEZONE</motion.div>
-        </div>
-    );
-
     return (
         <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '110px', fontFamily: '"Outfit", sans-serif', overflowX: 'hidden' }}>
-
-            {/* FORCE BRIGHT COLORS FOR MODAL BUTTONS VIA GLOBAL CSS */}
             <style>
                 {`
-                .vibrant-btn-label { color: #ffffff !important; opacity: 1 !important; text-shadow: 0 0 1px #fff; }
+                .vibrant-btn-label { color: #ffffff !important; opacity: 1 !important; text-shadow: 0 0 2px #fff; }
                 .neon-purple { color: #b480ff !important; opacity: 1 !important; text-shadow: 0 0 10px rgba(180,128,255,0.4); }
                 .neon-green { color: #39ff14 !important; opacity: 1 !important; text-shadow: 0 0 10px rgba(57,255,20,0.4); }
+                .res-input { width: 100%; padding: 18px 15px 18px 50px; background: #111; border: 1px solid #222; border-radius: 20px; color: #fff; font-size: 16px; margin-bottom: 12px; font-weight: 950; }
                 `}
             </style>
+
+            {/* 🛎️ GLOBAL NOTIFICATION TOAST */}
+            <AnimatePresence>
+                {globalAlert && (
+                    <motion.div initial={{ y: -100, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -100, opacity: 0 }} style={{ position: 'fixed', top: 0, left: '15px', right: '15px', zIndex: 5000, background: 'linear-gradient(90deg, #7000ff, #000)', padding: '20px', borderRadius: '30px', border: '1px solid #fff', boxShadow: '0 20px 60px rgba(112,0,255,0.5)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ background: '#fff', borderRadius: '50%', padding: '10px', color: '#7000ff' }}><BellRing size={24} /></div>
+                        <div style={{ flex: 1 }}>
+                            <b style={{ fontSize: '16px', display: 'block', color: '#fff' }}>BRON OGOHLANTIRISH! 🚨</b>
+                            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}><b>PC: {globalAlert.pcName}</b> • {globalAlert.guestName} ({globalAlert.rTime}) келяпти!</span>
+                        </div>
+                        <button onClick={() => setGlobalAlert(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '8px', borderRadius: '12px' }}><X size={18} /></button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <header style={{ padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(30px)', zIndex: 100, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -242,10 +187,31 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                         <div style={{ background: 'linear-gradient(145deg, #0e0e0e, #050505)', padding: '40px 20px', borderRadius: '40px', textAlign: 'center', marginBottom: '15px', border: '1px solid rgba(112, 0, 255, 0.1)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
                             <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontWeight: '900', letterSpacing: '4px', marginBottom: '8px' }}>DAILY REVENUE</p>
                             <h2 style={{ fontSize: '56px', fontWeight: '950', margin: 0, color: '#fff' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h2>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px', background: 'rgba(57, 255, 20, 0.08)', padding: '6px 12px', borderRadius: '10px', color: '#39ff14', fontSize: '9px', fontWeight: '900' }}>
-                                <Activity size={10} /> ACTUAL MONITORING
-                            </div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px', background: 'rgba(57, 255, 20, 0.08)', padding: '6px 12px', borderRadius: '10px', color: '#39ff14', fontSize: '9px', fontWeight: '900' }}> <Activity size={10} /> ACTUAL MONITORING </div>
                         </div>
+
+                        {/* 📅 UPCOMING RESERVATIONS IN STATS TAB */}
+                        {stats?.upcomingReservations?.length > 0 && (
+                            <div style={{ marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingLeft: '10px' }}>
+                                    <CalendarClock size={16} color="#ffaa00" /><h3 style={{ fontSize: '13px', fontWeight: '950', margin: 0 }}>YAQIN ORADAGI BRONLAR</h3>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+                                    {stats.upcomingReservations.map(res => (
+                                        <div key={res.id} style={{ minWidth: '220px', background: res.isUrgent ? 'rgba(255,170,0,0.1)' : '#0a0a0a', border: `1px solid ${res.isUrgent ? '#ffaa00' : 'rgba(255,255,255,0.05)'}`, padding: '18px', borderRadius: '25px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                                <b style={{ fontSize: '12px', color: '#fff' }}>{res.user}</b>
+                                                <span style={{ fontSize: '10px', color: res.isUrgent ? '#ffaa00' : '#888', fontWeight: '950' }}>{res.pc}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <Clock size={12} color="#ffaa00" /><b style={{ fontSize: '16px', color: '#fff' }}>{formatTashkentTime(res.time)}</b>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                             <div style={{ background: '#0a0a0a', padding: '18px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.03)' }}>
                                 <DashItem label="NAQD KASSA" icon={<Coins size={12} color="#7000ff" />} value={stats?.revenue?.cashPcRevenue?.toLocaleString()} />
@@ -254,170 +220,125 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 <DashItem label="ONLINE" icon={<Zap size={12} color="#39ff14" />} value={stats?.revenue?.userPcRevenue?.toLocaleString()} />
                             </div>
                         </div>
-                        <div style={{ background: '#0a0a0a', padding: '18px', borderRadius: '30px', display: 'flex', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.03)' }}>
-                            <DashItem label="ADMIN PC" icon={<Monitor size={12} color="#444" />} value={stats?.revenue?.adminPcRevenue?.toLocaleString()} />
-                            <div style={{ textAlign: 'right' }}>
-                                <p style={{ fontSize: '8px', color: '#fff', fontWeight: '900', marginBottom: '2px' }}>O'RT. SOATBAY</p>
-                                <b style={{ color: '#39ff14', fontSize: '15px' }}>{Math.round(stats?.revenue?.avgHourly || 0).toLocaleString()} UZS</b>
-                            </div>
-                        </div>
                     </motion.div>
                 )}
 
-                {activeTab === 'rooms' && !selectedViewRoom && (
+                {activeTab === 'rooms' && (
                     <motion.div key="rooms" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-                            <h1 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>XONALAR</h1>
-                            <motion.button whileTap={{ scale: 0.92 }} onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }} style={{ background: 'linear-gradient(45deg, #7000ff 0%, #a000ff 100%)', padding: '10px 18px', borderRadius: '16px', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '950', fontSize: '11px' }}><Plus size={14} strokeWidth={3} /> QO'SHISH</motion.button>
-                        </div>
-                        {rooms.map(room => {
-                            const busy = room.Computers?.filter(pc => pc.status === 'busy' || pc.status === 'paused').length || 0;
-                            const reserved = room.Computers?.filter(pc => pc.status === 'reserved').length || 0;
-                            const free = (room.Computers?.length || 0) - busy - reserved;
-                            return (
-                                <motion.div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? 'rgba(255,68,68,0.03)' : '#090909', borderRadius: '35px', padding: '24px', marginBottom: '15px', border: `1px solid ${room.isLocked ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.04)'}`, cursor: 'pointer' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><h3 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>{room.isLocked && <Lock size={15} color="#ff4444" />}</div><p style={{ fontSize: '11px', color: '#888', marginTop: '2px', fontWeight: '600' }}>{room.Computers?.length} PC • {room.pricePerHour.toLocaleString()} UZS/SOAT</p></div>
-                                        <div style={{ display: 'flex', gap: '6px' }}>
-                                            <RoomAction onClick={e => handleLockRoom(e, room.id)} color={room.isLocked ? '#39ff14' : '#ffee32'} icon={room.isLocked ? <Unlock size={15} /> : <Lock size={15} />} />
-                                            <RoomAction onClick={e => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} icon={<Pencil size={15} />} color="#fff" />
-                                            <RoomAction onClick={e => handleDeleteRoom(e, room.id)} color="#ff4444" icon={<Trash2 size={15} />} />
+                        {!selectedViewRoom ? (
+                            <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+                                    <h1 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>XONALAR</h1>
+                                    <motion.button whileTap={{ scale: 0.92 }} onClick={() => setShowAddRoomModal(true)} style={{ background: 'linear-gradient(45deg, #7000ff, #a000ff)', padding: '10px 18px', borderRadius: '16px', border: 'none', color: '#fff', fontWeight: '950', fontSize: '11px' }}><Plus size={14} /> QO'SHISH</motion.button>
+                                </div>
+                                {rooms.map(room => (
+                                    <div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: '#090909', borderRadius: '35px', padding: '24px', marginBottom: '15px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <div><h3 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3><p style={{ fontSize: '11px', color: '#888' }}>{room.Computers?.length} PC • {room.pricePerHour.toLocaleString()} UZS</p></div>
+                                            <ChevronRight color="#333" />
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '5px', margin: '14px 0' }}><div style={{ flex: busy || 1, background: '#ff00ff', height: '4px', borderRadius: '10px', opacity: busy > 0 ? 1 : 0.05 }} /><div style={{ flex: reserved || 1, background: '#ffaa00', height: '4px', borderRadius: '10px', opacity: reserved > 0 ? 1 : 0.05 }} /><div style={{ flex: free || 1, background: '#39ff14', height: '4px', borderRadius: '10px', opacity: free > 0 ? 1 : 0.05 }} /></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '15px' }}><MiniStat label="BAND" count={busy} color="#ff00ff" /><MiniStat label="BRON" count={reserved} color="#ffaa00" /><MiniStat label="BO'SH" count={free} color="#39ff14" /></div><div style={{ textAlign: 'right' }}><p style={{ fontSize: '8px', color: '#fff', margin: 0, fontWeight: '900', letterSpacing: '1px' }}>TUSHUM</p><b style={{ fontSize: '13px', color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div></div>
-                                </motion.div>
-                            );
-                        })}
-                    </motion.div>
-                )}
-
-                {activeTab === 'rooms' && selectedViewRoom && (
-                    <motion.div key="room-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-                            <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#0a0a0a', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ArrowLeft size={20} /></button>
-                            <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '950' }}>{rooms.find(r => r.id === selectedViewRoom.id)?.name?.toUpperCase()}</h1>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '10px' }}>
-                            {rooms.find(r => r.id === selectedViewRoom.id)?.Computers?.map(pc => {
-                                const info = calculateSessionInfo(pc, rooms.find(r => r.id === selectedViewRoom.id)?.pricePerHour);
-                                const s = pc.status.toLowerCase();
-                                const theme = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#222';
-                                return (
-                                    <motion.div key={pc.id} whileTap={{ scale: 0.94 }} onClick={() => setSelectedPC({ ...pc, roomPrice: rooms.find(r => r.id === selectedViewRoom.id)?.pricePerHour })} style={{ background: '#090909', border: `1px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.03)'}`, borderRadius: '24px', padding: '18px 8px', textAlign: 'center', cursor: 'pointer' }}><div style={{ fontSize: '11px', fontWeight: '950', marginBottom: '4px' }}>{pc.name}</div><div style={{ fontSize: '8px', fontWeight: '900', color: (s !== 'free') ? theme : '#888' }}>{s === 'free' ? 'BO\'SH' : (s === 'reserved' ? info.reservedInfo?.time : info.time)}</div></motion.div>
-                                );
-                            })}
-                        </div>
+                                ))}
+                            </>
+                        ) : (
+                            <div key="room-detail">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+                                    <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#0a0a0a', width: '42px', height: '42px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', color: '#fff' }}><ArrowLeft size={20} /></button>
+                                    <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '950' }}>{selectedViewRoom.name?.toUpperCase()}</h1>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '12px' }}>
+                                    {selectedViewRoom.Computers?.map(pc => {
+                                        const info = calculateSessionInfo(pc, selectedViewRoom.pricePerHour);
+                                        return (
+                                            <motion.div key={pc.id} whileTap={{ scale: 0.94 }} onClick={() => setSelectedPC({ ...pc, roomPrice: selectedViewRoom.pricePerHour })} style={{ background: '#090909', border: `1px solid ${pc.status !== 'free' ? '#7000ff' : 'rgba(255,255,255,0.03)'}`, borderRadius: '24px', padding: '18px 8px', textAlign: 'center' }}>
+                                                <div style={{ fontSize: '11px', fontWeight: '950', marginBottom: '4px' }}>{pc.name}</div>
+                                                <div style={{ fontSize: '8px', color: '#888' }}>{pc.status === 'free' ? 'BO\'SH' : info.time}</div>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
 
             <AnimatePresence>
                 {selectedPC && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(45px)' }} onClick={() => setSelectedPC(null)}>
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#0a0a0a', width: '100%', padding: '30px 25px 60px', borderRadius: '50px 50px 0 0', borderTop: '2px solid rgba(112, 0, 255, 0.4)', boxShadow: '0 -20px 80px rgba(112, 0, 255, 0.15)' }} onClick={e => e.stopPropagation()}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(45px)' }} onClick={() => { setSelectedPC(null); setIsReserveMode(false); }}>
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#0a0a0a', width: '100%', padding: '30px 25px 60px', borderRadius: '50px 50px 0 0', borderTop: '2px solid rgba(112, 0, 255, 0.4)' }} onClick={e => e.stopPropagation()}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                                <div><h1 style={{ margin: 0, fontSize: '30px', fontWeight: '950', color: '#fff' }}>{selectedPC.name}</h1><p style={{ color: '#aaa', fontSize: '11px', fontWeight: '900' }}>{(selectedPC.specs || 'PREMIUM PC').toUpperCase()}</p></div>
-                                <div style={{ textAlign: 'right', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                    <div style={{ textAlign: 'right' }}><p style={{ fontSize: '8px', color: '#888', margin: 0, fontWeight: '900', letterSpacing: '1px' }}>REAL TIME</p><b style={{ fontSize: '16px', color: '#fff' }}>{formatTashkentTime(new Date(nowTime))}</b></div>
-                                    <button onClick={() => setSelectedPC(null)} style={{ background: '#1c1c1c', width: '45px', height: '45px', borderRadius: '16px', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={22} /></button>
-                                </div>
+                                <div><h1 style={{ margin: 0, fontSize: '30px', fontWeight: '950' }}>{selectedPC.name}</h1><p style={{ color: '#aaa', fontSize: '11px' }}>ADMIN CONTROL</p></div>
+                                <button onClick={() => { setSelectedPC(null); setIsReserveMode(false); }} style={{ background: '#1c1c1c', width: '45px', height: '45px', borderRadius: '16px', border: 'none', color: '#fff' }}><X size={22} /></button>
                             </div>
 
-                            {(() => {
-                                const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice);
-                                const s = selectedPC.status.toLowerCase();
-                                const themeColor = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#222';
-                                return (
-                                    <div style={{ marginBottom: '35px' }}>
-                                        {s !== 'free' && s !== 'reserved' && (
-                                            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', padding: '35px 20px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                                <p style={{ fontSize: '11px', color: '#aaa', fontWeight: '950', letterSpacing: '5px' }}>TIME REMAINING</p>
-                                                <h1 style={{ fontSize: '88px', color: themeColor, fontWeight: '950', margin: '5px 0', letterSpacing: '-5px', textShadow: `0 0 40px ${themeColor}30` }}>{info.time}</h1>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginTop: '20px' }}>
-                                                    <div><p style={{ fontSize: '9px', color: '#aaa', margin: 0, fontWeight: '900' }}>BOSHLAHDY</p><b style={{ fontSize: '16px', color: '#fff' }}>{info.startTime || '--:--'}</b></div>
-                                                    <div style={{ width: '1px', background: '#222', height: '30px', margin: '5px auto' }} />
-                                                    <div><p style={{ fontSize: '9px', color: '#aaa', margin: 0, fontWeight: '900' }}>HISOBLAHDY</p><b style={{ fontSize: '24px', color: '#fff' }}>{info.cost?.toLocaleString()}</b></div>
-                                                </div>
+                            {isReserveMode ? (
+                                <div key="reserve-form">
+                                    <div style={{ position: 'relative' }}> <Contact2 className="res-icon" style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
+                                        <input className="res-input" placeholder="Mijoz ismi" value={resName} onChange={e => setResName(e.target.value)} /> </div>
+                                    <div style={{ position: 'relative' }}> <Phone className="res-icon" style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
+                                        <input className="res-input" placeholder="Tel raqami" value={resPhone} onChange={e => setResPhone(e.target.value)} /> </div>
+                                    <div style={{ position: 'relative' }}> <Clock className="res-icon" style={{ position: 'absolute', left: '15px', top: '20px', color: '#7000ff' }} />
+                                        <input className="res-input" type="time" value={resTime} onChange={e => setResTime(e.target.value)} /> </div>
+
+                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('reserve')} style={{ width: '100%', padding: '25px', borderRadius: '25px', background: '#ffaa00', color: '#000', border: 'none', fontSize: '18px', fontWeight: '950', marginTop: '10px' }}>BRONNI BAND QILISH 🔓</motion.button>
+                                    <button onClick={() => setIsReserveMode(false)} style={{ width: '100%', color: '#888', background: 'transparent', border: 'none', marginTop: '15px', fontWeight: '900' }}>ORQAGA</button>
+                                </div>
+                            ) : (
+                                <>
+                                    {selectedPC.status === 'free' ? (
+                                        <div key="free-ui">
+                                            <div style={{ position: 'relative', marginBottom: '20px' }}>
+                                                <Banknote style={{ position: 'absolute', left: '25px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={32} />
+                                                <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '30px 20px 30px 70px', background: '#000', border: '1px solid #222', borderRadius: '30px', color: '#39ff14', fontSize: '36px', fontWeight: '950' }} />
                                             </div>
-                                        )}
-                                        {s === 'reserved' && (
-                                            <div style={{ background: 'rgba(255, 170, 0, 0.08)', padding: '40px', borderRadius: '45px', border: '1px solid rgba(255,170,0,0.3)', textAlign: 'center' }}>
-                                                <UserIcon color="#ffaa00" size={45} style={{ marginBottom: '15px' }} />
-                                                <h3 style={{ fontSize: '30px', margin: 0, fontWeight: '950', color: '#fff' }}>{info.reservedInfo?.user}</h3>
-                                                <b style={{ fontSize: '22px', color: '#ffaa00' }}>{formatTashkentTime(new Date(info.reservedInfo?.time))}</b>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '25px' }}>
+                                                <QuickTouchBtn label="10.000 UZS" onClick={() => setStartAmountInput('10000')} className="vibrant-btn-label" />
+                                                <QuickTouchBtn label="20.000 UZS" onClick={() => setStartAmountInput('20000')} className="vibrant-btn-label" />
+                                                <QuickTouchBtn label="1 SOAT" onClick={() => handleAction('start', 60)} className="neon-purple" />
+                                                <QuickTouchBtn label="2 SOAT" onClick={() => handleAction('start', 120)} className="neon-purple" />
                                             </div>
-                                        )}
-                                        {s === 'free' && (
-                                            <div style={{ width: '100%' }}>
-                                                <div style={{ position: 'relative', marginBottom: '20px' }}>
-                                                    <Banknote style={{ position: 'absolute', left: '25px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={32} />
-                                                    <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '30px 20px 30px 70px', background: '#000', border: '1px solid #222', borderRadius: '30px', color: '#39ff14', fontSize: '36px', fontWeight: '950', textAlign: 'left' }} />
-                                                    <div style={{ position: 'absolute', right: '25px', top: '50%', transform: 'translateY(-50%)', color: '#fff', fontWeight: '950' }}>UZS</div>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '25px' }}>
-                                                    <QuickTouchBtn label="10.000 UZS" sub="10K" onClick={() => setStartAmountInput('10000')} className="vibrant-btn-label" />
-                                                    <QuickTouchBtn label="20.000 UZS" sub="20K" onClick={() => setStartAmountInput('20000')} className="vibrant-btn-label" />
-                                                    <QuickTouchBtn label="30.000 UZS" sub="30K" onClick={() => setStartAmountInput('30000')} className="vibrant-btn-label" />
-                                                    <QuickTouchBtn label="50.000 UZS" sub="50K" onClick={() => setStartAmountInput('50000')} className="vibrant-btn-label" />
-                                                    <QuickTouchBtn label="1 SOAT" sub="TIME" onClick={() => handleAction('start', 60)} className="neon-purple" />
-                                                    <QuickTouchBtn label="2 SOAT" sub="TIME" onClick={() => handleAction('start', 120)} className="neon-purple" />
-                                                    <QuickTouchBtn label="5 SOAT" sub="TIME" onClick={() => handleAction('start', 300)} className="neon-purple" />
-                                                    <QuickTouchBtn label="VIP UNLIM" sub="GHOST" onClick={() => handleAction('start')} className="neon-green" />
-                                                </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setIsReserveMode(true)} style={{ padding: '25px', borderRadius: '25px', background: 'rgba(255,170,0,0.1)', color: '#ffaa00', border: '1px solid rgba(255,170,0,0.3)', fontWeight: '950', fontSize: '16px' }}>BRON QILISH 📅</motion.button>
+                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ padding: '25px', borderRadius: '25px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontWeight: '950', fontSize: '18px' }}>START 🚀</motion.button>
                                             </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '28px', borderRadius: '28px', background: 'rgba(255, 68, 68, 0.15)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '18px', letterSpacing: '2px' }}>STOP ⏹️</motion.button>}
-                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '28px', borderRadius: '28px', background: selectedPC.status === 'busy' ? '#ffee32' : 'linear-gradient(45deg, #7000ff, #a000ff)', color: selectedPC.status === 'busy' ? '#000' : '#fff', border: 'none', fontWeight: '950', fontSize: '20px', gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto', boxShadow: selectedPC.status === 'free' ? '0 15px 50px rgba(112, 0, 255, 0.5)' : 'none' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'VAQTNI OCHISH 🚀'}</motion.button>
-                            </div>
+                                        </div>
+                                    ) : (
+                                        <div key="busy-ui">
+                                            <div style={{ textAlign: 'center', padding: '40px', background: 'rgba(255,255,255,0.03)', borderRadius: '40px', marginBottom: '25px' }}>
+                                                <p style={{ fontSize: '11px', color: '#888', letterSpacing: '5px', fontWeight: '950' }}>VAQT QOLDI</p>
+                                                <h1 style={{ fontSize: '80px', margin: 0, fontWeight: '950', color: '#39ff14' }}>{calculateSessionInfo(selectedPC).time}</h1>
+                                            </div>
+                                            <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ width: '100%', padding: '28px', borderRadius: '28px', background: 'rgba(255,68,68,0.15)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '20px' }}>STOP ⏹️</motion.button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <nav style={{ position: 'fixed', bottom: '20px', left: '15px', right: '15px', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(30px)', padding: '12px 10px', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
+            <nav style={{ position: 'fixed', bottom: '20px', left: '15px', right: '15px', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(30px)', padding: '12px 10px', borderRadius: '35px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.06)' }}>
                 {navItem('stats', 'Status', <LayoutGrid size={20} />)}
                 {navItem('rooms', 'Xarita', <Monitor size={20} />)}
-                {navItem('users', 'Mijozlar', <Users size={20} />)}
+                {navItem('users', 'Mijjzlar', <Users size={20} />)}
                 {navItem('payments', 'To\'lov', <Wallet size={20} />)}
             </nav>
         </div>
     );
 };
 
-const QuickTouchBtn = ({ label, sub, onClick, className }) => (
-    <motion.button
-        whileTap={{ scale: 0.94 }}
-        onClick={onClick}
-        style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '25px',
-            padding: '20px 10px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
-        }}
-    >
-        <span style={{ fontSize: '10px', fontWeight: '950', color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', pointerEvents: 'none' }}>{sub}</span>
-        <span className={className} style={{ fontSize: '17px', fontWeight: '950', pointerEvents: 'none' }}>{label}</span>
+const QuickTouchBtn = ({ label, onClick, className }) => (
+    <motion.button whileTap={{ scale: 0.94 }} onClick={onClick} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '25px', padding: '25px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span className={className} style={{ fontSize: '18px', fontWeight: '950' }}>{label}</span>
     </motion.button>
 );
 
 const DashItem = ({ label, icon, value }) => (
     <div><div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>{icon}<p style={{ fontSize: '8px', color: '#aaa', fontWeight: '900', margin: 0 }}>{label}</p></div><b style={{ fontSize: '16px', color: '#fff' }}>{value}</b></div>
 );
-const RoomAction = ({ icon, onClick, color = '#fff' }) => (
-    <button onClick={onClick} style={{ background: 'rgba(255,255,255,0.03)', width: '38px', height: '38px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {React.cloneElement(icon, { color: color })}
-    </button>
-);
-const MiniStat = ({ label, count, color }) => (<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '4px', height: '4px', background: color, borderRadius: '50%', boxShadow: `0 0 6px ${color}` }} /><span style={{ fontSize: '10px', color: count > 0 ? color : '#333', fontWeight: '950' }}>{count}</span></div>);
+const RoomAction = ({ icon, onClick, color = '#fff' }) => (<button onClick={onClick} style={{ background: 'rgba(255,255,255,0.03)', width: '38px', height: '38px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}> {React.cloneElement(icon, { color: color })} </button>);
+const MiniStat = ({ label, count, color }) => (<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '4px', height: '4px', background: color, borderRadius: '50%' }} /><span style={{ fontSize: '10px', color: count > 0 ? color : '#333', fontWeight: '950' }}>{count}</span></div>);
 
 export default ManagerDashboard;

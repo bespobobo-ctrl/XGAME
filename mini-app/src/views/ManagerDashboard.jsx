@@ -61,16 +61,29 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         return () => { clearInterval(dataInterval); clearInterval(timerInterval); };
     }, [activeTab, searchQuery]);
 
+    const formatTashkentTime = (dateStr) => {
+        if (!dateStr) return '--:--';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date)) return '--:--';
+            return new Intl.DateTimeFormat('en-GB', {
+                hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent', hour12: false
+            }).format(date);
+        } catch (e) { return '--:--'; }
+    };
+
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
-        if (!pc) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
+        if (!pc) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null, startTime: null };
         const price = roomPrice || 15000;
         const sessions = pc.Sessions || [];
         const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
 
-        if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
+        if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null, startTime: null };
+
+        const sTime = activeSession.startTime ? formatTashkentTime(activeSession.startTime) : null;
 
         if (activeSession.status === 'reserved') {
-            return { time: '--:--', cost: 0, progress: 0, remaining: '--:--', isCountdown: false, reservedInfo: { time: activeSession.reserveTime, user: activeSession.guestName || 'Mehmon' } };
+            return { time: '--:--', cost: 0, progress: 0, remaining: '--:--', isCountdown: false, reservedInfo: { time: activeSession.reserveTime, user: activeSession.guestName || 'Mehmon' }, startTime: null };
         }
 
         const start = new Date(activeSession.startTime);
@@ -84,12 +97,12 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             const rh = Math.floor(remainingSec / 3600).toString().padStart(2, '0');
             const rm = Math.floor((remainingSec % 3600) / 60).toString().padStart(2, '0');
             const rs = (remainingSec % 60).toString().padStart(2, '0');
-            return { time: `${rh}:${rm}:${rs}`, cost, progress: 0, remaining: `${rh}:${rm}:${rs}`, isCountdown: true };
+            return { time: `${rh}:${rm}:${rs}`, cost, progress: 0, remaining: `${rh}:${rm}:${rs}`, isCountdown: true, startTime: sTime };
         } else {
             const h = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
             const m = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
             const s = (diffSeconds % 60).toString().padStart(2, '0');
-            return { time: `${h}:${m}:${s}`, cost, progress: 0, remaining: `${h}:${m}:${s}`, isCountdown: false };
+            return { time: `${h}:${m}:${s}`, cost, progress: 0, remaining: `${h}:${m}:${s}`, isCountdown: false, startTime: sTime };
         }
     };
 
@@ -252,7 +265,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
                     <motion.div key="rooms" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
-                        {/* ROOMS LIST PRESERVED */}
+                        {/* ROOMS LIST CONTENT PRESERVED */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
                             <h1 style={{ fontSize: '20px', fontWeight: '950', margin: 0, letterSpacing: '-0.5px' }}>XONALAR</h1>
                             <motion.button
@@ -352,19 +365,23 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
-            {/* 🔥 CLUBTIMER PREMIUM MODAL (REDESIGNED) */}
             <AnimatePresence>
                 {selectedPC && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', p: '20px', backdropFilter: 'blur(30px)' }} onClick={() => setSelectedPC(null)}>
-                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} style={{ background: '#0e0e0e', width: '100%', maxWidth: '380px', borderRadius: '40px', padding: '30px', border: '1px solid rgba(112, 0, 255, 0.25)', boxShadow: '0 30px 100px rgba(0,0,0,0.8), 0 0 30px rgba(112, 0, 255, 0.1) inset' }} onClick={e => e.stopPropagation()}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', p: '15px', backdropFilter: 'blur(35px)' }} onClick={() => setSelectedPC(null)}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} style={{ background: '#0b0b0b', width: '100%', maxWidth: '380px', borderRadius: '45px', padding: '25px', border: '1px solid rgba(112, 0, 255, 0.25)', boxShadow: '0 30px 100px rgba(0,0,0,0.8)' }} onClick={e => e.stopPropagation()}>
 
-                            {/* Header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div style={{ background: '#7000ff', width: '4px', height: '24px', borderRadius: '2px' }} />
-                                    <div><h2 style={{ margin: 0, fontSize: '24px', fontWeight: '950', letterSpacing: '-0.5px' }}>{selectedPC.name}</h2><p style={{ margin: 0, fontSize: '10px', color: '#444', fontWeight: '900' }}>CONTROL PANEL</p></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ background: '#7000ff', width: '4px', height: '20px', borderRadius: '2px' }} />
+                                    <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '950' }}>{selectedPC.name}</h2>
                                 </div>
-                                <motion.button whileTap={{ scale: 0.85 }} onClick={() => setSelectedPC(null)} style={{ background: 'rgba(255,255,255,0.05)', p: '8px', borderRadius: '14px', border: 'none', color: '#555' }}><X size={20} /></motion.button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <p style={{ fontSize: '8px', color: '#444', margin: 0, fontWeight: '900' }}>REAL TIME</p>
+                                        <b style={{ fontSize: '12px', color: '#fff' }}>{formatTashkentTime(new Date(nowTime))}</b>
+                                    </div>
+                                    <motion.button whileTap={{ scale: 0.85 }} onClick={() => setSelectedPC(null)} style={{ background: 'rgba(255,255,255,0.05)', p: '6px', borderRadius: '12px', border: 'none', color: '#555' }}><X size={18} /></motion.button>
+                                </div>
                             </div>
 
                             {(() => {
@@ -373,40 +390,39 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 const themeColor = s === 'busy' ? (info.isCountdown ? '#39ff14' : '#ff00ff') : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#222';
 
                                 return (
-                                    <div style={{ marginBottom: '30px' }}>
+                                    <div style={{ marginBottom: '25px' }}>
                                         {s !== 'free' && s !== 'reserved' && (
-                                            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', padding: '30px 20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                                                <h1 style={{ fontSize: '56px', color: themeColor, fontWeight: '950', margin: 0, textShadow: `0 0 20px ${themeColor}30`, letterSpacing: '-3px' }}>{info.time}</h1>
-                                                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '15px' }}>
-                                                    <div><p style={{ fontSize: '8px', color: '#444', margin: 0, fontWeight: '900' }}>HISOBLANGAN</p><b style={{ fontSize: '16px' }}>{info.cost?.toLocaleString()} UZS</b></div>
-                                                    <div style={{ width: '1px', background: '#1a1a1a' }} />
-                                                    <div><p style={{ fontSize: '8px', color: '#444', margin: 0, fontWeight: '900' }}>TARIF</p><b style={{ fontSize: '16px' }}>{selectedPC.roomPrice?.toLocaleString()}</b></div>
+                                            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', padding: '25px 15px', borderRadius: '35px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                                <p style={{ fontSize: '10px', color: '#444', fontWeight: '950', letterSpacing: '3px' }}>TIME REMAINING</p>
+                                                <h1 style={{ fontSize: '72px', color: themeColor, fontWeight: '950', margin: '5px 0', letterSpacing: '-2px' }}>{info.time}</h1>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '15px' }}>
+                                                    <div><p style={{ fontSize: '8px', color: '#333', margin: 0, fontWeight: '900' }}>BOSHLAHDY</p><b style={{ fontSize: '13px' }}>{info.startTime || '--:--'}</b></div>
+                                                    <div style={{ width: '1px', background: '#1a1a1a', height: '20px', margin: '5px auto' }} />
+                                                    <div><p style={{ fontSize: '8px', color: '#333', margin: 0, fontWeight: '900' }}>HISOBLAHDY</p><b style={{ fontSize: '18px', color: '#fff' }}>{info.cost?.toLocaleString()}</b></div>
                                                 </div>
                                             </div>
                                         )}
                                         {s === 'reserved' && (
-                                            <div style={{ background: 'rgba(255, 170, 0, 0.05)', padding: '30px', borderRadius: '35px', border: '1px solid rgba(255,170,0,0.2)', textAlign: 'center' }}>
-                                                <div style={{ background: '#ffaa00', width: '50px', height: '50px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}><UserIcon color="#000" size={24} /></div>
-                                                <h3 style={{ fontSize: '26px', margin: 0, fontWeight: '950' }}>{info.reservedInfo?.user}</h3>
-                                                <b style={{ fontSize: '18px', color: '#ffaa00' }}>{info.reservedInfo?.time}</b>
+                                            <div style={{ background: 'rgba(255, 170, 0, 0.05)', padding: '25px', borderRadius: '35px', border: '1px solid rgba(255,170,0,0.15)', textAlign: 'center' }}>
+                                                <UserIcon color="#ffaa00" size={32} style={{ marginBottom: '10px' }} />
+                                                <h3 style={{ fontSize: '24px', margin: 0, fontWeight: '950' }}>{info.reservedInfo?.user}</h3>
+                                                <b style={{ fontSize: '16px', color: '#ffaa00' }}>{formatTashkentTime(info.reservedInfo?.time)}</b>
                                             </div>
                                         )}
                                         {s === 'free' && (
                                             <div>
-                                                <div style={{ position: 'relative', marginBottom: '15px' }}>
-                                                    <Banknote style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#222' }} size={24} />
-                                                    <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '25px 25px 25px 60px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '25px', color: '#39ff14', fontSize: '28px', fontWeight: '950' }} />
-                                                    <div style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', color: '#333', fontSize: '10px', fontWeight: '900' }}>UZS</div>
+                                                <div style={{ position: 'relative', marginBottom: '12px' }}>
+                                                    <Banknote style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#1a1a1a' }} size={20} />
+                                                    <input type="number" placeholder="SUMMA" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '22px 20px 22px 50px', background: '#000', border: '1px solid #151515', borderRadius: '22px', color: '#39ff14', fontSize: '24px', fontWeight: '950', textAlign: 'center' }} />
                                                 </div>
-                                                {/* QUICK ACTIONS GRID */}
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '20px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '15px' }}>
                                                     {[10000, 20000, 30000, 50000].map(amt => (
-                                                        <motion.button key={amt} whileTap={{ scale: 0.95 }} onClick={() => setStartAmountInput(amt.toString())} style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: '15px', p: '12px 5px', color: '#666', fontSize: '10px', fontWeight: '950' }}>{amt / 1000}K</motion.button>
+                                                        <motion.button key={amt} whileTap={{ scale: 0.95 }} onClick={() => setStartAmountInput(amt.toString())} style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: '12px', p: '10px 2px', color: '#555', fontSize: '9px', fontWeight: '950' }}>{amt / 1000}K</motion.button>
                                                     ))}
-                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 60)} style={{ background: 'rgba(112,0,255,0.1)', border: '1px solid #7000ff15', borderRadius: '15px', p: '12px 5px', color: '#7000ff', fontSize: '10px', fontWeight: '950' }}>1 SOAT</motion.button>
-                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 120)} style={{ background: 'rgba(112,0,255,0.1)', border: '1px solid #7000ff15', borderRadius: '15px', p: '12px 5px', color: '#7000ff', fontSize: '10px', fontWeight: '950' }}>2 SOAT</motion.button>
-                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 300)} style={{ background: 'rgba(112,0,255,0.1)', border: '1px solid #7000ff15', borderRadius: '15px', p: '12px 5px', color: '#7000ff', fontSize: '10px', fontWeight: '950' }}>5 SOAT</motion.button>
-                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start')} style={{ background: 'rgba(57,255,20,0.1)', border: '1px solid #39ff1415', borderRadius: '15px', p: '12px 5px', color: '#39ff14', fontSize: '10px', fontWeight: '950' }}>VIP UNLIM</motion.button>
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 60)} style={{ background: 'rgba(112,0,255,0.08)', border: '1px solid #7000ff10', borderRadius: '12px', p: '10px 2px', color: '#7000ff', fontSize: '9px', fontWeight: '950' }}>1 SOAT</motion.button>
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 120)} style={{ background: 'rgba(112,0,255,0.08)', border: '1px solid #7000ff10', borderRadius: '12px', p: '10px 2px', color: '#7000ff', fontSize: '9px', fontWeight: '950' }}>2 SOAT</motion.button>
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start', 300)} style={{ background: 'rgba(112,0,255,0.08)', border: '1px solid #7000ff10', borderRadius: '12px', p: '10px 2px', color: '#7000ff', fontSize: '9px', fontWeight: '950' }}>5 SOAT</motion.button>
+                                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('start')} style={{ background: 'rgba(57,255,20,0.08)', border: '1px solid #39ff1410', borderRadius: '12px', p: '10px 2px', color: '#39ff14', fontSize: '8px', fontWeight: '950' }}>VIP UNLIM</motion.button>
                                                 </div>
                                             </div>
                                         )}
@@ -414,23 +430,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 );
                             })()}
 
-                            {/* Footer Actions */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('stop')} style={{ padding: '20px', borderRadius: '22px', background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '14px', letterSpacing: '1px' }}>STOP ⏹️</motion.button>}
-                                <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')}
-                                    style={{
-                                        padding: '20px', borderRadius: '22px',
-                                        background: selectedPC.status === 'busy' ? '#ffee32' : 'linear-gradient(45deg, #7000ff, #a000ff)',
-                                        color: selectedPC.status === 'busy' ? '#000' : '#fff', border: 'none',
-                                        fontWeight: '950', fontSize: '14px', letterSpacing: '1px',
-                                        gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto',
-                                        boxShadow: selectedPC.status === 'free' ? '0 10px 30px rgba(112, 0, 255, 0.4)' : 'none'
-                                    }}
-                                >
-                                    {selectedPC.status === 'busy' ? 'PAUZA ⏸️' : 'START 🚀'}
-                                </motion.button>
+                                {selectedPC.status !== 'free' && <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('stop')} style={{ padding: '18px', borderRadius: '20px', background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', border: 'none', fontWeight: '950', fontSize: '13px' }}>STOP ⏹️</motion.button>}
+                                <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'start')} style={{ padding: '18px', borderRadius: '20px', background: selectedPC.status === 'busy' ? '#ffee32' : '#7000ff', color: '#000', border: 'none', fontWeight: '950', fontSize: '14px', gridColumn: (selectedPC.status === 'free' || selectedPC.status === 'reserved') ? 'span 2' : 'auto', boxShadow: selectedPC.status === 'free' ? '0 10px 30px rgba(112, 0, 255, 0.3)' : 'none' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'VAQTNI OCHISH 🚀'}</motion.button>
                             </div>
                         </motion.div>
                     </motion.div>

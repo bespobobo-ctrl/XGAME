@@ -58,26 +58,35 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         return () => { clearInterval(dataInterval); clearInterval(timerInterval); };
     }, [activeTab, searchQuery]);
 
+    // 🇺🇿 TOSHKENT VAQTI FORMATTERI
+    const formatTashkentTime = (dateStr) => {
+        if (!dateStr) return '--:--';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date)) return '--:--';
+            return new Intl.DateTimeFormat('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Asia/Tashkent',
+                hour12: false
+            }).format(date);
+        } catch (e) { return '--:--'; }
+    };
+
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
-        // Hozirgi aktiv yoki bron seansni topish
+        const pcName = (pc?.name || '').trim().toUpperCase();
+
+        // Hozirgi seansni topish
         const sessions = pc?.Sessions || [];
         const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
 
         if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
 
         if (activeSession.status === 'reserved') {
-            // BACKUP SOURCE: Stats ichidagi bronlar ro'yxatidan shu PC ni qidiramiz
-            const globalRes = stats?.upcomingReservations?.find(r => r.pc === pc.name);
+            // 🔄 BACKUP SOURCE: Global stats dagi bronlar bilan solishtirish (Robust Trim Match)
+            const globalRes = stats?.upcomingReservations?.find(r => (r.pc || '').trim().toUpperCase() === pcName);
 
-            // Bron vaqtini to'g'ri o'qish (Global ro'yxatdan yoki seansdan)
-            let rTimeStr = '--:--';
-            const rawTime = globalRes?.time || activeSession.reserveTime;
-            if (rawTime) {
-                const rt = new Date(rawTime);
-                rTimeStr = !isNaN(rt) ? rt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-            }
-
-            // Ismni (Global ro'yxatdan yoki seansdan) o'qish
+            const rTimeStr = formatTashkentTime(globalRes?.time || activeSession.reserveTime);
             const reserveUser = globalRes?.user || activeSession.User?.username || activeSession.guestName || `Mijoz #${activeSession.UserId || 'Mehmon'}`;
 
             return {
@@ -86,10 +95,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 progress: 0,
                 remaining: rTimeStr,
                 isCountdown: false,
-                reservedInfo: {
-                    time: rTimeStr,
-                    user: reserveUser
-                }
+                reservedInfo: { time: rTimeStr, user: reserveUser }
             };
         }
 
@@ -242,7 +248,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             ) : (
                                 stats.upcomingReservations.map((res, i) => (
                                     <div key={i} style={{ background: '#111', border: res.isUrgent ? '1.5px solid #ffaa0050' : '1px solid #1a1a1a', padding: '20px', borderRadius: '30px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div><h4 style={{ margin: 0, fontSize: '16px', fontWeight: '950' }}>{res.pc} • {res.user}</h4><p style={{ margin: 0, fontSize: '11px', color: '#444', marginTop: '3px' }}>Vaqt: {res.time ? new Date(res.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Belgilanmagan'}</p></div>
+                                        <div><h4 style={{ margin: 0, fontSize: '16px', fontWeight: '950' }}>{res.pc} • {res.user}</h4><p style={{ margin: 0, fontSize: '11px', color: '#444', marginTop: '3px' }}>Vaqt: {formatTashkentTime(res.time)}</p></div>
                                         {res.isUrgent && <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity }} style={{ background: '#ffaa00', color: '#000', padding: '8px 15px', borderRadius: '15px', fontSize: '10px', fontWeight: '950' }}>DIQQAT!</motion.div>}
                                     </div>
                                 ))

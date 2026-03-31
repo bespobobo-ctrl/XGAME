@@ -92,21 +92,26 @@ exports.reservePc = async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Bu kompyuter hozir bo'sh emas" });
         }
 
+        // 🇺🇿 TOSHKENT VAQTINI HISOBGA OLISH (UTC+5)
         let rDate = new Date();
         if (reserveTime && reserveTime.includes(':')) {
             const [h, m] = reserveTime.split(':');
-            rDate.setHours(parseInt(h), parseInt(m), 0, 0);
-            if (rDate < new Date()) rDate.setDate(rDate.getDate() + 1);
+            const now = new Date();
+            rDate = new Date(now.getTime());
+            rDate.setUTCHours(parseInt(h) - 5, parseInt(m), 0, 0);
+            if (rDate < now) {
+                rDate.setUTCDate(rDate.getUTCDate() + 1);
+            }
         }
 
         await Session.create({
             startTime: new Date(),
             ComputerId: pc.id,
             ClubId: user.ClubId,
-            UserId: user.id, // Add this
-            status: 'paused',
+            UserId: user.id,
+            status: 'reserved', // Statusni to'g'ridan-to'g'ri 'reserved' qilamiz
             reserveTime: rDate,
-            guestName: user.firstName || user.username,
+            guestName: user.firstName && user.firstName !== '_' ? user.firstName : user.username,
             guestPhone: user.telegramId || 'Telegram User'
         });
 

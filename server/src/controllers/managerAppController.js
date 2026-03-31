@@ -197,28 +197,33 @@ exports.addRoom = async (req, res, next) => {
             return res.status(400).json({ error: "Barcha maydonlarni to'ldiring!" });
         }
 
+        const count = parseInt(pcCount);
         const room = await Room.create({
             name,
             pricePerHour: parseInt(pricePerHour),
-            pcCount: parseInt(pcCount),
+            pcCount: count,
             ClubId: clubId
         });
 
         // Avtomatik PC larni yaratish (Auto-create PCs)
         const pcsToCreate = [];
-        for (let i = 1; i <= parseInt(pcCount); i++) {
+        for (let i = 1; i <= count; i++) {
             pcsToCreate.push({
-                name: `${i}-${name.substring(0, 3).toUpperCase()}`,
+                name: `${i}-${name.substring(0, 5).toUpperCase().trim()}`,
                 status: 'free',
                 specs: specs || "Xarakteristikasi kiritilmagan",
                 RoomId: room.id
             });
         }
-        await Computer.bulkCreate(pcsToCreate);
+
+        if (pcsToCreate.length > 0) {
+            await Computer.bulkCreate(pcsToCreate);
+        }
 
         res.json({ success: true, room });
     } catch (err) {
-        next(err);
+        console.error("ADD ROOM ERROR:", err);
+        res.status(500).json({ error: "Xona yaratishda xatolik!" });
     }
 };
 

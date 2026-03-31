@@ -1,4 +1,4 @@
-export const API_URL = 'https://161-35-196-164.sslip.io';
+export const API_URL = '';
 
 export const callAPI = async (endpoint, options = {}) => {
     const token = localStorage.getItem('x-token');

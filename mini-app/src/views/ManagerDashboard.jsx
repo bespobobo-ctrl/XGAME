@@ -258,7 +258,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
                     <motion.div key="rooms" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
-                        {/* Rooms List */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
                             <h1 style={{ fontSize: '20px', fontWeight: '950', margin: 0 }}>XONALAR</h1>
                             <motion.button whileTap={{ scale: 0.92 }} onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }} style={{ background: 'linear-gradient(45deg, #7000ff 0%, #a000ff 100%)', padding: '10px 18px', borderRadius: '16px', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '950', fontSize: '11px' }}><Plus size={14} strokeWidth={3} /> QO'SHISH</motion.button>
@@ -301,7 +300,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
-            {/* PC CONTROL MODAL */}
             <AnimatePresence>
                 {selectedPC && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(45px)' }} onClick={() => setSelectedPC(null)}>
@@ -347,14 +345,14 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                     <div style={{ position: 'absolute', right: '25px', top: '50%', transform: 'translateY(-50%)', color: '#555', fontWeight: '950' }}>UZS</div>
                                                 </div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '25px' }}>
-                                                    <QuickTouchBtn label="10.000 UZS" sub="10K" onClick={() => setStartAmountInput('10000')} color="#fff" />
-                                                    <QuickTouchBtn label="20.000 UZS" sub="20K" onClick={() => setStartAmountInput('20000')} color="#fff" />
-                                                    <QuickTouchBtn label="30.000 UZS" sub="30K" onClick={() => setStartAmountInput('30000')} color="#fff" />
-                                                    <QuickTouchBtn label="50.000 UZS" sub="50K" onClick={() => setStartAmountInput('50000')} color="#fff" />
-                                                    <QuickTouchBtn label="1 SOAT" sub="TIME" color="#a066ff" onClick={() => handleAction('start', 60)} />
-                                                    <QuickTouchBtn label="2 SOAT" sub="TIME" color="#a066ff" onClick={() => handleAction('start', 120)} />
-                                                    <QuickTouchBtn label="5 SOAT" sub="TIME" color="#a066ff" onClick={() => handleAction('start', 300)} />
-                                                    <QuickTouchBtn label="VIP UNLIM" sub="GHOST" color="#39ff14" onClick={() => handleAction('start')} />
+                                                    <QuickTouchBtn label="10.000 UZS" sub="10K" onClick={() => setStartAmountInput('10000')} txtColor="#ffffff" />
+                                                    <QuickTouchBtn label="20.000 UZS" sub="20K" onClick={() => setStartAmountInput('20000')} txtColor="#ffffff" />
+                                                    <QuickTouchBtn label="30.000 UZS" sub="30K" onClick={() => setStartAmountInput('30000')} txtColor="#ffffff" />
+                                                    <QuickTouchBtn label="50.000 UZS" sub="50K" onClick={() => setStartAmountInput('50000')} txtColor="#ffffff" />
+                                                    <QuickTouchBtn label="1 SOAT" sub="TIME" txtColor="#b480ff" onClick={() => handleAction('start', 60)} />
+                                                    <QuickTouchBtn label="2 SOAT" sub="TIME" txtColor="#b480ff" onClick={() => handleAction('start', 120)} />
+                                                    <QuickTouchBtn label="5 SOAT" sub="TIME" txtColor="#b480ff" onClick={() => handleAction('start', 300)} />
+                                                    <QuickTouchBtn label="VIP UNLIM" sub="GHOST" txtColor="#39ff14" onClick={() => handleAction('start')} />
                                                 </div>
                                             </div>
                                         )}
@@ -380,13 +378,13 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     );
 };
 
-const QuickTouchBtn = ({ label, sub, onClick, color = '#fff' }) => (
+const QuickTouchBtn = ({ label, sub, onClick, txtColor = '#ffffff' }) => (
     <motion.button
         whileTap={{ scale: 0.94 }}
         onClick={onClick}
         style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: `1px solid ${color === '#fff' ? 'rgba(255,255,255,0.1)' : color + '40'}`,
+            background: 'rgba(255,255,255,0.05)',
+            border: `1px solid ${txtColor === '#ffffff' ? 'rgba(255,255,255,0.1)' : txtColor + '50'}`,
             borderRadius: '25px',
             padding: '20px 10px',
             display: 'flex',
@@ -397,7 +395,7 @@ const QuickTouchBtn = ({ label, sub, onClick, color = '#fff' }) => (
         }}
     >
         <span style={{ fontSize: '10px', fontWeight: '950', color: 'rgba(255,255,255,0.3)', letterSpacing: '2px' }}>{sub}</span>
-        <span style={{ fontSize: '16px', fontWeight: '950', color }}>{label}</span>
+        <span style={{ fontSize: '16px', fontWeight: '950', color: txtColor }}>{label}</span>
     </motion.button>
 );
 

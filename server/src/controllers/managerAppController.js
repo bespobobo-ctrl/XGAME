@@ -81,11 +81,26 @@ exports.getStats = async (req, res, next) => {
         let adminPcRevenue = 0;
         let userPcRevenue = 0;
 
+        // 1. Completed Transactions
         allTransactions.forEach(t => {
             if (t.type === 'deposit') cashTopups += t.amount;
             if (t.type === 'pc_payment') {
                 if (t.UserId) userPcRevenue += t.amount;
                 else adminPcRevenue += t.amount;
+            }
+        });
+
+        // 2. ⚡️ LIVE REVENUE (Active Sessions)
+        allSessions.forEach(s => {
+            if (s.status === 'active' || s.status === 'paused') {
+                const roomPrice = s.Computer?.Room?.pricePerHour || 15000;
+                const effectiveNow = s.status === 'paused' ? new Date(s.pausedAt || Date.now()) : now;
+                const diffMs = effectiveNow - new Date(s.startTime);
+                const mins = Math.max(0, Math.floor(diffMs / 60000));
+                const currentCost = Math.round((mins / 60) * roomPrice);
+
+                if (s.UserId) userPcRevenue += currentCost;
+                else adminPcRevenue += currentCost;
             }
         });
 

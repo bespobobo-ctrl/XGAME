@@ -60,21 +60,31 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
         // Hozirgi aktiv yoki bron seansni topish
-        const activeSession = pc?.Sessions?.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
+        const sessions = pc?.Sessions || [];
+        const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
 
         if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
 
         if (activeSession.status === 'reserved') {
-            const timeStr = activeSession.reserveTime ? new Date(activeSession.reserveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+            // Bron vaqtini to'g'ri o'qish
+            let rTimeStr = '--:--';
+            if (activeSession.reserveTime) {
+                const rt = new Date(activeSession.reserveTime);
+                rTimeStr = !isNaN(rt) ? rt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+            }
+
+            // Ismni (username yoki mehmon ismi) o'qish
+            const reserveUser = activeSession.User?.username || activeSession.guestName || `ID: ${activeSession.UserId || 'Mehmon'}`;
+
             return {
-                time: timeStr,
+                time: rTimeStr,
                 cost: 0,
                 progress: 0,
-                remaining: timeStr,
+                remaining: rTimeStr,
                 isCountdown: false,
                 reservedInfo: {
-                    time: timeStr,
-                    user: activeSession.User?.username || activeSession.guestName || 'Mehmon'
+                    time: rTimeStr,
+                    user: reserveUser
                 }
             };
         }

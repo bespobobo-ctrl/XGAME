@@ -60,6 +60,7 @@ router.post('/manager/pc/:id/action', auth, authorize('manager'), asyncHandler(m
 router.post('/manager/rooms', auth, authorize('manager'), asyncHandler(managerAppCtrl.addRoom));
 router.put('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.editRoom));
 router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.deleteRoom));
+router.post('/manager/room/:id/lock', auth, authorize('manager'), asyncHandler(managerAppCtrl.lockRoom));
 router.get('/manager/topups', auth, authorize('manager'), asyncHandler(managerAppCtrl.getTopUpRequests));
 router.post('/manager/topups/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.updateTopUpStatus));
 router.patch('/manager/club/card', auth, authorize('manager'), asyncHandler(managerAppCtrl.updateClubCard));

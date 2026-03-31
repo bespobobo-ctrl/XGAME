@@ -668,7 +668,23 @@ exports.deleteRoom = async (req, res, next) => {
         await t.commit();
         res.json({ success: true });
     } catch (err) {
-        await t.rollback();
+        if (!t.finished) await t.rollback();
+        next(err);
+    }
+};
+
+exports.lockRoom = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const clubId = req.user.ClubId;
+        const room = await Room.findOne({ where: { id, ClubId: clubId } });
+        if (!room) return res.status(404).json({ error: 'Not found' });
+
+        room.isLocked = !room.isLocked;
+        await room.save();
+
+        res.json({ success: true, isLocked: room.isLocked });
+    } catch (err) {
         next(err);
     }
 };

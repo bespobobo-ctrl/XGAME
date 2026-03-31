@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3 } from 'lucide-react';
+import { Monitor, MonitorPlay, CalendarClock, ArrowLeft, Pencil, Trash2, Clock, Play, X, User as UserIcon, Plus, LayoutGrid, Users, Wallet, Search, Timer, AlertTriangle, BellRing, ChevronRight, CheckCircle2, XCircle, CreditCard, Send, Settings, Coins, TrendingUp, DollarSign, Zap, BarChart3, Lock, Unlock } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -77,7 +77,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         if (!pc) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
         const pcNameNormalized = (pc.name || '').trim().toUpperCase();
         const sessions = pc.Sessions || [];
-        // Only active/paused/reserved for UI timer
         const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
 
         if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
@@ -167,6 +166,25 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         } catch (e) { alert("Xatolik!"); }
     };
 
+    const handleDeleteRoom = async (e, id) => {
+        e.stopPropagation();
+        if (!window.confirm("Haqiqatan ham ushbu xonani va undagi barcha kompyuterlarni o'chirib yubormoqchimisiz?")) return;
+        try {
+            const res = await callAPI(`/api/manager/room/${id}`, { method: 'DELETE' });
+            if (res.success) fetchData();
+            else alert(res.error || "O'chirishda xatolik!");
+        } catch (e) { alert("Xatolik!"); }
+    };
+
+    const handleLockRoom = async (e, id) => {
+        e.stopPropagation();
+        try {
+            const res = await callAPI(`/api/manager/room/${id}/lock`, { method: 'POST' });
+            if (res.success) fetchData();
+            else alert(res.error || "Xatolik!");
+        } catch (e) { alert("Xatolik!"); }
+    };
+
     const navItem = (id, label, icon) => (
         <div onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === id ? '#7000ff' : '#444', gap: '4px', cursor: 'pointer' }}>
             {icon}
@@ -219,17 +237,24 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <button onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }} style={{ background: '#7000ff', p: '12px 20px', borderRadius: '20px', border: 'none', color: '#fff' }}><Plus size={16} /> QO'SHISH</button>
                         </div>
                         {rooms.map(room => (
-                            <div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: '#111', borderRadius: '40px', padding: '30px', marginBottom: '15px', border: '1.5px solid #1a1a1a', cursor: 'pointer' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                            <div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? '#1a1010' : '#111', borderRadius: '40px', padding: '30px', marginBottom: '15px', border: room.isLocked ? '1.5px solid #ff444430' : '1.5px solid #1a1a1a', cursor: 'pointer', position: 'relative' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                                     <div>
-                                        <h3 style={{ fontSize: '24px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>
-                                        <p style={{ fontSize: '12px', color: '#444' }}>{room.Computers?.length} PC • {room.pricePerHour} UZS</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <h3 style={{ fontSize: '24px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>
+                                            {room.isLocked && <Lock size={16} color="#ff4444" />}
+                                        </div>
+                                        <p style={{ fontSize: '12px', color: '#444' }}>{room.Computers?.length} PC • {room.pricePerHour.toLocaleString()} UZS</p>
                                     </div>
-                                    <div style={{ background: '#39ff1410', p: '12px', borderRadius: '15px' }}><BarChart3 color="#39ff14" size={24} /></div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button onClick={(e) => handleLockRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: room.isLocked ? '#39ff14' : '#ffee32' }}>{room.isLocked ? <Unlock size={18} /> : <Lock size={18} />}</button>
+                                        <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#fff' }}><Pencil size={18} /></button>
+                                        <button onClick={(e) => handleDeleteRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#ff4444' }}><Trash2 size={18} /></button>
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #1a1a1a', paddingTop: '15px' }}>
                                     <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI ISH</p><b style={{ color: '#fff' }}>{room.todayHours || 0} soat</b></div>
-                                    <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI TUSHUM</p><b style={{ color: '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
+                                    <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI TUSHUM</p><b style={{ color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
                                 </div>
                             </div>
                         ))}
@@ -240,8 +265,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     <motion.div key="room-detail" style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
                             <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', width: '45px', height: '45px', borderRadius: '15px', border: 'none', color: '#fff' }}><ArrowLeft /></button>
-                            <h2>{currentRoomFromState?.name?.toUpperCase()}</h2>
+                            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '950' }}>{currentRoomFromState?.name?.toUpperCase()}</h2>
                         </div>
+                        {currentRoomFromState?.isLocked && <div style={{ background: '#ff444415', color: '#ff4444', padding: '15px', borderRadius: '15px', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>⚠️ USHBU XONA QULFLANGAN</div>}
                         {roomReservations.length > 0 && roomReservations.map((res, i) => (
                             <motion.div key={i} whileTap={{ scale: 0.98 }} onClick={() => setSelectedPC({ ...res.pc, roomPrice: currentRoomFromState.pricePerHour })} style={{ background: '#ffaa0020', borderLeft: '4px solid #ffaa00', padding: '15px', borderRadius: '12px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
                                 <div><p style={{ fontWeight: '950', color: '#ffaa00', margin: 0 }}>{res.pc.name} BRON!</p><p style={{ fontSize: '10px', margin: 0 }}>{res.info.time} • {res.info.user}</p></div>
@@ -257,7 +283,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                         s === 'reserved' ? { color: '#ffaa00', icon: <CalendarClock size={20} />, label: info.reservedInfo?.time || 'BRON' } :
                                             { color: '#444', icon: <Monitor size={20} />, label: 'BO\'SH' };
                                 return (
-                                    <motion.div key={pc.id} onClick={() => setSelectedPC({ ...pc, roomPrice: currentRoomFromState.pricePerHour })} style={{ background: '#0a0a0a', border: `1.5px solid ${s !== 'free' ? theme.color : '#1a1a1a'}`, borderRadius: '22px', padding: '15px 5px', textAlign: 'center', cursor: 'pointer' }}>
+                                    <motion.div key={pc.id} onClick={() => setSelectedPC({ ...pc, roomPrice: currentRoomFromState.pricePerHour })} style={{ background: '#0a0a0a', border: `1.5px solid ${s !== 'free' ? theme.color : '#1a1a1a'}`, borderRadius: '22px', padding: '15px 5px', textAlign: 'center', cursor: 'pointer', opacity: currentRoomFromState.isLocked ? 0.6 : 1 }}>
                                         <div style={{ color: theme.color, marginBottom: '6px' }}>{theme.icon}</div>
                                         <div style={{ fontSize: '10px', fontWeight: '900' }}>{pc.name}</div>
                                         <div style={{ fontSize: '8px', color: (s !== 'free') ? theme.color : '#444' }}>{theme.label}</div>
@@ -293,8 +319,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 </div>
                                 {req.receiptImage && <img src={`${API_URL}/${req.receiptImage}`} alt="Check" style={{ width: '100%', borderRadius: '20px', marginBottom: '15px' }} />}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                    <button onClick={() => handleUpdateTopUp(req.id, 'approved')} style={{ background: '#39ff14', color: '#000', p: '15px', borderRadius: '15px', border: 'none', fontWeight: '900' }}>TASDIQLASH</button>
-                                    <button onClick={() => handleUpdateTopUp(req.id, 'rejected')} style={{ background: '#ff444420', color: '#ff4444', p: '15px', borderRadius: '15px', border: 'none' }}>RAD ETISH</button>
+                                    <button onClick={() => handleUpdateTopUp(req.id, 'approve')} style={{ background: '#39ff14', color: '#000', p: '15px', borderRadius: '15px', border: 'none', fontWeight: '900' }}>TASDIQLASH</button>
+                                    <button onClick={() => handleUpdateTopUp(req.id, 'reject')} style={{ background: '#ff444420', color: '#ff4444', p: '15px', borderRadius: '15px', border: 'none' }}>RAD ETISH</button>
                                 </div>
                             </div>
                         ))}
@@ -311,6 +337,20 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <h2>BALANS TO'LDIRISH</h2>
                             <input type="number" placeholder="Summani kiriting..." value={addBalanceAmount} onChange={e => setAddBalanceAmount(e.target.value)} style={{ width: '100%', padding: '20px', background: '#000', borderRadius: '20px', color: '#39ff14', fontSize: '24px', margin: '20px 0' }} />
                             <button onClick={() => handleAddUserBalance(selectedUser.id, addBalanceAmount)} style={{ width: '100%', padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900' }}>TASDIQLASH 💰</button>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {showAddRoomModal && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowAddRoomModal(false)}>
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px', borderRadius: '35px 35px 0 0' }} onClick={e => e.stopPropagation()}>
+                            <h2>{editingRoom ? 'TAHRIRLASH' : 'YANGI XONA'}</h2>
+                            <div style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
+                                <input placeholder="Nomi" value={newRoomData.name} onChange={e => setNewRoomData({ ...newRoomData, name: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
+                                <input type="number" placeholder="Narxi" value={newRoomData.pricePerHour} onChange={e => setNewRoomData({ ...newRoomData, pricePerHour: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
+                                {!editingRoom && <input type="number" placeholder="PC soni" value={newRoomData.pcCount} onChange={e => setNewRoomData({ ...newRoomData, pcCount: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />}
+                                <button onClick={handleAddRoom} style={{ padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900' }}>SAQLASH 🏢</button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -365,7 +405,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
-            <nav style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', background: 'rgba(10,10,12,0.85)', padding: '18px 0', borderRadius: '45px', display: 'flex', justifyContent: 'space-around', zIndex: 100, border: '1.5px solid #222' }}>
+            <nav style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', background: 'rgba(10,10,12,0.85)', padding: '18px 0', borderRadius: '45px', display: 'flex', justifyContent: 'space-around', zIndex: 100, border: '1.5px solid #222', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                 {navItem('stats', 'Status', <LayoutGrid size={24} />)}
                 {navItem('rooms', 'Xarita', <Monitor size={24} />)}
                 {navItem('users', 'Mijozlar', <Users size={24} />)}

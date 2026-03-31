@@ -66,15 +66,19 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
 
         if (activeSession.status === 'reserved') {
-            // Bron vaqtini to'g'ri o'qish
+            // BACKUP SOURCE: Stats ichidagi bronlar ro'yxatidan shu PC ni qidiramiz
+            const globalRes = stats?.upcomingReservations?.find(r => r.pc === pc.name);
+
+            // Bron vaqtini to'g'ri o'qish (Global ro'yxatdan yoki seansdan)
             let rTimeStr = '--:--';
-            if (activeSession.reserveTime) {
-                const rt = new Date(activeSession.reserveTime);
+            const rawTime = globalRes?.time || activeSession.reserveTime;
+            if (rawTime) {
+                const rt = new Date(rawTime);
                 rTimeStr = !isNaN(rt) ? rt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
             }
 
-            // Ismni (username yoki mehmon ismi) o'qish
-            const reserveUser = activeSession.User?.username || activeSession.guestName || `ID: ${activeSession.UserId || 'Mehmon'}`;
+            // Ismni (Global ro'yxatdan yoki seansdan) o'qish
+            const reserveUser = globalRes?.user || activeSession.User?.username || activeSession.guestName || `Mijoz #${activeSession.UserId || 'Mehmon'}`;
 
             return {
                 time: rTimeStr,

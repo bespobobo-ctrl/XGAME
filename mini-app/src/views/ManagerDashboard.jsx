@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info, UserPlus } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info, UserPlus, Coins, Timer } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -13,7 +13,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [selectedPC, setSelectedPC] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [selectedViewRoom, setSelectedViewRoom] = useState(null);
-    const [guestNameInput, setGuestNameInput] = useState('');
+    const [startAmountInput, setStartAmountInput] = useState('');
 
     // Payments
     const [topupRequests, setTopupRequests] = useState([]);
@@ -76,14 +76,22 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         if (!selectedPC || actionLoading) return;
         const pcId = selectedPC.id;
         setActionLoading(true);
+
+        let finalMinutes = expectedMinutes;
+        const amount = parseInt(startAmountInput);
+        if (action === 'start' && !expectedMinutes && amount > 0) {
+            // Calculate minutes from amount
+            finalMinutes = Math.floor((amount / selectedPC.roomPrice) * 60);
+        }
+
         try {
             const res = await callAPI(`/api/manager/pc/${pcId}/action`, {
                 method: 'POST',
-                body: JSON.stringify({ action, expectedMinutes, guestName: guestNameInput })
+                body: JSON.stringify({ action, expectedMinutes: finalMinutes })
             });
             if (res.success) {
                 setTimeout(fetchData, 400);
-                if (action === 'stop') { setSelectedPC(null); setGuestNameInput(''); }
+                if (action === 'stop' || action === 'start') { setSelectedPC(null); setStartAmountInput(''); }
             }
         } catch (e) { alert("Xatolik!"); }
         finally { setActionLoading(false); }
@@ -109,7 +117,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         const status = (pc?.status || 'free').toLowerCase();
         const isActive = status === 'busy' || status === 'paused';
         const { time, progress } = calculateSessionInfo(pc, room?.pricePerHour || 15000);
-        const activeSession = pc?.Sessions?.find(s => s.status === 'active' || s.status === 'paused');
 
         const getStatusTheme = () => {
             if (status === 'busy') return { color: '#ff00ff', icon: <MonitorPlay size={22} />, label: time };
@@ -124,7 +131,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {isActive && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', background: color, width: `${progress}%` }} />}
                 <div style={{ color: color, marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{pc.name}</div>
-                <div style={{ fontSize: '9px', fontWeight: 'bold', color: isActive ? color : '#444', marginTop: '2px' }}>{isActive && activeSession?.guestName ? activeSession.guestName.toUpperCase() : label}</div>
+                <div style={{ fontSize: '9px', fontWeight: 'bold', color: isActive ? color : '#444', marginTop: '2px' }}>{label}</div>
             </motion.div>
         );
     };
@@ -152,12 +159,27 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             <AnimatePresence mode="wait">
                 {activeTab === 'stats' && (
                     <motion.div key="stats" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ padding: '20px' }}>
-                        <div style={{ background: 'linear-gradient(135deg, #111, #050505)', padding: '45px 20px', borderRadius: '45px', border: '1px solid #1a1a1a', textAlign: 'center', marginBottom: '25px' }}>
-                            <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#444', fontWeight: '950', letterSpacing: '2px' }}>BUGUNGI DAROMAD</p>
-                            <h1 style={{ margin: 0, fontSize: '50px', fontWeight: '950', letterSpacing: '-2px' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h1>
+                        <div style={{ background: 'linear-gradient(135deg, #7000ff, #3000cc)', padding: '40px 20px', borderRadius: '45px', textAlign: 'center', marginBottom: '25px', boxShadow: '0 20px 40px rgba(112,0,255,0.2)' }}>
+                            <p style={{ margin: '0 0 5px', fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '950', letterSpacing: '2px' }}>UMUMIY TUSHUM</p>
+                            <h1 style={{ margin: 0, fontSize: '54px', fontWeight: '950', letterSpacing: '-2px' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h1>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '30px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '30px' }}>
+                            <div style={{ background: '#111', padding: '18px 10px', borderRadius: '25px', border: '1px solid #1a1a1a', textAlign: 'center' }}>
+                                <p style={{ fontSize: '7px', color: '#444', fontWeight: 'bold' }}>NAQD (KASSA)</p>
+                                <h3 style={{ margin: '5px 0 0', fontSize: '14px', color: '#39ff14', fontWeight: '950' }}>{stats?.revenue?.cashTopups?.toLocaleString()}</h3>
+                            </div>
+                            <div style={{ background: '#111', padding: '18px 10px', borderRadius: '25px', border: '1px solid #1a1a1a', textAlign: 'center' }}>
+                                <p style={{ fontSize: '7px', color: '#444', fontWeight: 'bold' }}>ADMIN PC</p>
+                                <h3 style={{ margin: '5px 0 0', fontSize: '14px', color: '#7000ff', fontWeight: '950' }}>{stats?.revenue?.adminPcRevenue?.toLocaleString()}</h3>
+                            </div>
+                            <div style={{ background: '#111', padding: '18px 10px', borderRadius: '25px', border: '1px solid #1a1a1a', textAlign: 'center' }}>
+                                <p style={{ fontSize: '7px', color: '#444', fontWeight: 'bold' }}>MIJOZ PC</p>
+                                <h3 style={{ margin: '5px 0 0', fontSize: '14px', color: '#fff', fontWeight: '950' }}>{stats?.revenue?.userPcRevenue?.toLocaleString()}</h3>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                             {[
                                 { l: 'JAMI PC', v: stats?.totalPCs, c: '#fff' },
                                 { l: 'BAND', v: stats?.busyPCs, c: '#ff00ff' },
@@ -175,10 +197,23 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
                     <motion.div key="rooms" style={{ padding: '20px' }}>
-                        {rooms.map(room => (
-                            <motion.div key={room.id} whileTap={{ scale: 0.98 }} onClick={() => setSelectedViewRoom(room)} style={{ background: '#111', borderRadius: '35px', padding: '25px', border: '1px solid #1a1a1a', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div><h3 style={{ margin: 0, fontSize: '19px', fontWeight: '950' }}>{room.name.toUpperCase()}</h3><p style={{ margin: '5px 0 0', fontSize: '11px', color: '#444' }}>{room.Computers?.length} PC • {room.pricePerHour?.toLocaleString()} UZS/S</p></div>
-                                <ChevronRight color="#222" />
+                        <h2 style={{ fontSize: '24px', fontWeight: '950', marginBottom: '25px' }}>XONALAR DAROMADI</h2>
+                        {stats?.roomStats?.map(room => (
+                            <motion.div key={room.id} whileTap={{ scale: 0.98 }} onClick={() => setSelectedViewRoom(rooms.find(r => r.id === room.id))} style={{ background: '#111', borderRadius: '35px', padding: '25px', border: '1px solid #1a1a1a', marginBottom: '15px', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: 0, right: 0, background: '#39ff1410', padding: '10px 20px', borderRadius: '0 0 0 20px', borderLeft: '1px solid #39ff1430', borderBottom: '1px solid #39ff1430' }}>
+                                    <span style={{ fontSize: '10px', color: '#39ff14', fontWeight: '950' }}>JAMI: {room.totalRevenue?.toLocaleString()} UZS</span>
+                                </div>
+                                <div style={{ marginTop: '10px' }}>
+                                    <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '950' }}>{room.name?.toUpperCase()}</h3>
+                                    <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Timer size={12} color="#444" /><span style={{ fontSize: '11px', color: '#666' }}>{room.totalHours} soat ishladi</span></div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Coins size={12} color="#444" /><span style={{ fontSize: '11px', color: '#666' }}>{room.pcCount} PC</span></div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '15px' }}>
+                                        <div style={{ background: '#050505', padding: '10px', borderRadius: '15px' }}><p style={{ fontSize: '8px', color: '#333', margin: 0 }}>ADMIN ORQALI</p><b style={{ fontSize: '12px', color: '#7000ff' }}>{room.adminRevenue?.toLocaleString()}</b></div>
+                                        <div style={{ background: '#050505', padding: '10px', borderRadius: '15px' }}><p style={{ fontSize: '8px', color: '#333', margin: 0 }}>MIJOZ ORQALI</p><b style={{ fontSize: '12px', color: '#fff' }}>{room.userRevenue?.toLocaleString()}</b></div>
+                                    </div>
+                                </div>
                             </motion.div>
                         ))}
                     </motion.div>
@@ -188,7 +223,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     <motion.div key="room-detail" style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}>
                             <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', border: '1px solid #222', color: '#fff', width: '45px', height: '45px', borderRadius: '15px' }}><ArrowLeft size={20} /></button>
-                            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '950' }}>{currentRoomFromState?.name?.toUpperCase()}</h2>
+                            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '950' }}>{currentRoomFromState?.name?.toUpperCase()}</h2>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
                             {currentRoomFromState?.Computers?.map(pc => renderPC(pc, currentRoomFromState))}
@@ -231,6 +266,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
+            {/* MODALS */}
             <AnimatePresence>
                 {selectedUser && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setSelectedUser(null)}>
@@ -243,9 +279,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
 
                 {selectedPC && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => { setSelectedPC(null); setGuestNameInput(''); }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => { setSelectedPC(null); setStartAmountInput(''); }}>
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px', borderRadius: '40px 40px 0 0', borderTop: '1px solid #1a1a1a' }} onClick={e => e.stopPropagation()}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}><h1 style={{ margin: 0, fontSize: '34px', fontWeight: '950' }}>{selectedPC.name}</h1><button onClick={() => { setSelectedPC(null); setGuestNameInput(''); }} style={{ background: '#1a1a1a', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '15px' }}><X size={24} /></button></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}><h1 style={{ margin: 0, fontSize: '34px', fontWeight: '950' }}>{selectedPC.name}</h1><button onClick={() => { setSelectedPC(null); setStartAmountInput(''); }} style={{ background: '#1a1a1a', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '15px' }}><X size={24} /></button></div>
 
                             {(selectedPC.status === 'busy' || selectedPC.status === 'paused') ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -257,8 +293,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             ) : (
                                 <div>
                                     <div style={{ position: 'relative', marginBottom: '20px' }}>
-                                        <UserPlus style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
-                                        <input placeholder="Mehmon ismi (ixtiyoriy)..." value={guestNameInput} onChange={e => setGuestNameInput(e.target.value)} style={{ width: '100%', padding: '18px 18px 18px 45px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '20px', color: '#fff', fontSize: '14px' }} />
+                                        <Banknote style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
+                                        <input type="number" placeholder="Necha so'mlik o'ynaydi? (Summa...)" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', padding: '18px 18px 18px 45px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '20px', color: '#39ff14', fontSize: '18px', fontWeight: 'bold' }} />
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                                         {[30, 60, 120, null].map(v => (

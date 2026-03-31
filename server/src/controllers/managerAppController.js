@@ -23,166 +23,81 @@ exports.getStats = async (req, res, next) => {
         const dStart = getTashkentDayStart();
         const wStart = startOfWeek(now, { weekStartsOn: 1 });
         const mStart = startOfMonth(now);
-        const yStart = startOfYear(now);
 
-        const allRooms = await Room.findAll({ where: { ClubId: clubId }, attributes: ['id'] });
+        const allRooms = await Room.findAll({ where: { ClubId: clubId } });
         const allRoomIds = allRooms.map(r => r.id);
 
-        const [recentSessions, allTransactions, completedSessions, allComputers, ongoingSessions, upcomingReservations, club, roomsWithPrice] = await Promise.all([
+        const [allTransactions, allSessions, allComputers, club] = await Promise.all([
+            Transaction.findAll({ where: { ClubId: clubId, createdAt: { [Op.gte]: dStart } } }),
             Session.findAll({
-                include: [
-                    { model: Computer, attributes: ['name'], where: { ClubId: clubId } },
-                    { model: User, attributes: ['username', 'phone'] }
-                ],
-                where: { status: 'completed' },
-                order: [['endTime', 'DESC']],
-                limit: 5
-            }),
-            Transaction.findAll({
-                where: { ClubId: clubId, createdAt: { [Op.gte]: yStart } },
-                order: [['createdAt', 'DESC']]
-            }),
-            Session.findAll({
-                include: [{ model: Computer, attributes: ['id', 'name'], where: { ClubId: clubId } }],
-                where: {
-                    startTime: { [Op.gte]: yStart },
-                    status: 'completed'
-                }
+                where: { ClubId: clubId, startTime: { [Op.gte]: dStart } },
+                include: [{ model: Computer, include: [Room] }]
             }),
             Computer.findAll({ where: { RoomId: { [Op.in]: allRoomIds } } }),
-            Session.findAll({
-                include: [{ model: Computer, where: { ClubId: clubId }, include: [Room] }],
-                where: { status: 'active', reserveTime: null, startTime: { [Op.gte]: yStart } }
-            }),
-            Session.findAll({
-                include: [
-                    { model: Computer, where: { ClubId: clubId }, include: [Room] },
-                    { model: User }
-                ],
-                where: { status: { [Op.in]: ['active', 'paused'] }, reserveTime: { [Op.ne]: null } },
-                order: [['reserveTime', 'ASC']]
-            }),
-            Club.findByPk(clubId),
-            Room.findAll({ where: { ClubId: clubId } })
+            Club.findByPk(clubId)
         ]);
 
-        const totalPCs = allComputers.length;
-        const busyPCs = allComputers.filter(c => c.status === 'busy').length;
-        const freePCs = allComputers.filter(c => c.status === 'free').length;
-        const reservedPCs = allComputers.filter(c => c.status === 'reserved').length;
+        // 💰 REVENUE BREAKDOWN
+        let cashTopups = 0; // Admin qo'shgan naqd pul (deposit)
+        let adminPcRevenue = 0; // Admin yoqgan (UserId null) PC lardan tushum
+        let userPcRevenue = 0; // Mijoz balansi orqali tushum
 
-        const pcStats = {};
-        allComputers.forEach(pc => {
-            const room = roomsWithPrice.find(r => r.id === pc.RoomId);
-            pcStats[pc.id] = {
-                name: pc.name,
-                id: pc.id,
-                roomId: pc.RoomId,
-                hours: 0,
-                revenue: 0,
-                pricePerHour: room?.pricePerHour || 15000
+        allTransactions.forEach(t => {
+            if (t.type === 'deposit') cashTopups += t.amount;
+            if (t.type === 'pc_payment') {
+                if (t.UserId) userPcRevenue += t.amount;
+                else adminPcRevenue += t.amount;
+            }
+        });
+
+        // 🏠 ROOM STATS
+        const roomStats = {};
+        allRooms.forEach(r => {
+            roomStats[r.id] = {
+                id: r.id,
+                name: r.name,
+                totalMinutes: 0,
+                adminRevenue: 0,
+                userRevenue: 0,
+                pcCount: r.pcCount
             };
         });
 
-        const flow = { day: 0, week: 0, month: 0, year: 0 };
-        const hours = { day: 0, week: 0, month: 0, year: 0 };
+        allSessions.forEach(s => {
+            const rid = s.Computer?.RoomId;
+            if (roomStats[rid]) {
+                const duration = s.status === 'completed' ? (s.totalMinutes || 0) : ((now - new Date(s.startTime)) / 60000);
+                roomStats[rid].totalMinutes += duration;
 
-        // 1. TUGALLANGAN SEANSIYALAR (Completed)
-        completedSessions.forEach(s => {
-            const h = (s.totalMinutes || 0) / 60;
-            const cost = s.totalCost || 0;
-            const pcId = s.ComputerId;
-            const sTime = new Date(s.startTime);
+                // Real-time (active) or completed financial check
+                const pph = allRooms.find(r => r.id === rid)?.pricePerHour || 15000;
+                const cost = s.status === 'completed' ? (s.totalCost || 0) : Math.round((duration / 60) * pph);
 
-            if (pcStats[pcId]) {
-                pcStats[pcId].hours += h;
-                pcStats[pcId].revenue += cost;
+                if (s.UserId) roomStats[rid].userRevenue += cost;
+                else roomStats[rid].adminRevenue += cost;
             }
-
-            flow.year++; hours.year += h;
-            if (sTime >= mStart) { hours.month += h; flow.month++; }
-            if (sTime >= wStart) { hours.week += h; flow.week++; }
-            if (sTime >= dStart) { hours.day += h; flow.day++; }
         });
 
-        // 2. DAVOM ETAYOTGAN SEANSIYALAR (Real-time active)
-        let activeUnrealizedRevenue = { day: 0, week: 0, month: 0, year: 0 };
-        ongoingSessions.forEach(s => {
-            const sTime = new Date(s.startTime);
-            const diffMs = Math.max(0, now - sTime);
-            const h = diffMs / 3600000;
-            const pcId = s.ComputerId;
-            const roomPrice = pcStats[pcId]?.pricePerHour || 15000;
-            const currentCost = Math.round(h * roomPrice);
-
-            if (pcStats[pcId]) {
-                pcStats[pcId].hours += h;
-                pcStats[pcId].revenue += currentCost;
-                pcStats[pcId].activeSessionStart = s.startTime;
-            }
-
-            activeUnrealizedRevenue.year += currentCost;
-            if (sTime >= mStart) activeUnrealizedRevenue.month += currentCost;
-            if (sTime >= wStart) activeUnrealizedRevenue.week += currentCost;
-            if (sTime >= dStart) activeUnrealizedRevenue.day += currentCost;
-
-            // Flow count for active sessions too
-            flow.year++;
-            if (sTime >= mStart) flow.month++;
-            if (sTime >= wStart) flow.week++;
-            if (sTime >= dStart) flow.day++;
-
-            hours.year += h;
-            if (sTime >= mStart) hours.month += h;
-            if (sTime >= wStart) hours.week += h;
-            if (sTime >= dStart) hours.day += h;
-        });
-
-        const revenue = {
-            day: allTransactions.filter(t => new Date(t.createdAt) >= dStart).reduce((sum, t) => sum + t.amount, 0) + activeUnrealizedRevenue.day,
-            week: allTransactions.filter(t => new Date(t.createdAt) >= wStart).reduce((sum, t) => sum + t.amount, 0) + activeUnrealizedRevenue.week,
-            month: allTransactions.filter(t => new Date(t.createdAt) >= mStart).reduce((sum, t) => sum + t.amount, 0) + activeUnrealizedRevenue.month,
-            year: allTransactions.reduce((sum, t) => sum + t.amount, 0) + activeUnrealizedRevenue.year
-        };
-
-        const topPCs = Object.values(pcStats).sort((a, b) => b.hours - a.hours).slice(0, 3);
-
-        const urgentReservations = upcomingReservations.filter(r => {
-            const rTime = new Date(r.reserveTime);
-            const diff = (rTime - now) / 60000;
-            return diff > 0 && diff <= 10; // Keyingi 10 daqiqa ichida
-        }).map(r => ({
-            pc: r.Computer?.name,
-            user: r.User?.username || r.guestName,
-            phone: r.User?.phone || r.guestPhone,
-            startTime: r.reserveTime
-        }));
+        const busyPCs = allComputers.filter(c => c.status === 'busy' || c.status === 'paused').length;
+        const freePCs = allComputers.filter(c => c.status === 'free' || c.status === 'available').length;
+        const reservedPCs = allComputers.filter(c => c.status === 'reserved').length;
 
         res.json({
-            fetchTime: new Date(),
-            totalPCs, busyPCs, freePCs, reservedPCs, urgentReservations,
             clubName: club?.name || 'GAME CLUB',
-            upcomingReservations: upcomingReservations.map(r => ({
-                id: r.id,
-                pc: r.Computer?.name,
-                room: r.Computer?.Room?.name || 'Unknown',
-                user: r.User?.username || r.guestName || 'Guest',
-                phone: r.User?.phone || r.guestPhone || '',
-                time: r.reserveTime
-            })),
-            recentSessions: recentSessions.map(s => ({
-                user: s.User?.username || 'Guest',
-                phone: s.User?.phone || '',
-                pc: s.Computer?.name,
-                time: s.endTime,
-                cost: s.totalCost,
-                duration: s.totalMinutes
-            })),
-            revenue, flow, hours, topPCs,
-            pcStats: Object.values(pcStats)
+            totalPCs: allComputers.length, busyPCs, freePCs, reservedPCs,
+            revenue: {
+                day: adminPcRevenue + userPcRevenue,
+                cashTopups,
+                adminPcRevenue,
+                userPcRevenue
+            },
+            roomStats: Object.values(roomStats).map(rs => ({
+                ...rs,
+                totalHours: Math.round(rs.totalMinutes / 60),
+                totalRevenue: rs.adminRevenue + rs.userRevenue
+            }))
         });
     } catch (err) {
-        console.error("STATS ERROR:", err);
         next(err);
     }
 };

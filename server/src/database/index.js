@@ -90,6 +90,9 @@ async function initializeDatabase() {
             try {
                 await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT;");
             } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0;");
+            } catch (e) { }
 
             await sequelize.sync({ alter: false });
             logger.info('✅ Database sinxronizatsiya qilindi (Safe mode)!');

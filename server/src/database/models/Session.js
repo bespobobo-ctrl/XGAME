@@ -37,7 +37,7 @@ const Session = sequelize.define('Session', {
         defaultValue: 0,
     },
     status: {
-        type: DataTypes.ENUM('active', 'paused', 'completed', 'forced_stop'),
+        type: DataTypes.ENUM('active', 'paused', 'completed', 'forced_stop', 'reserved'),
         defaultValue: 'active',
     },
     guestName: {
@@ -51,6 +51,10 @@ const Session = sequelize.define('Session', {
     notifiedAt: {
         type: DataTypes.DATE,
         allowNull: true,
+    },
+    penaltyApplied: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 });
 

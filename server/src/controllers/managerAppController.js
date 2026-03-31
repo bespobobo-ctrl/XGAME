@@ -372,7 +372,7 @@ async function handleReserve(pc, id, clubId, body) {
 
     // Mavjud sessiya borligini tekshirish
     const existing = await Session.findOne({
-        where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] } }
+        where: { ComputerId: id, status: { [Op.in]: ['active', 'paused', 'reserved'] } }
     });
     if (existing) {
         throw Object.assign(new Error('Bu kompyuter hozir band'), { status: 400 });
@@ -389,7 +389,7 @@ async function handleReserve(pc, id, clubId, body) {
         startTime: new Date(),
         ComputerId: id,
         ClubId: clubId,
-        status: 'paused',
+        status: 'reserved',
         reserveTime: rDate,
         guestName: guestName || null,
         guestPhone: guestPhone || null
@@ -434,8 +434,8 @@ async function handleResume(pc, id) {
  */
 async function handleCancelReserve(pc, id) {
     await Session.update(
-        { status: 'completed', endTime: new Date(), totalMinutes: 0, totalCost: 0 },
-        { where: { ComputerId: id, status: { [Op.in]: ['active', 'paused'] }, reserveTime: { [Op.ne]: null } } }
+        { status: 'completed', endTime: new Date(), totalMinutes: 0, totalCost: 0, penaltyApplied: true },
+        { where: { ComputerId: id, status: 'reserved' } }
     );
     pc.status = 'free';
 }

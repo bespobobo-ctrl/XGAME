@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info } from 'lucide-react';
+import { Monitor, MonitorPlay, Crown, CalendarClock, PowerOff, ChevronRight, ArrowLeft, Pencil, Trash2, Lock, Clock, Play, Square, Ticket, Diamond, Brush, X, CreditCard, Check, XCircle, Image as ImageIcon, Send, LayoutGrid, Users, History, Wallet, Search, Filter, Terminal, Plus, Minus, MessageSquare, Banknote, Info, UserPlus } from 'lucide-react';
 
 const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [stats, setStats] = useState(null);
@@ -13,6 +13,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [selectedPC, setSelectedPC] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [selectedViewRoom, setSelectedViewRoom] = useState(null);
+    const [guestNameInput, setGuestNameInput] = useState('');
 
     // Payments
     const [topupRequests, setTopupRequests] = useState([]);
@@ -78,11 +79,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         try {
             const res = await callAPI(`/api/manager/pc/${pcId}/action`, {
                 method: 'POST',
-                body: JSON.stringify({ action, expectedMinutes })
+                body: JSON.stringify({ action, expectedMinutes, guestName: guestNameInput })
             });
             if (res.success) {
                 setTimeout(fetchData, 400);
-                if (action === 'stop') setSelectedPC(null);
+                if (action === 'stop') { setSelectedPC(null); setGuestNameInput(''); }
             }
         } catch (e) { alert("Xatolik!"); }
         finally { setActionLoading(false); }
@@ -108,6 +109,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         const status = (pc?.status || 'free').toLowerCase();
         const isActive = status === 'busy' || status === 'paused';
         const { time, progress } = calculateSessionInfo(pc, room?.pricePerHour || 15000);
+        const activeSession = pc?.Sessions?.find(s => s.status === 'active' || s.status === 'paused');
 
         const getStatusTheme = () => {
             if (status === 'busy') return { color: '#ff00ff', icon: <MonitorPlay size={22} />, label: time };
@@ -122,7 +124,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {isActive && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', background: color, width: `${progress}%` }} />}
                 <div style={{ color: color, marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{pc.name}</div>
-                <div style={{ fontSize: '9px', fontWeight: 'bold', color: isActive ? color : '#444', marginTop: '2px' }}>{label}</div>
+                <div style={{ fontSize: '9px', fontWeight: 'bold', color: isActive ? color : '#444', marginTop: '2px' }}>{isActive && activeSession?.guestName ? activeSession.guestName.toUpperCase() : label}</div>
             </motion.div>
         );
     };
@@ -168,21 +170,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 </div>
                             ))}
                         </div>
-
-                        <div style={{ display: 'grid', gap: '10px' }}>
-                            {['week', 'month'].map(period => (
-                                <div key={period} style={{ background: '#111', padding: '20px 25px', borderRadius: '30px', border: '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '11px', fontWeight: '900', color: '#333' }}>{period.toUpperCase()}</span>
-                                    <span style={{ fontSize: '18px', fontWeight: '950' }}>{stats?.revenue?.[period]?.toLocaleString()} <small style={{ fontSize: '10px', color: '#222' }}>UZS</small></span>
-                                </div>
-                            ))}
-                        </div>
                     </motion.div>
                 )}
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
                     <motion.div key="rooms" style={{ padding: '20px' }}>
-                        <h2 style={{ fontSize: '24px', fontWeight: '950', marginBottom: '25px' }}>KLUB XARITASI</h2>
                         {rooms.map(room => (
                             <motion.div key={room.id} whileTap={{ scale: 0.98 }} onClick={() => setSelectedViewRoom(room)} style={{ background: '#111', borderRadius: '35px', padding: '25px', border: '1px solid #1a1a1a', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div><h3 style={{ margin: 0, fontSize: '19px', fontWeight: '950' }}>{room.name.toUpperCase()}</h3><p style={{ margin: '5px 0 0', fontSize: '11px', color: '#444' }}>{room.Computers?.length} PC • {room.pricePerHour?.toLocaleString()} UZS/S</p></div>
@@ -239,7 +231,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
-            {/* MODALS */}
             <AnimatePresence>
                 {selectedUser && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setSelectedUser(null)}>
@@ -252,9 +243,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
 
                 {selectedPC && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setSelectedPC(null)}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => { setSelectedPC(null); setGuestNameInput(''); }}>
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px', borderRadius: '40px 40px 0 0', borderTop: '1px solid #1a1a1a' }} onClick={e => e.stopPropagation()}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}><h1 style={{ margin: 0, fontSize: '34px', fontWeight: '950' }}>{selectedPC.name}</h1><button onClick={() => setSelectedPC(null)} style={{ background: '#1a1a1a', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '15px' }}><X size={24} /></button></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}><h1 style={{ margin: 0, fontSize: '34px', fontWeight: '950' }}>{selectedPC.name}</h1><button onClick={() => { setSelectedPC(null); setGuestNameInput(''); }} style={{ background: '#1a1a1a', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '15px' }}><X size={24} /></button></div>
+
                             {(selectedPC.status === 'busy' || selectedPC.status === 'paused') ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                     <div style={{ background: '#000', padding: '20px', borderRadius: '20px', textAlign: 'center' }}><p style={{ fontSize: '10px', color: '#444' }}>VAQT</p><h3>{calculateSessionInfo(selectedPC, selectedPC.roomPrice).time}</h3></div>
@@ -263,10 +255,16 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                     <button onClick={() => handleAction(selectedPC.status === 'busy' ? 'pause' : 'resume')} style={{ gridColumn: 'span 1', padding: '20px', borderRadius: '20px', background: '#ffee32', color: '#000', border: 'none', fontWeight: '950' }}>{selectedPC.status === 'busy' ? 'PAUZA' : 'DAVOM'}</button>
                                 </div>
                             ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                                    {[30, 60, 120, null].map(v => (
-                                        <button key={v} onClick={() => handleAction('start', v)} style={{ background: v ? '#111' : '#39ff14', color: v ? '#fff' : '#000', padding: '22px 0', borderRadius: '20px', border: 'none', fontWeight: '950' }}>{v ? `${v}m` : '∞'}</button>
-                                    ))}
+                                <div>
+                                    <div style={{ position: 'relative', marginBottom: '20px' }}>
+                                        <UserPlus style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
+                                        <input placeholder="Mehmon ismi (ixtiyoriy)..." value={guestNameInput} onChange={e => setGuestNameInput(e.target.value)} style={{ width: '100%', padding: '18px 18px 18px 45px', background: '#000', border: '1px solid #1a1a1a', borderRadius: '20px', color: '#fff', fontSize: '14px' }} />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                        {[30, 60, 120, null].map(v => (
+                                            <button key={v} onClick={() => handleAction('start', v)} style={{ background: v ? '#111' : '#39ff14', color: v ? '#fff' : '#000', padding: '22px 0', borderRadius: '20px', border: 'none', fontWeight: '950' }}>{v ? `${v}m` : '∞'}</button>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </motion.div>

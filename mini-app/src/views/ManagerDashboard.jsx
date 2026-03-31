@@ -220,13 +220,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <div><p style={{ fontSize: '9px', color: '#444' }}>ADMIN PC</p><b>{stats?.revenue?.adminPcRevenue?.toLocaleString()}</b></div>
                             <div style={{ textAlign: 'right' }}><p style={{ fontSize: '9px', color: '#444' }}>SAOTBAY (O'RT.)</p><b style={{ color: '#39ff14' }}>{Math.round(stats?.revenue?.avgHourly || 0).toLocaleString()} UZS</b></div>
                         </div>
-                        <h3 style={{ fontSize: '14px', marginBottom: '15px' }}>BUGUNGI BRONLAR</h3>
-                        {stats?.upcomingReservations?.map((res, i) => (
-                            <div key={i} style={{ background: '#111', padding: '18px', borderRadius: '30px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div><h4 style={{ margin: 0 }}>{res.pc} • {res.user}</h4><p style={{ fontSize: '10px', color: '#444' }}>Vaqt: {formatTashkentTime(res.time)}</p></div>
-                                {res.isUrgent && <AlertTriangle color="#ff4444" size={16} />}
-                            </div>
-                        ))}
                     </motion.div>
                 )}
 
@@ -236,28 +229,43 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <h2 style={{ fontSize: '24px' }}>XONALAR</h2>
                             <button onClick={() => { setEditingRoom(null); setNewRoomData({ name: '', pricePerHour: '', pcCount: '', specs: '' }); setShowAddRoomModal(true); }} style={{ background: '#7000ff', p: '12px 20px', borderRadius: '20px', border: 'none', color: '#fff' }}><Plus size={16} /> QO'SHISH</button>
                         </div>
-                        {rooms.map(room => (
-                            <div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? '#1a1010' : '#111', borderRadius: '40px', padding: '30px', marginBottom: '15px', border: room.isLocked ? '1.5px solid #ff444430' : '1.5px solid #1a1a1a', cursor: 'pointer', position: 'relative' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <h3 style={{ fontSize: '24px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>
-                                            {room.isLocked && <Lock size={16} color="#ff4444" />}
+                        {rooms.map(room => {
+                            const total = room.Computers?.length || 0;
+                            const busy = room.Computers?.filter(pc => pc.status === 'busy' || pc.status === 'paused').length || 0;
+                            const reserved = room.Computers?.filter(pc => pc.status === 'reserved').length || 0;
+                            const free = total - busy - reserved;
+
+                            return (
+                                <div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: room.isLocked ? '#1a1010' : '#111', borderRadius: '40px', padding: '30px', marginBottom: '15px', border: room.isLocked ? '1.5px solid #ff444430' : '1.5px solid #1a1a1a', cursor: 'pointer', position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <h3 style={{ fontSize: '24px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>
+                                                {room.isLocked && <Lock size={16} color="#ff4444" />}
+                                            </div>
+                                            <p style={{ fontSize: '12px', color: '#444' }}>{total} PC • {room.pricePerHour.toLocaleString()} UZS</p>
                                         </div>
-                                        <p style={{ fontSize: '12px', color: '#444' }}>{room.Computers?.length} PC • {room.pricePerHour.toLocaleString()} UZS</p>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={(e) => handleLockRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: room.isLocked ? '#39ff14' : '#ffee32' }}>{room.isLocked ? <Unlock size={18} /> : <Lock size={18} />}</button>
+                                            <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#fff' }}><Pencil size={18} /></button>
+                                            <button onClick={(e) => handleDeleteRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#ff4444' }}><Trash2 size={18} /></button>
+                                        </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={(e) => handleLockRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: room.isLocked ? '#39ff14' : '#ffee32' }}>{room.isLocked ? <Unlock size={18} /> : <Lock size={18} />}</button>
-                                        <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); setNewRoomData({ name: room.name, pricePerHour: room.pricePerHour, pcCount: room.pcCount, specs: room.Computers?.[0]?.specs || '' }); setShowAddRoomModal(true); }} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#fff' }}><Pencil size={18} /></button>
-                                        <button onClick={(e) => handleDeleteRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: '#ff4444' }}><Trash2 size={18} /></button>
+
+                                    {/* OCCUPANCY STATS */}
+                                    <div style={{ display: 'flex', gap: '12px', margin: '20px 0' }}>
+                                        <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BAND</p><b style={{ color: busy > 0 ? '#ff00ff' : '#444' }}>{busy}</b></div>
+                                        <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BRON</p><b style={{ color: reserved > 0 ? '#ffaa00' : '#444' }}>{reserved}</b></div>
+                                        <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BO'SH</p><b style={{ color: free > 0 ? '#39ff14' : '#444' }}>{free}</b></div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #1a1a1a', paddingTop: '15px' }}>
+                                        <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI ISH</p><b style={{ color: '#fff' }}>{room.todayHours || 0} soat</b></div>
+                                        <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI TUSHUM</p><b style={{ color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #1a1a1a', paddingTop: '15px' }}>
-                                    <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI ISH</p><b style={{ color: '#fff' }}>{room.todayHours || 0} soat</b></div>
-                                    <div><p style={{ fontSize: '10px', color: '#444', margin: 0 }}>BUGUNGI TUSHUM</p><b style={{ color: room.isLocked ? '#ff4444' : '#39ff14' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </motion.div>
                 )}
 
@@ -265,7 +273,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     <motion.div key="room-detail" style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
                             <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', width: '45px', height: '45px', borderRadius: '15px', border: 'none', color: '#fff' }}><ArrowLeft /></button>
-                            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '950' }}>{currentRoomFromState?.name?.toUpperCase()}</h2>
+                            <h2>{currentRoomFromState?.name?.toUpperCase()}</h2>
                         </div>
                         {currentRoomFromState?.isLocked && <div style={{ background: '#ff444415', color: '#ff4444', padding: '15px', borderRadius: '15px', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>⚠️ USHBU XONA QULFLANGAN</div>}
                         {roomReservations.length > 0 && roomReservations.map((res, i) => (
@@ -348,7 +356,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             <div style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
                                 <input placeholder="Nomi" value={newRoomData.name} onChange={e => setNewRoomData({ ...newRoomData, name: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
                                 <input type="number" placeholder="Narxi" value={newRoomData.pricePerHour} onChange={e => setNewRoomData({ ...newRoomData, pricePerHour: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
-                                {!editingRoom && <input type="number" placeholder="PC soni" value={newRoomData.pcCount} onChange={e => setNewRoomData({ ...newRoomData, pcCount: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />}
+                                <input type="number" placeholder="PC soni" value={newRoomData.pcCount} onChange={e => setNewRoomData({ ...newRoomData, pcCount: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
                                 <button onClick={handleAddRoom} style={{ padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900' }}>SAQLASH 🏢</button>
                             </div>
                         </motion.div>

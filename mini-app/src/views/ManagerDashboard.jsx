@@ -23,12 +23,14 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const [selectedReceipt, setSelectedReceipt] = useState(null);
     const [clubSettings, setClubSettings] = useState({ cardNumber: '', cardOwner: '' });
 
+    // 🔥 ANTI-CACHE fetchData
     const fetchData = async () => {
         try {
+            const timestamp = Date.now();
             const [s, r, t] = await Promise.all([
-                callAPI('/api/manager/stats'),
-                callAPI('/api/manager/rooms'),
-                callAPI('/api/manager/topups')
+                callAPI(`/api/manager/stats?t=${timestamp}`),
+                callAPI(`/api/manager/rooms?t=${timestamp}`),
+                callAPI(`/api/manager/topups?t=${timestamp}`)
             ]);
 
             const freshRooms = Array.isArray(r) ? r : [];
@@ -37,7 +39,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             setTopupRequests(Array.isArray(t) ? t : []);
             if (s?.cardNumber) setClubSettings({ cardNumber: s.cardNumber, cardOwner: s.cardName || s.cardOwner || '' });
 
-            // 🔥 REAL-TIME MODAL UPDATE (Reactive)
+            // 🔥 REAL-TIME MODAL & GRID SYNC
             if (selectedPC) {
                 const allPCs = freshRooms.flatMap(rm => rm.Computers || []);
                 const freshPC = allPCs.find(p => p.id === selectedPC.id);
@@ -57,7 +59,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         return () => { clearInterval(dataInterval); clearInterval(timerInterval); };
     }, []);
 
-    // Helper to calculate session info on the fly
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
         const activeSession = pc.Sessions?.find(s => s.status === 'active' || s.status === 'paused');
         if (!activeSession) return { time: "00:00:00", cost: 0, progress: 0 };
@@ -75,38 +76,42 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
     const handleAction = async (action, expectedMinutes = null, reserveTime = null, guestName = null) => {
         if (!selectedPC || actionLoading) return;
 
-        // 🔥 OPTIMISTIC UPDATE: Update UI immediately before server responds
-        const prevStatus = selectedPC.status;
-        const optimisticPC = { ...selectedPC };
-        if (action === 'start') optimisticPC.status = 'busy';
-        if (action === 'stop') optimisticPC.status = 'free';
-        if (action === 'pause') optimisticPC.status = 'paused';
-        if (action === 'resume') optimisticPC.status = 'busy';
-        setSelectedPC(optimisticPC);
+        // 🔥 FULL OPTIMISTIC UPDATE (UI grid also updates instantly)
+        const pcId = selectedPC.id;
+        const newStatus = action === 'start' || action === 'resume' ? 'busy' :
+            action === 'stop' ? 'free' :
+                action === 'pause' ? 'paused' : selectedPC.status;
+
+        // Update grid locally BEFORE server response
+        setRooms(prevRooms => prevRooms.map(room => ({
+            ...room,
+            Computers: room.Computers.map(c => c.id === pcId ? { ...c, status: newStatus } : c)
+        })));
+
+        // Update modal locally
+        setSelectedPC(prev => prev ? { ...prev, status: newStatus } : null);
 
         setActionLoading(true);
         try {
-            const res = await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
+            const res = await callAPI(`/api/manager/pc/${pcId}/action`, {
                 method: 'POST',
                 body: JSON.stringify({ action, expectedMinutes, reserveTime, guestName })
             });
 
             if (res.success) {
-                // Wait briefly for DB to commit and then sync
+                // Ensure backend has settled
                 setTimeout(async () => {
                     await fetchData();
                     if (action === 'stop') setSelectedPC(null);
-                }, 400);
-
+                }, 500);
                 setShowReservePicker(false);
                 setCustomMinutes('');
             } else {
-                // Rollins back on failure
-                setSelectedPC({ ...selectedPC, status: prevStatus });
+                fetchData(); // Rollback to real data
                 alert(res.error || res.message);
             }
         } catch (e) {
-            setSelectedPC({ ...selectedPC, status: prevStatus });
+            fetchData(); // Rollback to real data
             alert(e.message);
         }
         setActionLoading(false);
@@ -134,7 +139,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             await callAPI('/api/manager/broadcast', { method: 'POST', body: JSON.stringify({ message: broadcastMessage }) });
             alert('Xabar yuborildi!');
             setBroadcastMessage('');
-        } catch (e) { alert('Xatolik: ' + e.message); }
+        } catch (e) { alert('Xato: ' + e.message); }
         setIsBroadcasting(false);
     };
 
@@ -166,10 +171,12 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#7000ff', fontSize: '30px' }}>⚡</div>;
 
+    const currentRoomFromState = rooms.find(r => r.id === selectedViewRoom?.id) || selectedViewRoom;
+
     return (
         <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', paddingBottom: '120px', fontFamily: 'Inter, sans-serif' }}>
             <header style={{ padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(15px)', zIndex: 100, borderBottom: '1px solid #111' }}>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', letterSpacing: '0.1px' }}>{stats?.clubName?.toUpperCase() || 'GAMEZONE'} <span style={{ color: '#39ff14', fontSize: '10px', verticalAlign: 'middle', marginLeft: '5px' }}>●</span></h2>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', letterSpacing: '0.1px' }}>{(stats?.clubName || 'GAMEZONE').toUpperCase()} <span style={{ color: '#39ff14', fontSize: '10px', verticalAlign: 'middle', marginLeft: '5px' }}>●</span></h2>
                 <button onClick={onLogout} style={{ background: '#ff444415', border: 'none', color: '#ff4444', padding: '10px 18px', borderRadius: '14px', fontSize: '11px', fontWeight: 'bold' }}>LOGOUT</button>
             </header>
 
@@ -177,7 +184,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {activeTab === 'stats' && (
                     <motion.div key="stats" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ padding: '20px' }}>
 
-                        {/* 💰 LIVE REVENUE CARD (PREMIUM) */}
                         {(() => {
                             let liveTotalDay = stats?.revenue?.day || 0;
                             let isTicking = false;
@@ -219,15 +225,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                             );
                         })()}
 
-                        {stats?.urgentReservations?.length > 0 && (
-                            <div style={{ background: 'linear-gradient(90deg, #ffaa00, #ff4444)', padding: '15px', borderRadius: '25px', marginBottom: '20px' }}>
-                                <h4 style={{ margin: '0 0 5px', fontSize: '12px', color: '#000', fontWeight: 'bold', textAlign: 'center' }}>OGOHLANTIRISH: BRON VAQTI!</h4>
-                                {stats.urgentReservations.map((ur, i) => (
-                                    <p key={i} style={{ margin: 0, fontSize: '11px', color: '#000', textAlign: 'center' }}>{ur.pc} - {ur.user}</p>
-                                ))}
-                            </div>
-                        )}
-
                         <div style={{ display: 'grid', gap: '12px' }}>
                             {['day', 'week', 'month', 'year'].map(period => (
                                 <div key={period} style={{ background: 'linear-gradient(90deg, #111, #0a0a0a)', border: '1px solid #1a1a1a', padding: '18px 25px', borderRadius: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -255,10 +252,10 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     <motion.div key="room-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}>
                             <button onClick={() => setSelectedViewRoom(null)} style={{ background: '#111', border: '1px solid #222', color: '#fff', width: '45px', height: '45px', borderRadius: '15px' }}><ArrowLeft size={20} /></button>
-                            <div><h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900' }}>{selectedViewRoom.name.toUpperCase()}</h2><p style={{ margin: 0, fontSize: '11px', color: '#7000ff', fontWeight: 'bold' }}>{selectedViewRoom.Computers?.length} TA PC</p></div>
+                            <div><h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900' }}>{currentRoomFromState.name.toUpperCase()}</h2><p style={{ margin: 0, fontSize: '11px', color: '#7000ff', fontWeight: 'bold' }}>{currentRoomFromState.Computers?.length} TA PC</p></div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
-                            {selectedViewRoom.Computers?.map(pc => renderPC(pc, selectedViewRoom))}
+                            {currentRoomFromState.Computers?.map(pc => renderPC(pc, currentRoomFromState))}
                         </div>
                     </motion.div>
                 )}
@@ -278,17 +275,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                 </div>
                             ))
                         }
-                    </motion.div>
-                )}
-
-                {activeTab === 'settings' && (
-                    <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '20px' }}>
-                        <div style={{ background: '#111', padding: '30px', borderRadius: '40px', border: '1px solid #222' }}>
-                            <h4 style={{ margin: '0 0 25px', fontSize: '12px', color: '#7000ff' }}>TO'LOV SOZLAMALARI</h4>
-                            <div style={{ marginBottom: '20px' }}><label style={{ fontSize: '11px', color: '#444' }}>KARTA RAQAMI:</label><input value={clubSettings.cardNumber} onChange={e => setClubSettings({ ...clubSettings, cardNumber: e.target.value })} style={{ width: '100%', padding: '20px', background: '#000', border: '1px solid #1a1a1a', color: '#fff', borderRadius: '20px' }} /></div>
-                            <div style={{ marginBottom: '25px' }}><label style={{ fontSize: '11px', color: '#444' }}>KARTA EGASI:</label><input value={clubSettings.cardOwner} onChange={e => setClubSettings({ ...clubSettings, cardOwner: e.target.value })} style={{ width: '100%', padding: '20px', background: '#000', border: '1px solid #1a1a1a', color: '#fff', borderRadius: '20px' }} /></div>
-                            <button onClick={handleUpdateCard} style={{ width: '100%', padding: '22px', background: '#7000ff', color: '#fff', borderRadius: '20px', fontWeight: '900' }}>SAQLASH ✅</button>
-                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -314,7 +300,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
                             {!showReservePicker ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                    {((selectedPC.status || '').toLowerCase() === 'free' || (selectedPC.status || '').toLowerCase() === 'available' || (selectedPC.status || '').toLowerCase() === 'off') && (
+                                    {((selectedPC.status || '').toLowerCase() === 'free' || (selectedPC.status || '').toLowerCase() === 'off') && (
                                         <><div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                                             <button onClick={() => handleAction('start', 30)} disabled={actionLoading} style={{ background: '#1c1c1e', color: '#fff', padding: '20px 0', borderRadius: '22px', border: '1px solid #333', fontWeight: 'bold' }}>30m</button>
                                             <button onClick={() => handleAction('start', 60)} disabled={actionLoading} style={{ background: '#1c1c1e', color: '#fff', padding: '20px 0', borderRadius: '22px', border: '1px solid #333', fontWeight: 'bold' }}>1s</button>
@@ -328,7 +314,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                         <><button onClick={() => handleAction('stop')} disabled={actionLoading} style={{ background: '#ff444415', border: '1.5px solid #ff444444', color: '#ff4444', padding: '25px', borderRadius: '25px', fontWeight: '950' }}>STOP ⏹️</button>
                                             {(selectedPC.status || '').toLowerCase() === 'busy' ? <button onClick={() => handleAction('pause')} disabled={actionLoading} style={{ background: '#ffee32', color: '#000', padding: '25px', borderRadius: '25px', fontWeight: '950' }}>PAUSE ⏸️</button> : <button onClick={() => handleAction('resume')} disabled={actionLoading} style={{ background: '#39ff14', color: '#000', padding: '25px', borderRadius: '25px', fontWeight: '950' }}>RESUME ▶️</button>}</>
                                     )}
-                                    {(selectedPC.status || '').toLowerCase() === 'reserved' && <button onClick={() => handleAction('cancel_reserve')} disabled={actionLoading} style={{ gridColumn: 'span 2', padding: '25px', borderRadius: '25px', background: '#ff4444', color: '#fff', fontWeight: '950' }}>BEKOR</button>}
                                 </div>
                             ) : (
                                 <div style={{ background: '#000', padding: '30px', borderRadius: '40px', border: '1px solid #1a1a1a' }}>
@@ -342,13 +327,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <AnimatePresence>{selectedReceipt && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.98)', zIndex: 1100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <img src={`${API_URL}/${selectedReceipt.receiptImage.replace(/\\/g, '/')}`} style={{ maxWidth: '100%', maxHeight: '75vh', borderRadius: '35px' }} />
-                    <div style={{ display: 'flex', gap: '15px', marginTop: '30px', width: '100%', maxWidth: '450px' }}><button onClick={() => setSelectedReceipt(null)} style={{ flex: 1, padding: '20px', background: '#1c1c1e', borderRadius: '22px', color: '#fff' }}>YOPISH</button><button onClick={() => { handleApproveTopup(selectedReceipt.id, 'approve'); setSelectedReceipt(null); }} style={{ flex: 1.5, padding: '20px', background: '#39ff14', borderRadius: '22px', color: '#000', fontWeight: '950' }}>OK</button></div>
-                </motion.div>
-            )}</AnimatePresence>
         </div>
     );
 };

@@ -42,13 +42,14 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             if (Array.isArray(t)) setTopupRequests(t);
             if (activeTab === 'users' && Array.isArray(u)) setUsersList(u);
 
-            // Sync selected PC
+            // Sync selected PC to get fresh session status & latest room price
             if (selectedPC) {
                 const allPCs = (Array.isArray(r) ? r : []).flatMap(rm => rm.Computers || []);
                 const freshPC = allPCs.find(p => p.id === selectedPC.id);
                 if (freshPC) {
                     const room = (Array.isArray(r) ? r : []).find(rm => rm.id === freshPC.RoomId);
-                    setSelectedPC({ ...freshPC, roomPrice: room?.pricePerHour || selectedPC.roomPrice || 15000 });
+                    // QAT'IY XONA NARXI (pricePerHour)
+                    setSelectedPC({ ...freshPC, roomPrice: room?.pricePerHour || 15000 });
                 }
             }
         } catch (err) { console.error("Sync error:", err); }
@@ -75,6 +76,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
 
     const calculateSessionInfo = (pc, roomPrice = 15000) => {
         if (!pc) return { time: "00:00:00", cost: 0, progress: 0, remaining: "00:00:00", isCountdown: false, reservedInfo: null };
+        const price = roomPrice || 15000;
         const pcNameNormalized = (pc.name || '').trim().toUpperCase();
         const sessions = pc.Sessions || [];
         const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'reserved');
@@ -91,7 +93,9 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         const start = new Date(activeSession.startTime);
         const effectiveNow = activeSession.status === 'paused' ? new Date(activeSession.pausedAt || Date.now()) : nowTime;
         const diffSeconds = Math.max(0, Math.floor((effectiveNow - start) / 1000));
-        const cost = Math.floor((diffSeconds / 3600) * roomPrice);
+
+        // NARXNI HISОBLASH (PRICE BASED CALCULATION)
+        const cost = Math.floor((diffSeconds / 3600) * price);
         const progress = activeSession.expectedMinutes ? Math.min((diffSeconds / (activeSession.expectedMinutes * 60)) * 100, 100) : 0;
 
         if (activeSession.expectedMinutes) {
@@ -115,6 +119,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         let finalMinutes = expectedMinutes;
         const amount = parseInt(startAmountInput);
         if (action === 'start' && !expectedMinutes && amount > 0) {
+            // NARXNI TO'G'RI HISОBLASH (AMOUNT TO MINUTES)
             finalMinutes = Math.floor((amount / selectedPC.roomPrice) * 60);
         }
         try {
@@ -157,7 +162,12 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         try {
             const url = editingRoom ? `/api/manager/room/${editingRoom.id}` : '/api/manager/rooms';
             const res = await callAPI(url, {
-                method: editingRoom ? 'PUT' : 'POST', body: JSON.stringify(newRoomData)
+                method: editingRoom ? 'PUT' : 'POST', body: JSON.stringify({
+                    name: newRoomData.name,
+                    pricePerHour: parseInt(newRoomData.pricePerHour),
+                    pcCount: parseInt(newRoomData.pcCount),
+                    specs: newRoomData.specs || 'Standard'
+                })
             });
             if (res.success) {
                 alert(editingRoom ? "Xona tahrirlandi!" : "Xona muvaffaqiyatli qo'shildi!");
@@ -201,8 +211,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
         <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', paddingBottom: '130px', fontFamily: '"Outfit", sans-serif' }}>
 
             <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)', zIndex: 100 }}>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '950' }}>{(stats?.clubName || 'GAMEZONE').toUpperCase()}</h2>
-                <button onClick={onLogout} style={{ background: '#111', color: '#ff4444', padding: '10px 18px', borderRadius: '15px', border: 'none' }}>CHIQISH</button>
+                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '950' }}>{(stats?.clubName || 'GAMEZONE').toUpperCase()}</h1>
+                <button onClick={onLogout} style={{ background: '#111', color: '#ff4444', padding: '10px 18px', borderRadius: '15px', border: 'none' }}>CHIQUISH</button>
             </header>
 
             <AnimatePresence mode="wait">
@@ -210,7 +220,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                     <motion.div key="stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '20px' }}>
                         <div style={{ background: 'linear-gradient(135deg, #7000ff, #3000cc)', padding: '50px 20px', borderRadius: '45px', textAlign: 'center', marginBottom: '25px' }}>
                             <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>UMUMIY TUSHUM</p>
-                            <h1 style={{ fontSize: '64px', fontWeight: '950', margin: 0 }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h1>
+                            <h2 style={{ fontSize: '64px', fontWeight: '950', margin: 0 }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()}</h2>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
                             <div style={{ background: '#111', p: '25px', borderRadius: '35px', textAlign: 'center' }}><p style={{ fontSize: '9px', color: '#444' }}>KASSA (NAQD)</p><b>{stats?.revenue?.cashPcRevenue?.toLocaleString()}</b></div>
@@ -243,7 +253,7 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                                 <h3 style={{ fontSize: '24px', fontWeight: '950', margin: 0 }}>{room.name?.toUpperCase()}</h3>
                                                 {room.isLocked && <Lock size={16} color="#ff4444" />}
                                             </div>
-                                            <p style={{ fontSize: '12px', color: '#444' }}>{total} PC • {room.pricePerHour.toLocaleString()} UZS</p>
+                                            <p style={{ fontSize: '12px', color: '#444' }}>{total} PC • {room.pricePerHour.toLocaleString()} UZS/SOAT</p>
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <button onClick={(e) => handleLockRoom(e, room.id)} style={{ background: '#222', p: '10px', borderRadius: '15px', border: 'none', color: room.isLocked ? '#39ff14' : '#ffee32' }}>{room.isLocked ? <Unlock size={18} /> : <Lock size={18} />}</button>
@@ -252,7 +262,6 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                         </div>
                                     </div>
 
-                                    {/* OCCUPANCY STATS */}
                                     <div style={{ display: 'flex', gap: '12px', margin: '20px 0' }}>
                                         <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BAND</p><b style={{ color: busy > 0 ? '#ff00ff' : '#444' }}>{busy}</b></div>
                                         <div style={{ flex: 1, background: '#0a0a0a', p: '10px', borderRadius: '15px', textAlign: 'center', border: '1px solid #1a1a1a' }}><p style={{ fontSize: '8px', color: '#444', margin: 0 }}>BRON</p><b style={{ color: reserved > 0 ? '#ffaa00' : '#444' }}>{reserved}</b></div>
@@ -305,13 +314,13 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {activeTab === 'users' && (
                     <motion.div key="users" style={{ padding: '20px' }}>
                         <div style={{ position: 'relative', marginBottom: '20px' }}>
-                            <Search style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={20} />
+                            <Search style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={18} />
                             <input placeholder="Mijozni qidirish..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '18px 50px', background: '#111', border: '1px solid #1a1a1a', borderRadius: '25px', color: '#fff' }} />
                         </div>
                         {usersList.map(u => (
                             <div key={u.id} style={{ background: '#111', borderRadius: '30px', padding: '20px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div><h4 style={{ margin: 0 }}>{u.username?.toUpperCase()}</h4><p style={{ fontSize: '11px', color: '#39ff14' }}>{u.balance?.toLocaleString()} UZS</p></div>
-                                <button onClick={() => setSelectedUser(u)} style={{ background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '15px' }}>BALANS +</button>
+                                <button onClick={() => setSelectedUser(u)} style={{ background: '#7000ff', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '15px', fontWeight: '700' }}>BALANS +</button>
                             </div>
                         ))}
                     </motion.div>
@@ -342,8 +351,8 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {selectedUser && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setSelectedUser(null)}>
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px', borderRadius: '35px 35px 0 0' }} onClick={e => e.stopPropagation()}>
-                            <h2>BALANS TO'LDIRISH</h2>
-                            <input type="number" placeholder="Summani kiriting..." value={addBalanceAmount} onChange={e => setAddBalanceAmount(e.target.value)} style={{ width: '100%', padding: '20px', background: '#000', borderRadius: '20px', color: '#39ff14', fontSize: '24px', margin: '20px 0' }} />
+                            <h2 style={{ fontWeight: '900' }}>BALANS TO'LDIRISH</h2>
+                            <input type="number" placeholder="Summani kiriting..." value={addBalanceAmount} onChange={e => setAddBalanceAmount(e.target.value)} style={{ width: '100%', padding: '20px', background: '#000', borderRadius: '20px', color: '#39ff14', fontSize: '24px', margin: '20px 0', border: '1px solid #1a1a1a' }} />
                             <button onClick={() => handleAddUserBalance(selectedUser.id, addBalanceAmount)} style={{ width: '100%', padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900' }}>TASDIQLASH 💰</button>
                         </motion.div>
                     </motion.div>
@@ -352,12 +361,15 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {showAddRoomModal && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowAddRoomModal(false)}>
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} style={{ background: '#111', width: '100%', padding: '40px 25px', borderRadius: '35px 35px 0 0' }} onClick={e => e.stopPropagation()}>
-                            <h2>{editingRoom ? 'TAHRIRLASH' : 'YANGI XONA'}</h2>
+                            <h2 style={{ fontWeight: '900' }}>{editingRoom ? 'TAHRIRLASH' : 'YANGI XONA'}</h2>
                             <div style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
-                                <input placeholder="Nomi" value={newRoomData.name} onChange={e => setNewRoomData({ ...newRoomData, name: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
-                                <input type="number" placeholder="Narxi" value={newRoomData.pricePerHour} onChange={e => setNewRoomData({ ...newRoomData, pricePerHour: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
-                                <input type="number" placeholder="PC soni" value={newRoomData.pcCount} onChange={e => setNewRoomData({ ...newRoomData, pcCount: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff' }} />
-                                <button onClick={handleAddRoom} style={{ padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900' }}>SAQLASH 🏢</button>
+                                <label style={{ fontSize: '12px', color: '#444' }}>XONA NOMI</label>
+                                <input placeholder="Nomi" value={newRoomData.name} onChange={e => setNewRoomData({ ...newRoomData, name: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff', border: '1px solid #1a1a1a' }} />
+                                <label style={{ fontSize: '12px', color: '#444' }}>NARXI (1 SOAT UCHUN)</label>
+                                <input type="number" placeholder="Narxi" value={newRoomData.pricePerHour} onChange={e => setNewRoomData({ ...newRoomData, pricePerHour: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff', border: '1px solid #1a1a1a' }} />
+                                <label style={{ fontSize: '12px', color: '#444' }}>PCLAR SONI</label>
+                                <input type="number" placeholder="PC soni" value={newRoomData.pcCount} onChange={e => setNewRoomData({ ...newRoomData, pcCount: e.target.value })} style={{ padding: '20px', background: '#000', borderRadius: '20px', color: '#fff', border: '1px solid #1a1a1a' }} />
+                                <button onClick={handleAddRoom} style={{ padding: '20px', background: '#39ff14', color: '#000', borderRadius: '20px', fontWeight: '900', marginTop: '10px' }}>SAQLASH 🏢</button>
                             </div>
                         </motion.div>
                     </motion.div>

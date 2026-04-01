@@ -29,7 +29,7 @@ const ManageUsers = ({ stats }) => {
     const handleTopup = async () => {
         if (!selectedUser || !topupAmount) return;
         try {
-            const res = await callAPI(`/api/manager/user/${selectedUser.id}/topup`, {
+            const res = await callAPI(`/api/manager/user/${selectedUser.id}/balance`, {
                 method: 'POST',
                 body: JSON.stringify({ amount: topupAmount })
             });

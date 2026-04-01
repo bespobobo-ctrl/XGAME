@@ -245,13 +245,37 @@ class ManagerAppController {
             const clubId = req.user?.ClubId;
             if (!clubId) return res.status(403).json({ error: "Access Denied." });
 
+            const { search } = req.query;
+            let where;
+
+            if (search) {
+                // Search both in current club AND global unassigned users
+                where = {
+                    [Op.and]: [
+                        { [Op.or]: [{ ClubId: clubId }, { ClubId: null }] },
+                        {
+                            [Op.or]: [
+                                { username: { [Op.like]: `%${search}%` } },
+                                { telegramId: { [Op.like]: `%${search}%` } },
+                                { firstName: { [Op.like]: `%${search}%` } }
+                            ]
+                        }
+                    ]
+                };
+            } else {
+                // Regular list: only this club
+                where = { ClubId: clubId };
+            }
+
             const users = await User.findAll({
-                where: { ClubId: clubId, role: 'customer' },
-                attributes: ['id', 'username', 'firstName', 'lastName', 'telegramId', 'balance', 'status', 'lastActive'],
-                order: [['lastActive', 'DESC']]
+                where,
+                attributes: ['id', 'username', 'firstName', 'lastName', 'telegramId', 'balance', 'status', 'lastActive', 'role', 'ClubId'],
+                order: [['lastActive', 'DESC']],
+                limit: search ? 20 : 50
             });
             res.json(users);
         } catch (error) {
+            console.error("getUsers error:", error);
             res.status(500).json({ error: error.message });
         }
     }
@@ -261,8 +285,16 @@ class ManagerAppController {
             const clubId = req.user?.ClubId;
             if (!clubId) return res.status(403).json({ error: "Access Denied." });
 
-            const user = await User.findOne({ where: { id: req.params.id, ClubId: clubId } });
+            const user = await User.findOne({
+                where: { id: req.params.id, [Op.or]: [{ ClubId: clubId }, { ClubId: null }] }
+            });
             if (!user) return res.status(404).json({ error: "Foydalanuvchi topilmadi" });
+
+            // Automatically link to club if unassigned
+            if (user.ClubId === null) {
+                user.ClubId = clubId;
+                if (!user.role) user.role = 'customer';
+            }
 
             const { amount } = req.body;
             const parsedAmount = parseInt(amount);

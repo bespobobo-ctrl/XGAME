@@ -36,6 +36,7 @@ app.get('/ping', (req, res) => {
     res.json({
         message: 'GameZone API is active! 🚀',
         version: config.API_STABILITY_VERSION,
+        deployToken: '67c8c91_SAFETY_ACTIVE', // Bu men qo'shgan so'nggi commit ID
         status: 'OK'
     });
 });

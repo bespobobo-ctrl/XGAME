@@ -47,7 +47,11 @@ async function startServer() {
         // 4. Billing Service
         startBillingService(io);
 
-        // 5. Start HTTP Server
+        // 5. Reservation Monitoring (10m / 5m / penalty)
+        const reservationScheduler = require('./scheduler/reservationScheduler');
+        reservationScheduler.start(io);
+
+        // 6. Start HTTP Server
         const PORT = config.PORT || 3001;
         server.listen(PORT, () => {
             console.log(`🔥 Server running at: http://localhost:${PORT}`);

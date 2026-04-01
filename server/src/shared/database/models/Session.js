@@ -75,6 +75,26 @@ const Session = sequelize.define('Session', {
     consumedSeconds: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
+    },
+    notified10m: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    notified5m: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    notifiedStart: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    notifiedPenalty: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    userResponse: {
+        type: DataTypes.STRING, // 'coming', 'cancel'
+        allowNull: true
     }
 });
 

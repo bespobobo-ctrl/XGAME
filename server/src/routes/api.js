@@ -67,6 +67,7 @@ router.patch('/manager/club/card', auth, authorize('manager'), asyncHandler(mana
 router.get('/manager/users', auth, authorize('manager'), asyncHandler(managerAppCtrl.getUsers));
 router.post('/manager/user/:id/balance', auth, authorize('manager'), asyncHandler(managerAppCtrl.addUserBalance));
 router.get('/manager/user/:id/details', auth, authorize('manager'), asyncHandler(managerAppCtrl.getUserDetails));
+router.post('/manager/reservation/:id/confirm-penalty-warning', auth, authorize('manager'), asyncHandler(managerAppCtrl.confirmPenaltyWarning));
 
 /**
  * 🎮 PLAYER DASHBOARD (Gamer Profile)

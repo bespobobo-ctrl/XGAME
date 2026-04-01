@@ -356,6 +356,23 @@ class ManagerAppController {
         }
     }
 
+    async confirmPenaltyWarning(req, res) {
+        try {
+            const { id } = req.params;
+            const session = await Session.findByPk(id);
+            if (!session || session.status !== 'reserved') {
+                return res.status(404).json({ error: "Bron topilmadi yoki allaqachon faollashtirilgan." });
+            }
+
+            const reservationScheduler = require('../scheduler/reservationScheduler');
+            await reservationScheduler.sendFinalPenaltyWarning(session);
+
+            res.json({ success: true, message: "Oxirgi ogohlantirish yuborildi." });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // ═══════════════════════════════════════
     // ⚙️ SETUP & BROADCAST
     // ═══════════════════════════════════════

@@ -1,6 +1,6 @@
 require('dotenv').config({ path: '../../.env' });
 const TelegramBot = require('node-telegram-bot-api');
-const { User, Computer, Club } = require('../../server/src/shared/database/index');
+const { User, Computer, Club, Session } = require('../../server/src/shared/database/index');
 const i18n = require('./services/i18n');
 
 const token = process.env.BOT_TOKEN;
@@ -93,6 +93,32 @@ bot.on('callback_query', async (query) => {
         const user = await User.findOne({ where: { telegramId: String(userId) } });
         if (!user) return;
         const lang = user.language || 'uz';
+
+        if (action.startsWith('coming_')) {
+            const sessionId = action.split('_')[1];
+            const session = await Session.findByPk(sessionId);
+            if (session) {
+                await session.update({ userResponse: 'coming' });
+                bot.sendMessage(chatId, "✅ <b>Ajoyib!</b>\n\nSizni kutyapmiz. Adminga 'yo'lda' ekanligingiz haqida xabar yuborildi. ✨", { parse_mode: 'HTML' });
+                bot.answerCallbackQuery(query.id);
+                // Trigger manager notification via server API if possible, or just let DB do it
+                // For now, DB update is enough, scheduler/app can pull it.
+            }
+        }
+
+        if (action.startsWith('cancel_penalty_')) {
+            const sessionId = action.split('_')[2];
+            const session = await Session.findByPk(sessionId);
+            if (session && session.status === 'reserved') {
+                // This is a forced cancellation by user after warning
+                // Bot doesn't have NotificationService (server only), so we should use an API or raw DB
+                // Since bot shares database, we can do raw DB logic but we need Transaction model
+                // For simplicity, let's just mark it and the scheduler or server will handle the money.
+                await session.update({ status: 'cancelled', penaltyApplied: true, userResponse: 'cancelled_user' });
+                bot.sendMessage(chatId, "📉 <b>Bron bekor qilindi.</b>\n\nAfsuski, shartnomaga ko'ra to'langan depozit qaytarilmaydi. Kelgusida kutib qolamiz.", { parse_mode: 'HTML' });
+                bot.answerCallbackQuery(query.id);
+            }
+        }
 
         if (action === 'view_balance') {
             const text = i18n.get('balance_text', lang).replace('{balance}', user.balance);

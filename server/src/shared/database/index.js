@@ -85,6 +85,11 @@ async function initializeDatabase() {
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `lastResumeTime` DATETIME;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `consumedSeconds` INTEGER DEFAULT 0;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `totalCost` INTEGER DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notified10m` BOOLEAN DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notified5m` BOOLEAN DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedStart` BOOLEAN DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedPenalty` BOOLEAN DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `userResponse` TEXT;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `prepaidAmount` INTEGER DEFAULT 0;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardNumber` TEXT;"); } catch (e) { }

@@ -33,6 +33,11 @@ class ReservationScheduler {
                 const diffMs = startTime - now;
                 const diffMin = Math.floor(diffMs / 60000);
 
+                // --- Case 0: 30 Minutes Before (Reminder 0) ---
+                if (diffMin === 30 && !res.notifiedAt) {
+                    await this.notify30m(res, io);
+                }
+
                 // --- Case 1: 10 Minutes Before (Reminder 1) ---
                 if (diffMin === 10 && !res.notified10m) {
                     await this.notify10m(res, io);
@@ -59,6 +64,13 @@ class ReservationScheduler {
         } catch (error) {
             console.error("Scheduler error:", error);
         }
+    }
+
+    async notify30m(res, io) {
+        if (!res.User?.telegramId || res.User.telegramId === '0') return;
+        const text = `🔔 <b>ESLATMA (30 DAQIQA):</b>\n\nHurmatli ${res.User.username}, bron qilingan vaqtingizga 30 daqiqa qoldi. Iltimos, o'z vaqtida kelishingizni so'raymiz! ✨`;
+        await notificationService.sendTelegramToUser(res.User.telegramId, text);
+        await res.update({ notifiedAt: new Date() });
     }
 
     async notify10m(res, io) {

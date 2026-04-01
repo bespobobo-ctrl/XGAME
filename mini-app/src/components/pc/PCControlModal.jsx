@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Contact2, Phone, Clock, Play, Pause, Square } from 'lucide-react';
+import { X, Contact2, Phone, Clock, Play, Pause, Square, Trash2 } from 'lucide-react';
 import { calculateSessionInfo, formatTashkentTime } from '../../utils/time';
 import { callAPI } from '../../api';
 
@@ -105,9 +105,20 @@ const PCControlModal = ({
                                     const activeRes = selectedPC.Sessions?.find(s => s.status === 'reserved') || selectedPC.UpcomingReservations?.[0];
                                     if (!activeRes) return null;
                                     return (
-                                        <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
-                                            <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ BU PC BRON QILINGAN: {new Date(activeRes.startTime).getHours()}:{String(new Date(activeRes.startTime).getMinutes()).padStart(2, '0')}</p>
-                                            <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {activeRes.guestName} ({activeRes.guestPhone})</p>
+                                        <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '12px 18px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ textAlign: 'left' }}>
+                                                <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ BU PC BRON QILINGAN: {formatTashkentTime(activeRes.startTime)}</p>
+                                                <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {activeRes.guestName} ({activeRes.guestPhone})</p>
+                                            </div>
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm("Bronni bekor qilasizmi?")) handleAction('cancel_reserve');
+                                                }}
+                                                style={{ padding: '8px', background: 'rgba(255,170,0,0.1)', borderRadius: '10px', color: '#ffaa00', cursor: 'pointer' }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </div>
                                         </div>
                                     );
                                 })()}
@@ -136,9 +147,20 @@ const PCControlModal = ({
                                                 const nextRes = selectedPC.Sessions?.find(s => s.status === 'reserved') || selectedPC.UpcomingReservations?.[0];
                                                 if (!nextRes) return null;
                                                 return (
-                                                    <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
-                                                        <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ NAVBATDAGI BRON: {new Date(nextRes.startTime).getHours()}:{String(new Date(nextRes.startTime).getMinutes()).padStart(2, '0')}</p>
-                                                        <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {nextRes.guestName}</p>
+                                                    <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '12px 18px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ textAlign: 'left' }}>
+                                                            <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ NAVBATDAGI BRON: {formatTashkentTime(nextRes.startTime)}</p>
+                                                            <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {nextRes.guestName}</p>
+                                                        </div>
+                                                        <div
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm("Navbatdagi bronni bekor qilasizmi?")) handleAction('cancel_reserve');
+                                                            }}
+                                                            style={{ padding: '8px', background: 'rgba(255,170,0,0.1)', borderRadius: '10px', color: '#ffaa00', cursor: 'pointer' }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </div>
                                                     </div>
                                                 );
                                             })()}

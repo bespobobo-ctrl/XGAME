@@ -36,6 +36,9 @@ class SessionService {
                 case 'reserve':
                     await this._handleReserve(pc, reserveTime, guestName, guestPhone, transaction, userId);
                     break;
+                case 'cancel_reserve':
+                    await this._handleCancelReserve(pc, transaction);
+                    break;
                 default:
                     throw new Error(`Invalid action: ${action}`);
             }
@@ -49,6 +52,20 @@ class SessionService {
     }
 
     // --- Private Handlers (Hidden Logic) ---
+
+    async _handleCancelReserve(pc, transaction) {
+        const session = await Session.findOne({
+            where: { ComputerId: pc.id, status: SESSION_STATUS.RESERVED },
+            transaction
+        });
+
+        if (session) {
+            // Note: If you want to refund the deposit, add logic here.
+            // For now, we just cancel it.
+            await session.update({ status: 'cancelled' }, { transaction });
+        }
+        await pc.update({ status: PC_STATUS.FREE }, { transaction });
+    }
 
     async _handleStart(pc, roomPrice, expectedMinutes, transaction) {
         if (pc.status !== PC_STATUS.FREE && pc.status !== PC_STATUS.RESERVED) {

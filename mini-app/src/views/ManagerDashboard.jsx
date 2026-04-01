@@ -198,14 +198,59 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                 )}
             </AnimatePresence>
 
-            <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: 0, zIndex: 100 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '10px', height: '10px', background: socketConnected ? '#39ff14' : '#ff4444', borderRadius: '50%', boxShadow: socketConnected ? '0 0 10px #39ff14' : 'none' }} />
-                    <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '950' }}>{stats?.clubName || 'GAMEZONE'}</h1>
+            <header style={{
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'rgba(10,10,10,0.7)',
+                backdropFilter: 'blur(35px)',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 100
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <motion.div
+                        animate={{ opacity: [1, 0.4, 1], scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 3 }}
+                        style={{
+                            width: '8px', height: '8px',
+                            background: socketConnected ? 'linear-gradient(45deg, #39ff14, #00ff88)' : '#ff4444',
+                            borderRadius: '50%',
+                            boxShadow: socketConnected ? '0 0 12px #39ff14' : 'none'
+                        }}
+                    />
+                    <h1 style={{
+                        margin: 0,
+                        fontSize: '20px',
+                        fontWeight: '950',
+                        letterSpacing: '-0.5px',
+                        background: 'linear-gradient(90deg, #fff, #999)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                    }}>
+                        {stats?.clubName?.toUpperCase() || 'GAMEZONE'}
+                    </h1>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <LiveTimer />
-                    <LogOut size={20} onClick={onLogout} style={{ color: '#ff3366', cursor: 'pointer' }} />
+                    <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={onLogout}
+                        style={{
+                            background: 'rgba(255,51,102,0.1)',
+                            border: '1px solid rgba(255,51,102,0.2)',
+                            color: '#ff3366',
+                            width: '38px', height: '38px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            padding: 0
+                        }}
+                    >
+                        <LogOut size={18} strokeWidth={2.5} />
+                    </motion.button>
                 </div>
             </header>
 

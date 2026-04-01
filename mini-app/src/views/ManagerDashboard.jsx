@@ -125,6 +125,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                         selectedViewRoom={selectedViewRoom}
                         setSelectedViewRoom={setSelectedViewRoom}
                         setSelectedPC={setSelectedPC}
+                        fetchData={fetchData}
                     />
                 )}
             </main>

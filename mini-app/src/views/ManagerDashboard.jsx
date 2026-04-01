@@ -9,6 +9,8 @@ import RoomGrid from '../components/inventory/RoomGrid';
 import PCControlModal from '../components/pc/PCControlModal';
 import LiveTimer from '../components/shared/LiveTimer';
 
+import ManageUsers from '../components/users/ManageUsers';
+
 const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     const [stats, setStats] = useState(null);
     const [rooms, setRooms] = useState([]);
@@ -155,7 +157,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                 </div>
             </header>
 
-            <main>
+            <main style={{ paddingBottom: '100px' }}>
                 {activeTab === 'stats' && <RevenueDashboard stats={stats} />}
                 {activeTab === 'rooms' && (
                     <RoomGrid
@@ -165,6 +167,14 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                         setSelectedPC={setSelectedPC}
                         fetchData={fetchData}
                     />
+                )}
+                {activeTab === 'users' && <ManageUsers stats={stats} />}
+                {activeTab === 'payments' && (
+                    <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>
+                        <Wallet size={48} style={{ marginBottom: '15px' }} />
+                        <h3>Kassa bo'limi</h3>
+                        <p>Тo'lovlar tarixi tez kunda qo'shiladi...</p>
+                    </div>
                 )}
             </main>
 

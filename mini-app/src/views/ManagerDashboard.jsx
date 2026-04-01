@@ -130,12 +130,11 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 .vibrant-btn-label { color: #ffffff !important; opacity: 1 !important; text-shadow: 0 0 2px #fff; }
                 .neon-purple { color: #b480ff !important; opacity: 1 !important; text-shadow: 0 0 15px rgba(180,128,255,0.6); }
                 .neon-green { color: #39ff14 !important; opacity: 1 !important; text-shadow: 0 0 15px rgba(57,255,20,0.6); }
-                .res-input { width: 100%; padding: 22px 15px 22px 55px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; color: #fff; font-size: 18px; margin-bottom: 15px; font-weight: 950; outline: none; box-sizing: border-box; }
-                .premium-glass { background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); backdrop-filter: blur(80px); border: 1px solid rgba(255,255,255,0.18); border-radius: 65px; box-shadow: 0 50px 120px rgba(0,0,0,0.85); position: relative; overflow: hidden; }
-                .premium-glass::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); }
-                .secondary-label { color: rgba(255,255,255,0.4) !important; font-weight: 900 !important; letter-spacing: 2px !important; font-size: 10px !important; }
-                .timer-unit { background: rgba(255,255,255,0.04); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); min-width: 85px; display: inline-flex; justify-content: center; align-items: center; }
-                .timer-dot { color: #7000ff; font-weight: 950; font-size: 40px; margin-top: -10px; animation: blink 1.5s infinite; }
+                .res-input { width: 100%; padding: 18px 15px 18px 50px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: #fff; font-size: 16px; margin-bottom: 15px; font-weight: 900; outline: none; box-sizing: border-box; }
+                .premium-glass { background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%); backdrop-filter: blur(80px); border: 1px solid rgba(255,255,255,0.12); border-radius: 45px; box-shadow: 0 50px 100px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
+                .secondary-label { color: rgba(255,255,255,0.3) !important; font-weight: 900 !important; letter-spacing: 1.5px !important; font-size: 9px !important; }
+                .timer-unit { background: rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); min-width: 60px; display: inline-flex; justify-content: center; align-items: center; }
+                .timer-dot { color: #7000ff; font-weight: 950; font-size: 24px; animation: blink 1.5s infinite; }
                 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.1; } }
                 `}
             </style>
@@ -160,32 +159,31 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
             <AnimatePresence mode="wait">
                 {activeTab === 'stats' && (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '15px' }}>
-                        <div className="premium-glass" style={{ padding: '40px 25px', textAlign: 'center', marginBottom: '20px' }}>
+                        <div className="premium-glass" style={{ padding: '30px 20px', textAlign: 'center', marginBottom: '15px' }}>
                             <p className="secondary-label">DAILY COMMAND REVENUE</p>
-                            <h2 style={{ fontSize: '58px', fontWeight: '950', margin: '5px 0', color: '#fff', letterSpacing: '-2.5px', textShadow: '0 0 30px rgba(112,0,255,0.3)' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()} UZS</h2>
+                            <h2 style={{ fontSize: '48px', fontWeight: '950', margin: '5px 0', color: '#fff', letterSpacing: '-1.5px' }}>{Math.round(stats?.revenue?.day || 0).toLocaleString()} UZS</h2>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: '35px', border: '1px solid rgba(255,255,255,0.06)' }}><DashItem label="NAQD KASSA" icon={<Coins size={14} color="#7000ff" />} value={stats?.revenue?.cashPcRevenue?.toLocaleString()} /></div>
-                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: '35px', border: '1px solid rgba(255,255,255,0.06)' }}><DashItem label="USER TERMINAL" icon={<Zap size={14} color="#39ff14" />} value={stats?.revenue?.userPcRevenue?.toLocaleString()} /></div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.04)' }}><DashItem label="NAQD KASSA" icon={<Coins size={14} color="#7000ff" />} value={stats?.revenue?.cashPcRevenue?.toLocaleString()} /></div>
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.04)' }}><DashItem label="PORTAL" icon={<Zap size={14} color="#39ff14" />} value={stats?.revenue?.userPcRevenue?.toLocaleString()} /></div>
                         </div>
                     </motion.div>
                 )}
 
                 {activeTab === 'rooms' && !selectedViewRoom && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}><h1 style={{ fontSize: '24px', fontWeight: '950', margin: 0, color: '#fff', letterSpacing: '-1px' }}>DASHBOARD</h1></div>
                         {rooms.map(room => {
                             const busy = room.Computers?.filter(pc => pc.status === 'busy' || pc.status === 'paused').length || 0;
                             const reserved = room.Computers?.filter(pc => pc.status === 'reserved').length || 0;
                             const free = (room.Computers?.length || 0) - busy - reserved;
                             return (
-                                <motion.div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '45px', padding: '30px', marginBottom: '18px', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                                <motion.div key={room.id} onClick={() => setSelectedViewRoom(room)} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '35px', padding: '24px', marginBottom: '15px', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div><h3 style={{ fontSize: '24px', fontWeight: '950', margin: 0, color: '#fff', letterSpacing: '-1px' }}>{room.name?.toUpperCase()}</h3><p className="secondary-label" style={{ marginTop: '6px' }}>{room.pricePerHour.toLocaleString()} UZS / SOAT</p></div>
-                                        <ChevronRight size={24} color="rgba(255,255,255,0.2)" />
+                                        <div><h3 style={{ fontSize: '20px', fontWeight: '950', margin: 0, color: '#fff' }}>{room.name?.toUpperCase()}</h3><p className="secondary-label" style={{ marginTop: '2px' }}>{room.pricePerHour.toLocaleString()} UZS / HR</p></div>
+                                        <ChevronRight size={22} color="rgba(255,255,255,0.2)" />
                                     </div>
-                                    <div style={{ display: 'flex', gap: '6px', margin: '25px 0' }}><div style={{ height: '5px', background: '#ff00ff', flex: busy || 0.1, borderRadius: '6px', opacity: busy > 0 ? 1 : 0.1, boxShadow: busy > 0 ? '0 0 10px #ff00ff' : 'none' }} /><div style={{ height: '5px', background: '#ffaa00', flex: reserved || 0.1, borderRadius: '6px', opacity: reserved > 0 ? 1 : 0.1, boxShadow: reserved > 0 ? '0 0 10px #ffaa00' : 'none' }} /><div style={{ height: '5px', background: '#39ff14', flex: free || 0.1, borderRadius: '6px', opacity: free > 0 ? 1 : 0.1, boxShadow: free > 0 ? '0 0 10px #39ff14' : 'none' }} /></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '18px' }}><MiniStat color="#ff00ff" count={busy} label="BUSY" /><MiniStat color="#ffaa00" count={reserved} label="BRON" /><MiniStat color="#39ff14" count={free} label="FREE" /></div><b style={{ fontSize: '18px', color: '#39ff14', fontWeight: '950' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
+                                    <div style={{ display: 'flex', gap: '4px', margin: '15px 0' }}><div style={{ height: '4px', background: '#ff00ff', flex: busy || 0.1, borderRadius: '4px', opacity: busy > 0 ? 1 : 0.1 }} /><div style={{ height: '4px', background: '#ffaa00', flex: reserved || 0.1, borderRadius: '4px', opacity: reserved > 0 ? 1 : 0.1 }} /><div style={{ height: '4px', background: '#39ff14', flex: free || 0.1, borderRadius: '4px', opacity: free > 0 ? 1 : 0.1 }} /></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '12px' }}><MiniStat color="#ff00ff" count={busy} label="BUSY" /><MiniStat color="#ffaa00" count={reserved} label="BRON" /><MiniStat color="#39ff14" count={free} label="FREE" /></div><b style={{ fontSize: '16px', color: '#39ff14', fontWeight: '950' }}>{room.todayRevenue?.toLocaleString()} UZS</b></div>
                                 </motion.div>
                             );
                         })}
@@ -193,15 +191,15 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
 
                 {activeTab === 'rooms' && selectedViewRoom && (
-                    <motion.div initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '35px' }}><button onClick={() => setSelectedViewRoom(null)} style={{ background: '#0a0a0a', width: '50px', height: '50px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}><ArrowLeft size={24} /></button><h1 style={{ margin: 0, fontSize: '28px', fontWeight: '950', color: '#fff', letterSpacing: '-1px' }}>{selectedViewRoom.name?.toUpperCase()}</h1></div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '15px' }}>
+                    <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ padding: '15px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}><button onClick={() => setSelectedViewRoom(null)} style={{ background: '#0a0a0a', width: '45px', height: '45px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}><ArrowLeft size={20} /></button><h1 style={{ margin: 0, fontSize: '24px', fontWeight: '950', color: '#fff' }}>{selectedViewRoom.name?.toUpperCase()}</h1></div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '12px' }}>
                             {selectedViewRoom.Computers?.map(pc => {
                                 const info = calculateSessionInfo(pc, selectedViewRoom.pricePerHour);
                                 const s = pc.status.toLowerCase();
                                 const theme = s === 'busy' ? '#ff00ff' : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#333';
                                 return (
-                                    <motion.div key={pc.id} whileTap={{ scale: 0.94 }} onClick={() => setSelectedPC({ ...pc, roomPrice: selectedViewRoom.pricePerHour })} style={{ background: 'rgba(255,255,255,0.03)', border: `2px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.06)'}`, borderRadius: '25px', padding: '25px 5px', textAlign: 'center', boxShadow: s !== 'free' ? `0 0 20px ${theme}15` : 'none' }}><b style={{ fontSize: '15px', display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '950' }}>{pc.name}</b><span style={{ fontSize: '10px', color: (s !== 'free') ? theme : '#555', fontWeight: '950' }}>{s === 'free' ? 'AVAILABLE' : info.time.join(':')}</span></motion.div>
+                                    <motion.div key={pc.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedPC({ ...pc, roomPrice: selectedViewRoom.pricePerHour })} style={{ background: 'rgba(255,255,255,0.03)', border: `1.5px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.06)'}`, borderRadius: '20px', padding: '18px 5px', textAlign: 'center' }}><b style={{ fontSize: '14px', display: 'block', marginBottom: '4px', color: '#fff', fontWeight: '900' }}>{pc.name}</b><span style={{ fontSize: '9px', color: (s !== 'free') ? theme : '#555', fontWeight: '950' }}>{s === 'free' ? 'AVAILABLE' : info.time.join(':')}</span></motion.div>
                                 );
                             })}
                         </div>
@@ -209,40 +207,40 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 )}
             </AnimatePresence>
 
-            {/* 🚀 SUPER PREMIUM NEXUS 2026 MODAL */}
+            {/* 🚀 COMPACT NEXUS COMMAND MODAL */}
             <AnimatePresence>
                 {selectedPC && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.98)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(50px)' }} onClick={() => { setSelectedPC(null); setIsReserveMode(false); }}>
-                        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="premium-glass" style={{ width: '100%', maxWidth: '420px', padding: '45px 30px', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '50px' }}>
-                                <div><h1 style={{ margin: 0, fontSize: '42px', fontWeight: '950', letterSpacing: '-2px', color: '#fff', textShadow: '0 0 40px rgba(112,0,255,0.4)' }}>{selectedPC.name}</h1><p className="secondary-label">NEXUS COMMAND CENTER v0.4</p></div>
-                                <button onClick={() => { setSelectedPC(null); setIsReserveMode(false); }} style={{ background: 'rgba(255,255,255,0.05)', width: '45px', height: '45px', borderRadius: '15px', border: 'none', color: '#fff' }}><X size={22} /></button>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', backdropFilter: 'blur(30px)' }} onClick={() => { setSelectedPC(null); setIsReserveMode(false); }}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="premium-glass" style={{ width: '100%', maxWidth: '380px', padding: '30px 20px', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px' }}>
+                                <div><h1 style={{ margin: 0, fontSize: '32px', fontWeight: '950', letterSpacing: '-1px', color: '#fff' }}>{selectedPC.name}</h1><p className="secondary-label">COMMAND UNIT v0.5</p></div>
+                                <button onClick={() => { setSelectedPC(null); setIsReserveMode(false); }} style={{ background: 'rgba(255,255,255,0.05)', width: '40px', height: '40px', borderRadius: '12px', border: 'none', color: '#fff' }}><X size={20} /></button>
                             </div>
 
                             {isReserveMode ? (
                                 <div key="reserve-form">
-                                    <div style={{ position: 'relative' }}> <Contact2 style={{ position: 'absolute', left: '20px', top: '26px', color: '#7000ff' }} size={20} /> <input className="res-input" placeholder="Mijoz ismi" value={resName} onChange={e => setResName(e.target.value)} /> </div>
-                                    <div style={{ position: 'relative' }}> <Phone style={{ position: 'absolute', left: '20px', top: '26px', color: '#7000ff' }} size={20} /> <input className="res-input" placeholder="Tel raqami" value={resPhone} onChange={e => setResPhone(e.target.value)} /> </div>
-                                    <div style={{ position: 'relative' }}> <Clock style={{ position: 'absolute', left: '20px', top: '26px', color: '#7000ff' }} size={20} /> <input className="res-input" type="time" value={resTime} onChange={e => setResTime(e.target.value)} /> </div>
-                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('reserve')} style={{ width: '100%', padding: '28px', borderRadius: '35px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontSize: '18px', fontWeight: '950', boxShadow: '0 20px 50px rgba(112,0,255,0.4)' }}>RESERVE TERMINAL 🗓️</motion.button>
+                                    <div style={{ position: 'relative' }}> <Contact2 style={{ position: 'absolute', left: '18px', top: '18px', color: '#7000ff' }} size={18} /> <input className="res-input" placeholder="Mijoz ismi" value={resName} onChange={e => setResName(e.target.value)} /> </div>
+                                    <div style={{ position: 'relative' }}> <Phone style={{ position: 'absolute', left: '18px', top: '18px', color: '#7000ff' }} size={18} /> <input className="res-input" placeholder="Tel raqami" value={resPhone} onChange={e => setResPhone(e.target.value)} /> </div>
+                                    <div style={{ position: 'relative' }}> <Clock style={{ position: 'absolute', left: '18px', top: '18px', color: '#7000ff' }} size={18} /> <input className="res-input" type="time" value={resTime} onChange={e => setResTime(e.target.value)} /> </div>
+                                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('reserve')} style={{ width: '100%', padding: '20px', borderRadius: '25px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontSize: '16px', fontWeight: '950' }}>SAVE RESERVATION 🗓️</motion.button>
                                 </div>
                             ) : (
                                 <>
                                     {selectedPC.status === 'free' ? (
                                         <div key="free-ui">
-                                            <div style={{ textAlign: 'center', marginBottom: '45px', background: 'rgba(255,255,255,0.02)', borderRadius: '45px', padding: '55px 25px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <input type="number" placeholder="0" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', color: '#39ff14', fontSize: '82px', fontWeight: '950', outline: 'none', textAlign: 'center', letterSpacing: '-4px', textShadow: '0 0 50px rgba(57,255,20,0.2)' }} />
-                                                <p className="secondary-label" style={{ marginTop: '10px' }}>REQUIRED TOP-UP (UZS)</p>
+                                            <div style={{ textAlign: 'center', marginBottom: '25px', background: 'rgba(255,255,255,0.02)', borderRadius: '35px', padding: '30px 15px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                <input type="number" placeholder="0" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', color: '#39ff14', fontSize: '60px', fontWeight: '950', outline: 'none', textAlign: 'center', letterSpacing: '-3px' }} />
+                                                <p className="secondary-label">TOP-UP SUMMA</p>
                                             </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '40px' }}>
-                                                <QuickTapBtn label="10K UZS" onClick={() => setStartAmountInput('10000')} className="vibrant-btn-label" />
-                                                <QuickTapBtn label="20K UZS" onClick={() => setStartAmountInput('20000')} className="vibrant-btn-label" />
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '25px' }}>
+                                                <QuickTapBtn label="10K" onClick={() => setStartAmountInput('10000')} className="vibrant-btn-label" />
+                                                <QuickTapBtn label="20K" onClick={() => setStartAmountInput('20000')} className="vibrant-btn-label" />
                                                 <QuickTapBtn label="1 HOUR" onClick={() => handleAction('start', 60)} className="neon-purple" />
                                                 <QuickTapBtn label="2 HOUR" onClick={() => handleAction('start', 120)} className="neon-purple" />
                                             </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px' }}>
-                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setIsReserveMode(true)} style={{ padding: '30px', borderRadius: '40px', background: 'rgba(255,255,255,0.03)', color: '#999', border: '1px solid rgba(255,255,255,0.08)', fontWeight: '950', fontSize: '15px' }}>RESERVE 🗓️</motion.button>
-                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ padding: '30px', borderRadius: '40px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontWeight: '950', fontSize: '22px', boxShadow: '0 25px 60px rgba(112,0,255,0.5)' }}>START UNIT 🚀</motion.button>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '15px' }}>
+                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setIsReserveMode(true)} style={{ padding: '20px', borderRadius: '25px', background: 'rgba(255,255,255,0.03)', color: '#999', border: '1px solid rgba(255,255,255,0.08)', fontWeight: '950', fontSize: '13px' }}>RESERVE 🗓️</motion.button>
+                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ padding: '20px', borderRadius: '25px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontWeight: '950', fontSize: '18px' }}>START UNIT 🚀</motion.button>
                                             </div>
                                         </div>
                                     ) : (
@@ -250,32 +248,31 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                                             {(() => {
                                                 const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice);
                                                 return (
-                                                    <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
-                                                            <div className="timer-unit"><b style={{ fontSize: '75px', fontWeight: '950', color: '#fff', textShadow: '0 0 40px rgba(255,255,255,0.1)' }}>{info.time[0]}</b></div>
+                                                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+                                                            <div className="timer-unit"><b style={{ fontSize: '45px', fontWeight: '950', color: '#fff' }}>{info.time[0]}</b></div>
                                                             <span className="timer-dot">:</span>
-                                                            <div className="timer-unit"><b style={{ fontSize: '75px', fontWeight: '950', color: '#fff', textShadow: '0 0 40px rgba(255,255,255,0.1)' }}>{info.time[1]}</b></div>
+                                                            <div className="timer-unit"><b style={{ fontSize: '45px', fontWeight: '950', color: '#fff' }}>{info.time[1]}</b></div>
                                                             <span className="timer-dot">:</span>
-                                                            <div className="timer-unit"><b style={{ fontSize: '75px', fontWeight: '950', color: '#fff', textShadow: '0 0 40px rgba(255,255,255,0.1)' }}>{info.time[2]}</b></div>
+                                                            <div className="timer-unit"><b style={{ fontSize: '45px', fontWeight: '950', color: '#fff' }}>{info.time[2]}</b></div>
                                                         </div>
-                                                        <p className="secondary-label" style={{ marginBottom: '45px' }}>SYSTEM TIME {info.isCountdown ? 'REMAINING' : 'ELAPSED'}</p>
+                                                        <p className="secondary-label" style={{ marginBottom: '25px' }}>TIME {info.isCountdown ? 'REMAINING' : 'ELAPSED'}</p>
 
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', background: 'rgba(255,255,255,0.02)', padding: '30px', borderRadius: '45px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                            <div style={{ textAlign: 'left' }}><p className="secondary-label" style={{ margin: '0 0 8px', letterSpacing: '1px', fontSize: '9px' }}>CURRENT ACCUMULATED</p><b style={{ fontSize: '34px', color: '#39ff14', fontWeight: '950', letterSpacing: '-1px' }}>{parseInt(info.cost).toLocaleString()} <span style={{ fontSize: '12px', color: '#999' }}>UZS</span></b></div>
-                                                            <div style={{ textAlign: 'right' }}><p className="secondary-label" style={{ margin: '0 0 8px', letterSpacing: '1px', fontSize: '9px' }}>STARTED</p><b style={{ fontSize: '26px', color: '#fff', fontWeight: '950' }}>{info.startTime || '--:--'}</b></div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '15px', background: 'rgba(255,255,255,0.02)', padding: '22px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                            <div style={{ textAlign: 'left' }}><p className="secondary-label" style={{ margin: '0 0 5px', fontSize: '9px' }}>COST</p><b style={{ fontSize: '22px', color: '#39ff14', fontWeight: '950' }}>{parseInt(info.cost).toLocaleString()} <span style={{ fontSize: '10px', color: '#555' }}>UZS</span></b></div>
+                                                            <div style={{ textAlign: 'right' }}><p className="secondary-label" style={{ margin: '0 0 5px', fontSize: '9px' }}>START</p><b style={{ fontSize: '18px', color: '#fff', fontWeight: '950' }}>{info.startTime || '--:--'}</b></div>
                                                         </div>
                                                     </div>
                                                 );
                                             })()}
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'paused' ? 'resume' : 'pause')} style={{ padding: '35px', borderRadius: '45px', background: '#ffee32', color: '#000', border: 'none', fontWeight: '950', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 20px 40px rgba(255,238,50,0.2)' }}>{selectedPC.status === 'paused' ? <><Play size={24} fill="#000" /> RESUME</> : <><Pause size={24} fill="#000" /> PAUSE</>}</motion.button>
-                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '35px', borderRadius: '45px', background: 'rgba(255,68,68,0.1)', color: '#ff4444', border: '1px solid rgba(255,68,68,0.3)', fontWeight: '950', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}><Square size={24} fill="#ff4444" /> STOP UNIT</motion.button>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'paused' ? 'resume' : 'pause')} style={{ padding: '22px', borderRadius: '25px', background: '#ffee32', color: '#000', border: 'none', fontWeight: '950', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>{selectedPC.status === 'paused' ? <><Play size={20} fill="#000" /> RESUME</> : <><Pause size={20} fill="#000" /> PAUSE</>}</motion.button>
+                                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '22px', borderRadius: '25px', background: 'rgba(255,68,68,0.1)', color: '#ff4444', border: '1px solid rgba(255,68,68,0.3)', fontWeight: '950', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Square size={20} fill="#ff4444" /> STOP UNIT</motion.button>
                                             </div>
                                         </div>
                                     )}
                                 </>
                             )}
-                            <div style={{ textAlign: 'center', marginTop: '50px', opacity: 0.15, fontSize: '11px', letterSpacing: '5px' }}>NEXUS COMMAND CENTER • AUTH REQUIRED</div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -285,18 +282,18 @@ const ManagerDashboard = ({ user, activeTab, setActiveTab, onLogout }) => {
                 {navItem('stats', 'Status', <LayoutGrid size={22} strokeWidth={2.5} />)}
                 {navItem('rooms', 'Map', <Monitor size={22} strokeWidth={2.5} />)}
                 {navItem('users', 'Users', <Users size={22} strokeWidth={2.5} />)}
-                {navItem('payments', 'Kassa', <Wallet size={22} strokeWidth={2.5} />)}
+                {navItem('payments', 'Vault', <Wallet size={22} strokeWidth={2.5} />)}
             </nav>
         </div>
     );
 };
 
 const QuickTapBtn = ({ label, onClick, className }) => (
-    <motion.button whileTap={{ scale: 0.94 }} onClick={onClick} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '35px', padding: '35px 5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span className={className} style={{ fontSize: '18px', fontWeight: '950' }}>{label}</span>
+    <motion.button whileTap={{ scale: 0.94 }} onClick={onClick} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '25px', padding: '20px 5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span className={className} style={{ fontSize: '15px', fontWeight: '950' }}>{label}</span>
     </motion.button>
 );
-const DashItem = ({ label, icon, value }) => (<div><div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>{icon}<p className="secondary-label" style={{ margin: 0 }}>{label}</p></div><b style={{ fontSize: '24px', color: '#fff', fontWeight: '950' }}>{value}</b></div>);
-const MiniStat = ({ color, count, label }) => (<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '8px', height: '8px', background: color, borderRadius: '50%', boxShadow: `0 0 10px ${color}` }} /><div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: '12px', color: count > 0 ? color : '#333', fontWeight: '950' }}>{count}</span><span style={{ fontSize: '8px', color: '#555', fontWeight: '950' }}>{label}</span></div></div>);
+const DashItem = ({ label, icon, value }) => (<div><div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>{icon}<p className="secondary-label" style={{ margin: 0, letterSpacing: '1px' }}>{label}</p></div><b style={{ fontSize: '18px', color: '#fff', fontWeight: '950' }}>{value}</b></div>);
+const MiniStat = ({ color, count, label }) => (<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', background: color, borderRadius: '50%', boxShadow: `0 0 8px ${color}` }} /><div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: '11px', color: count > 0 ? color : '#333', fontWeight: '950' }}>{count}</span><span style={{ fontSize: '8px', color: '#555', fontWeight: '950' }}>{label}</span></div></div>);
 
 export default ManagerDashboard;

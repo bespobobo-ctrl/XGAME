@@ -23,6 +23,7 @@ const PCControlModal = ({
     const [userSearchText, setUserSearchText] = useState('');
     const [foundUsers, setFoundUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [localTime, setLocalTime] = useState(Date.now());
 
     // Isolated timer for modal view - only runs when modal is open
     useEffect(() => {

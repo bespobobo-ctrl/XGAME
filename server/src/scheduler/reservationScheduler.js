@@ -33,23 +33,23 @@ class ReservationScheduler {
                 const diffMs = startTime - now;
                 const diffMin = Math.floor(diffMs / 60000);
 
-                // --- Case 0: 30 Minutes Before ---
-                if (diffMin <= 30 && diffMin > 10 && !res.notifiedAt) {
+                // --- Case 0: 30 Minutes Before (Reminder 0) ---
+                if (diffMin <= 35 && diffMin >= 20 && !res.notifiedAt) {
                     await this.notify30m(res, io);
                 }
 
-                // --- Case 1: 10 Minutes Before ---
-                if (diffMin <= 10 && diffMin > 5 && !res.notified10m) {
+                // --- Case 1: 10 Minutes Before (Reminder 1 - BUTTONS) ---
+                if (diffMin <= 15 && diffMin >= 8 && !res.notified10m) {
                     await this.notify10m(res, io);
                 }
 
-                // --- Case 2: 5 Minutes Before ---
-                if (diffMin <= 5 && diffMin > 0 && !res.notified5m) {
+                // --- Case 2: 5 Minutes Before (Reminder 2 + Manager Alert) ---
+                if (diffMin <= 7 && diffMin >= 2 && !res.notified5m) {
                     await this.notify5m(res, io);
                 }
 
-                // --- Case 3: Start Time (0 to -10 minutes after) ---
-                if (diffMin <= 0 && diffMin >= -10 && !res.notifiedStart) {
+                // --- Case 3: Start Time (Final Warning Request) ---
+                if (diffMin <= 1 && diffMin >= -10 && !res.notifiedStart) {
                     await this.notifyStart(res, io);
                 }
 

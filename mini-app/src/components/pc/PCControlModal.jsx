@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Contact2, Phone, Clock, Play, Pause, Square } from 'lucide-react';
 import { calculateSessionInfo, formatTashkentTime } from '../../utils/time';
+import { callAPI } from '../../api';
 
 const PCControlModal = ({
     selectedPC,

@@ -23,7 +23,7 @@ class ReservationScheduler {
             const reservations = await Session.findAll({
                 where: {
                     status: 'reserved',
-                    startTime: { [Op.gt]: now } // Only future or current
+                    startTime: { [Op.gte]: new Date(now.getTime() - 15 * 60000) } // Catch sessions that started recently too
                 },
                 include: [{ model: User }, { model: Computer }]
             });
@@ -33,23 +33,23 @@ class ReservationScheduler {
                 const diffMs = startTime - now;
                 const diffMin = Math.floor(diffMs / 60000);
 
-                // --- Case 0: 30 Minutes Before (Reminder 0) ---
-                if (diffMin === 30 && !res.notifiedAt) {
+                // --- Case 0: 30 Minutes Before ---
+                if (diffMin <= 30 && diffMin > 10 && !res.notifiedAt) {
                     await this.notify30m(res, io);
                 }
 
-                // --- Case 1: 10 Minutes Before (Reminder 1) ---
-                if (diffMin === 10 && !res.notified10m) {
+                // --- Case 1: 10 Minutes Before ---
+                if (diffMin <= 10 && diffMin > 5 && !res.notified10m) {
                     await this.notify10m(res, io);
                 }
 
-                // --- Case 2: 5 Minutes Before (Reminder 2 + Manager Alert) ---
-                if (diffMin === 5 && !res.notified5m) {
+                // --- Case 2: 5 Minutes Before ---
+                if (diffMin <= 5 && diffMin > 0 && !res.notified5m) {
                     await this.notify5m(res, io);
                 }
 
-                // --- Case 3: Start Time (Manager Permission Alert) ---
-                if (diffMin <= 0 && diffMin >= -1 && !res.notifiedStart) {
+                // --- Case 3: Start Time (0 to -10 minutes after) ---
+                if (diffMin <= 0 && diffMin >= -10 && !res.notifiedStart) {
                     await this.notifyStart(res, io);
                 }
 

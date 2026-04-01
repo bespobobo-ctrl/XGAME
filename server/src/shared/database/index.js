@@ -70,51 +70,27 @@ async function initializeDatabase() {
         } else {
             // SQLite alter mode'dagi FK hatolarini oldini olish uchun qo'lda qo'shamiz
             await sequelize.authenticate();
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedAt` DATETIME;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `expectedMinutes` INTEGER;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `RoomId` INTEGER;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `ClubId` INTEGER;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestName` TEXT;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestPhone` TEXT;");
-            } catch (e) { }
-
-            // 💳 TOP-UP MIGRATIONS
-            try {
-                await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardNumber` TEXT;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardOwner` TEXT;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `status` TEXT DEFAULT 'approved';");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `lastResumeTime` DATETIME;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `consumedSeconds` INTEGER DEFAULT 0;");
-            } catch (e) { }
-            try {
-                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0;");
-            } catch (e) { }
-
             await sequelize.sync({ alter: false });
             logger.info('✅ Database sinxronizatsiya qilindi (Safe mode)!');
         }
+
+        // 🛠️ DATABASE MIGRATIONS (Always run these check-and-adds)
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedAt` DATETIME;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `expectedMinutes` INTEGER;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `RoomId` INTEGER;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `ClubId` INTEGER;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestName` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestPhone` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `lastResumeTime` DATETIME;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `consumedSeconds` INTEGER DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `totalCost` INTEGER DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardNumber` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardOwner` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `status` TEXT DEFAULT 'approved';"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `SessionId` INTEGER;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `ClubId` INTEGER;"); } catch (e) { }
 
         const clubCount = await Club.count();
         logger.info(`ℹ️ Jami ${clubCount} ta klub mavjud.`);

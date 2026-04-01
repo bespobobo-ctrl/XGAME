@@ -1,6 +1,6 @@
 require('dotenv').config({ path: '../../.env' });
 const TelegramBot = require('node-telegram-bot-api');
-const { User, Computer, Club } = require('../../server/src/database/index');
+const { User, Computer, Club } = require('../../server/src/shared/database/index');
 const i18n = require('./services/i18n');
 
 const token = process.env.BOT_TOKEN;

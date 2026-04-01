@@ -103,13 +103,41 @@ async function checkReservations(io) {
         await sendReservationAlert(res, io, '10 MINUT QOLDI ⚠️');
     }
 
-    // ❗️ 5 MINUTE URGENT ALERT
+    // ❗️ 5 MINUTE URGENT ALERT & AUTO-STOP
     const fiveMinsLater = new Date(now.getTime() + 6 * 60000);
-    const alerts5 = await Session.findAll({
-        where: { status: 'reserved', reserveTime: { [Op.between]: [now, fiveMinsLater] }, notifiedAt: { [Op.ne]: null } },
-        include: [{ model: Computer }, { model: User }]
+    const urgentRes = await Session.findAll({
+        where: { status: 'reserved', startTime: { [Op.between]: [now, fiveMinsLater] } },
+        include: [{ model: Computer }]
     });
-    for (const res of alerts5) {
+
+    for (const res of urgentRes) {
+        const pc = res.Computer;
+        if (pc && pc.status !== 'reserved') {
+            // IF PC IS BUSY, AUTO-STOP IT 5 MINUTES BEFORE
+            const activeSession = await Session.findOne({
+                where: { ComputerId: pc.id, status: ['active', 'paused'] }
+            });
+
+            if (activeSession) {
+                logger.info(`🚨 Auto-stopping PC:${pc.name} due to upcoming reservation for ${res.guestName}`);
+                // Stop the active session
+                activeSession.status = 'completed';
+                activeSession.endTime = now;
+                await activeSession.save();
+
+                // Notify PC to lock
+                if (io) {
+                    io.to(pc.name).emit('lock', { message: `BRON: ${res.guestName} uchun` });
+                }
+            }
+
+            // Set PC status to reserved to prevent new sessions
+            pc.status = 'reserved';
+            await pc.save();
+
+            if (io) io.emit('pc-status-updated', { pcId: pc.id, clubId: pc.ClubId, status: 'reserved' });
+        }
+
         const lastUrgent = `urgent_${res.id}`;
         if (!global[lastUrgent]) {
             await sendReservationAlert(res, io, '❗️ SHOSHILINCH: 5 MINUT QOLDI!');

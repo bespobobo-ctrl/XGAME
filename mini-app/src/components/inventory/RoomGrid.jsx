@@ -50,11 +50,20 @@ const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC,
                     {selectedViewRoom.Computers?.map(pc => {
                         const info = calculateSessionInfo(pc, selectedViewRoom.pricePerHour, localTime);
                         const s = pc.status.toLowerCase();
+                        const nextRes = pc.UpcomingReservations?.[0]; // Navbatdagi bron
+
                         const theme = s === 'busy' ? '#ff00ff' : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#333';
                         return (
-                            <motion.div key={pc.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedPC({ ...pc, roomPrice: selectedViewRoom.pricePerHour })} style={{ background: 'rgba(255,255,255,0.03)', border: `1.5px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.06)'}`, borderRadius: '20px', padding: '15px 5px', textAlign: 'center', boxShadow: s !== 'free' && s !== 'offline' ? `0 0 15px ${theme}33` : 'none' }}>
+                            <motion.div key={pc.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedPC({ ...pc, roomPrice: selectedViewRoom.pricePerHour })} style={{ background: 'rgba(255,255,255,0.03)', border: `1.5px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.06)'}`, borderRadius: '20px', padding: '15px 5px', textAlign: 'center', boxShadow: s !== 'free' && s !== 'offline' ? `0 0 15px ${theme}33` : 'none', position: 'relative', overflow: 'hidden' }}>
                                 <b style={{ fontSize: '13px', display: 'block', marginBottom: '4px', color: '#fff', fontWeight: '900' }}>{pc.name}</b>
                                 <span style={{ fontSize: '9px', color: (s !== 'free') ? theme : '#555', fontWeight: '950' }}>{s === 'free' ? 'BO\'SH' : info.time.join(':')}</span>
+
+                                {/* 🔔 FUTURE RESERVATION LABEL */}
+                                {nextRes && (
+                                    <div style={{ marginTop: '6px', fontSize: '8px', color: '#ffaa00', fontWeight: '950', borderTop: '1px solid rgba(255,170,0,0.1)', paddingTop: '4px' }}>
+                                        🗓️ {new Date(nextRes.startTime).getHours()}:{String(new Date(nextRes.startTime).getMinutes()).padStart(2, '0')} - {nextRes.guestName?.split(' ')[0]}
+                                    </div>
+                                )}
                             </motion.div>
                         );
                     })}

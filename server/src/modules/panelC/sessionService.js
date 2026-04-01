@@ -152,19 +152,37 @@ class SessionService {
     }
 
     async _handleReserve(pc, time, name, phone, transaction) {
-        if (pc.status !== PC_STATUS.FREE) throw new Error("PC is not free for reservation!");
+        // We allow reservation even if busy/free. 
+        // Logic: Create a reserved session for the future.
+        const today = new Date().toISOString().split('T')[0];
+        const reserveDate = new Date(`${today}T${time}:00`);
+
+        // Check for overlaps with other reservations
+        const existingRes = await Session.findOne({
+            where: {
+                ComputerId: pc.id,
+                status: SESSION_STATUS.RESERVED,
+                startTime: reserveDate
+            },
+            transaction
+        });
+
+        if (existingRes) throw new Error("Bu vaqtda allaqachon bron bor!");
 
         await Session.create({
             ComputerId: pc.id,
             RoomId: pc.RoomId,
             ClubId: pc.ClubId,
             status: SESSION_STATUS.RESERVED,
-            startTime: new Date(`${new Date().toISOString().split('T')[0]}T${time}:00`),
+            startTime: reserveDate,
             guestName: name,
             guestPhone: phone
         }, { transaction });
 
-        await pc.update({ status: PC_STATUS.RESERVED }, { transaction });
+        // IMPORTANT: Only set PC status to RESERVED if it's currently FREE
+        if (pc.status === PC_STATUS.FREE) {
+            await pc.update({ status: PC_STATUS.RESERVED }, { transaction });
+        }
     }
 }
 

@@ -39,6 +39,7 @@ Session.belongsTo(User);
 
 // Computer → Sessions
 Computer.hasMany(Session);
+Computer.hasMany(Session, { as: 'UpcomingReservations', foreignKey: 'ComputerId' });
 Session.belongsTo(Computer);
 
 // Room → Sessions

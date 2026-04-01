@@ -49,8 +49,14 @@ const PCControlModal = ({
                     </div>
                 ) : (
                     <>
-                        {selectedPC.status === 'free' ? (
+                        {selectedPC.status === 'free' || selectedPC.status === 'reserved' ? (
                             <div key="free-ui">
+                                {selectedPC.UpcomingReservations?.[0] && (
+                                    <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ BU PC BRON QILINGAN: {new Date(selectedPC.UpcomingReservations[0].startTime).getHours()}:{String(new Date(selectedPC.UpcomingReservations[0].startTime).getMinutes()).padStart(2, '0')}</p>
+                                        <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {selectedPC.UpcomingReservations[0].guestName} ({selectedPC.UpcomingReservations[0].guestPhone})</p>
+                                    </div>
+                                )}
                                 <div style={{ textAlign: 'center', marginBottom: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '30px', padding: '25px 15px', border: '1px solid rgba(255,255,255,0.06)' }}>
                                     <input type="number" placeholder="0" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', color: '#39ff14', fontSize: '56px', fontWeight: '950', outline: 'none', textAlign: 'center', letterSpacing: '-2px' }} />
                                     <p className="secondary-label">KIRITISH SUMMASI</p>

@@ -18,6 +18,14 @@ class InventoryService {
                         status: ['active', 'paused', 'reserved']
                     },
                     required: false
+                }, {
+                    model: Session,
+                    as: 'UpcomingReservations',
+                    where: {
+                        status: 'reserved',
+                        startTime: { [Op.gte]: new Date() }
+                    },
+                    required: false
                 }]
             }],
             order: [['id', 'ASC']]

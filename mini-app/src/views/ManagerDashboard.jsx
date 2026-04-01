@@ -45,12 +45,20 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         let socket = null;
         if (window.io) {
             socket = window.io(API_URL || 'https://server.respect-game.uz', { transports: ['websocket'] });
+
+            // Join specific club room for instant updates
+            if (stats?.clubId) {
+                socket.emit('join-club', stats.clubId);
+            }
+
             socket.on('upcoming-alert', (data) => {
                 setGlobalAlert(data);
                 new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(() => { });
                 setTimeout(() => setGlobalAlert(null), 15000);
             });
+
             socket.on('pc-status-updated', fetchData);
+            socket.on('room_update', fetchData);
         }
         return () => { clearInterval(dataInterval); if (socket) socket.disconnect(); };
     }, [activeTab]);

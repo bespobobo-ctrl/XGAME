@@ -26,6 +26,17 @@ function setupWebSockets(io) {
             }
         });
 
+        /**
+         * 👥 MANAGER JOIN CLUB ROOM
+         */
+        socket.on('join-club', (clubId) => {
+            if (clubId) {
+                const roomName = `club_${clubId}`;
+                socket.join(roomName);
+                console.log(`👨‍💼 Manager joined room: ${roomName} (Socket: ${socket.id})`);
+            }
+        });
+
         socket.on('disconnect', () => {
             console.log(`🔌 Kimdir tarmoqdan uzildi. Socket: ${socket.id}`);
             // Aslida kutilmaganda kompyuterdan LAN uzilsa ham uni darhol topa olamiz bu orqali

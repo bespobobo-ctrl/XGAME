@@ -59,6 +59,7 @@ class FinanceService {
         const club = await Club.findByPk(clubId);
 
         return {
+            clubId: clubId,
             clubName: club?.name || 'Unknown Club',
             revenue: {
                 day: Math.round(dayRevenue + activeRevenue),

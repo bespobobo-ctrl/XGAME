@@ -7,7 +7,7 @@ class SessionService {
      * Centralized PC Action Handler (Start/Stop/Pause/Resume/Reserve)
      */
     async executeAction(pcId, clubId, options) {
-        const { action, expectedMinutes, reserveTime, guestName, guestPhone, userId } = options;
+        const { action, amount, expectedMinutes: minutes, reserveTime, guestName, guestPhone, userId } = options;
         if (!pcId || !clubId) throw new Error("PC_ID and CLUB_ID are required for tenant safety.");
 
         const transaction = await sequelize.transaction();
@@ -22,7 +22,7 @@ class SessionService {
 
             switch (action) {
                 case 'start':
-                    await this._handleStart(pc, roomPrice, expectedMinutes, transaction);
+                    await this._handleStart(pc, roomPrice, amount, minutes, transaction);
                     break;
                 case 'stop':
                     await this._handleStop(pc, transaction);
@@ -78,9 +78,20 @@ class SessionService {
         await pc.update({ status: PC_STATUS.FREE }, { transaction });
     }
 
-    async _handleStart(pc, roomPrice, expectedMinutes, transaction) {
+    async _handleStart(pc, roomPrice, amount, minutes, transaction) {
         if (pc.status !== PC_STATUS.FREE && pc.status !== PC_STATUS.RESERVED) {
             throw new Error("Computer is already busy!");
+        }
+
+        let expectedMinutes = null;
+        let totalCost = 0;
+
+        if (minutes) {
+            expectedMinutes = parseInt(minutes);
+            totalCost = Math.ceil((expectedMinutes / 60) * roomPrice);
+        } else if (amount) {
+            totalCost = parseInt(amount);
+            expectedMinutes = Math.floor((totalCost / roomPrice) * 60);
         }
 
         // Cleanup any existing active sessions
@@ -97,7 +108,8 @@ class SessionService {
             startTime: new Date(),
             lastResumeTime: new Date(),
             consumedSeconds: 0,
-            expectedMinutes
+            expectedMinutes,
+            totalCost
         }, { transaction });
 
         await pc.update({ status: PC_STATUS.BUSY }, { transaction });

@@ -6,7 +6,7 @@ const RevenueDashboard = ({ stats }) => {
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '15px' }}>
             <div className="premium-glass" style={{ padding: '30px 20px', textAlign: 'center', marginBottom: '15px' }}>
-                <p className="secondary-label">DAILY COMMAND REVENUE</p>
+                <p className="secondary-label">KUNLIK UMUMIY DAROMAD</p>
                 <h2 style={{ fontSize: '48px', fontWeight: '950', margin: '5px 0', color: '#fff', letterSpacing: '-1.5px' }}>
                     {Math.round(stats?.revenue?.day || 0).toLocaleString()} UZS
                 </h2>

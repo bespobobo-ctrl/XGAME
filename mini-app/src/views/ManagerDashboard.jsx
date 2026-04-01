@@ -91,7 +91,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         </motion.div>
     );
 
-    if (loading && !stats) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#7000ff' }}><b>INITIALIZING NEXUS...</b></div>;
+    if (loading && !stats) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#7000ff' }}><b>TIZIM ISHGA TUSHMOQDA...</b></div>;
 
     return (
         <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '120px', overflowX: 'hidden' }}>
@@ -140,10 +140,10 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
             />
 
             <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: 'rgba(12,12,12,0.96)', backdropFilter: 'blur(40px)', padding: '15px 10px', borderRadius: '45px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.1)' }}>
-                {navItem('stats', 'Status', <LayoutGrid size={22} />)}
-                {navItem('rooms', 'Map', <Monitor size={22} />)}
-                {navItem('users', 'Users', <Users size={22} />)}
-                {navItem('payments', 'Vault', <Wallet size={22} />)}
+                {navItem('stats', 'Asosiy', <LayoutGrid size={22} />)}
+                {navItem('rooms', 'Xarita', <Monitor size={22} />)}
+                {navItem('users', 'Mijozlar', <Users size={22} />)}
+                {navItem('payments', 'Kassa', <Wallet size={22} />)}
             </nav>
         </div>
     );

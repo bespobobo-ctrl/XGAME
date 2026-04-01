@@ -29,7 +29,7 @@ const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC 
                         return (
                             <motion.div key={pc.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedPC({ ...pc, roomPrice: selectedViewRoom.pricePerHour })} style={{ background: 'rgba(255,255,255,0.03)', border: `1.5px solid ${s !== 'free' ? theme : 'rgba(255,255,255,0.06)'}`, borderRadius: '20px', padding: '15px 5px', textAlign: 'center' }}>
                                 <b style={{ fontSize: '13px', display: 'block', marginBottom: '4px', color: '#fff', fontWeight: '900' }}>{pc.name}</b>
-                                <span style={{ fontSize: '9px', color: (s !== 'free') ? theme : '#555', fontWeight: '950' }}>{s === 'free' ? 'AVAILABLE' : info.time.join(':')}</span>
+                                <span style={{ fontSize: '9px', color: (s !== 'free') ? theme : '#555', fontWeight: '950' }}>{s === 'free' ? 'BO\'SH' : info.time.join(':')}</span>
                             </motion.div>
                         );
                     })}
@@ -49,7 +49,7 @@ const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <h3 style={{ fontSize: '20px', fontWeight: '950', margin: 0, color: '#fff' }}>{room.name?.toUpperCase()}</h3>
-                                <p className="secondary-label" style={{ marginTop: '2px' }}>{room.pricePerHour.toLocaleString()} UZS / HR</p>
+                                <p className="secondary-label" style={{ marginTop: '2px' }}>{room.pricePerHour.toLocaleString()} UZS / SOAT</p>
                             </div>
                             <ChevronRight size={22} color="rgba(255,255,255,0.2)" />
                         </div>
@@ -60,9 +60,9 @@ const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC 
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', gap: '12px' }}>
-                                <MiniStat color="#ff00ff" count={busy} label="BUSY" />
+                                <MiniStat color="#ff00ff" count={busy} label="BAND" />
                                 <MiniStat color="#ffaa00" count={reserved} label="BRON" />
-                                <MiniStat color="#39ff14" count={free} label="FREE" />
+                                <MiniStat color="#39ff14" count={free} label="BO'SH" />
                             </div>
                             <b style={{ fontSize: '16px', color: '#39ff14', fontWeight: '950' }}>{room.todayRevenue?.toLocaleString()} UZS</b>
                         </div>

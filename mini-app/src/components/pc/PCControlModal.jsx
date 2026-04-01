@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Contact2, Phone, Clock, Play, Pause, Square, Trash2 } from 'lucide-react';
+import { X, Contact2, Phone, Clock, Play, Pause, Square, Trash2, BellRing, LogOut } from 'lucide-react';
 import { calculateSessionInfo, formatTashkentTime } from '../../utils/time';
 import { callAPI } from '../../api';
+
+const QuickTapBtn = ({ label, onClick, className }) => (
+    <motion.div
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
+        className={`quick-tap-btn ${className}`}
+        style={{
+            padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '18px',
+            border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', cursor: 'pointer',
+            transition: '0.3s'
+        }}
+    >
+        <span style={{ fontSize: '14px', fontWeight: '950', display: 'block' }}>{label}</span>
+    </motion.div>
+);
 
 const PCControlModal = ({
     selectedPC,
@@ -192,11 +207,5 @@ const PCControlModal = ({
         </motion.div>
     );
 };
-
-const QuickTapBtn = ({ label, onClick, className }) => (
-    <motion.button whileTap={{ scale: 0.94 }} onClick={onClick} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '22px', padding: '18px 5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span className={className} style={{ fontSize: '14px', fontWeight: '950' }}>{label}</span>
-    </motion.button>
-);
 
 export default React.memo(PCControlModal);

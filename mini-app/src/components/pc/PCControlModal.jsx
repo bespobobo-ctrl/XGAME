@@ -18,7 +18,10 @@ const PCControlModal = ({
     setResTime,
     handleAction
 }) => {
-    const [localTime, setLocalTime] = useState(Date.now());
+    // For User Search
+    const [userSearchText, setUserSearchText] = useState('');
+    const [foundUsers, setFoundUsers] = useState([]);
+    const [selectedUser, setSelectedUser] = useState(null);
 
     // Isolated timer for modal view - only runs when modal is open
     useEffect(() => {
@@ -27,25 +30,70 @@ const PCControlModal = ({
         return () => clearInterval(interval);
     }, [selectedPC]);
 
+    // Handle user search in reservation mode
+    useEffect(() => {
+        if (isReserveMode && userSearchText.length > 1) {
+            // Trigger search
+            callAPI(`/api/manager/users?search=${userSearchText}`).then(data => {
+                if (Array.isArray(data)) setFoundUsers(data.slice(0, 5));
+            });
+        } else {
+            setFoundUsers([]);
+        }
+    }, [isReserveMode, userSearchText]);
+
     if (!selectedPC) return null;
 
+    const onReserveAction = () => {
+        handleAction('reserve', null, {
+            guestName: selectedUser ? selectedUser.username : resName,
+            guestPhone: selectedUser ? (selectedUser.telegramId || 'PHONE') : resPhone,
+            userId: selectedUser ? selectedUser.id : null
+        });
+    };
+
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', backdropFilter: 'blur(30px)' }} onClick={() => { setSelectedPC(null); setIsReserveMode(false); }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', backdropFilter: 'blur(30px)' }} onClick={() => { setSelectedPC(null); setIsReserveMode(false); setSelectedUser(null); }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="premium-glass" style={{ width: '100%', maxWidth: '380px', padding: '25px 20px', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                     <div><h1 style={{ margin: 0, fontSize: '32px', fontWeight: '950', letterSpacing: '-1px', color: '#fff' }}>{selectedPC.name}</h1><p className="secondary-label">BOSHQARUV PANELI</p></div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
-                        <button onClick={() => { setSelectedPC(null); setIsReserveMode(false); }} style={{ background: 'rgba(255,255,255,0.05)', width: '35px', height: '35px', borderRadius: '10px', border: 'none', color: '#fff' }}><X size={18} /></button>
+                        <button onClick={() => { setSelectedPC(null); setIsReserveMode(false); setSelectedUser(null); }} style={{ background: 'rgba(255,255,255,0.05)', width: '35px', height: '35px', borderRadius: '10px', border: 'none', color: '#fff' }}><X size={18} /></button>
                         <div style={{ fontSize: '10px', color: '#7000ff', fontWeight: '950' }}>{formatTashkentTime(localTime)}</div>
                     </div>
                 </div>
 
                 {isReserveMode ? (
                     <div key="reserve-form">
-                        <div style={{ position: 'relative', marginBottom: '15px' }}> <Contact2 style={{ position: 'absolute', left: '18px', top: '16px', color: '#7000ff' }} size={20} /> <input placeholder="Mijoz ismi" value={resName} onChange={e => setResName(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(112,0,255,0.4)', padding: '16px 20px 16px 48px', borderRadius: '15px', color: '#fff', fontSize: '15px', outline: 'none', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' }} /> </div>
-                        <div style={{ position: 'relative', marginBottom: '15px' }}> <Phone style={{ position: 'absolute', left: '18px', top: '16px', color: '#7000ff' }} size={20} /> <input placeholder="Tel raqami" value={resPhone} onChange={e => setResPhone(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(112,0,255,0.4)', padding: '16px 20px 16px 48px', borderRadius: '15px', color: '#fff', fontSize: '15px', outline: 'none', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' }} /> </div>
-                        <div style={{ position: 'relative', marginBottom: '20px' }}> <Clock style={{ position: 'absolute', left: '18px', top: '16px', color: '#7000ff' }} size={20} /> <input type="time" value={resTime} onChange={e => setResTime(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(112,0,255,0.4)', padding: '16px 20px 16px 48px', borderRadius: '15px', color: '#39ff14', fontSize: '16px', fontWeight: 'bold', outline: 'none', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' }} /> </div>
-                        <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAction('reserve')} style={{ width: '100%', padding: '18px', borderRadius: '15px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontSize: '16px', fontWeight: '950', boxShadow: '0 0 20px rgba(112,0,255,0.4)' }}>BRON QILISH 🗓️</motion.button>
+                        {/* 👤 Link to User Search */}
+                        <div style={{ position: 'relative', marginBottom: '15px' }}>
+                            <Contact2 style={{ position: 'absolute', left: '18px', top: '16px', color: '#7000ff' }} size={20} />
+                            <input placeholder="Foydalanuvchi qidirish..." value={userSearchText} onChange={e => { setUserSearchText(e.target.value); setSelectedUser(null); }} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: `1px solid ${selectedUser ? '#39ff14' : 'rgba(112,0,255,0.4)'}`, padding: '16px 20px 16px 48px', borderRadius: '15px', color: '#fff', fontSize: '15px', outline: 'none' }} />
+                        </div>
+
+                        {/* Search Results Dropdown */}
+                        {foundUsers.length > 0 && !selectedUser && (
+                            <div style={{ background: '#111', borderRadius: '15px', padding: '10px', marginBottom: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                {foundUsers.map(u => (
+                                    <div key={u.id} onClick={() => { setSelectedUser(u); setUserSearchText(u.username); setFoundUsers([]); }} style={{ padding: '10px', color: '#fff', fontSize: '14px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                        👤 {u.username} ({u.balance?.toLocaleString()} UZS)
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {!selectedUser && (
+                            <>
+                                <div style={{ position: 'relative', marginBottom: '15px' }}> <Contact2 style={{ position: 'absolute', left: '18px', top: '16px', color: '#aaa' }} size={20} /> <input placeholder="Yoki yangi mijoz ismi" value={resName} onChange={e => setResName(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px 20px 16px 48px', borderRadius: '15px', color: '#fff', fontSize: '15px', outline: 'none' }} /> </div>
+                                <div style={{ position: 'relative', marginBottom: '15px' }}> <Phone style={{ position: 'absolute', left: '18px', top: '16px', color: '#aaa' }} size={20} /> <input placeholder="Tel raqami" value={resPhone} onChange={e => setResPhone(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px 20px 16px 48px', borderRadius: '15px', color: '#fff', fontSize: '15px', outline: 'none' }} /> </div>
+                            </>
+                        )}
+
+                        <div style={{ position: 'relative', marginBottom: '10px' }}> <Clock style={{ position: 'absolute', left: '18px', top: '16px', color: '#7000ff' }} size={20} /> <input type="time" value={resTime} onChange={e => setResTime(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(112,0,255,0.4)', padding: '16px 20px 16px 48px', borderRadius: '15px', color: '#39ff14', fontSize: '16px', fontWeight: 'bold', outline: 'none' }} /> </div>
+
+                        <p style={{ fontSize: '10px', color: '#ffaa00', textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}>⚠️ Bron uchun 1 soatlik to'lov darhol yechiladi!</p>
+
+                        <motion.button whileTap={{ scale: 0.95 }} onClick={onReserveAction} style={{ width: '100%', padding: '18px', borderRadius: '15px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontSize: '16px', fontWeight: '950', boxShadow: '0 0 20px rgba(112,0,255,0.4)' }}>BRON QILISH 🗓️</motion.button>
                     </div>
                 ) : (
                     <>
@@ -78,6 +126,12 @@ const PCControlModal = ({
                                     const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice, localTime);
                                     return (
                                         <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+                                            {selectedPC.UpcomingReservations?.[0] && (
+                                                <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
+                                                    <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ NAVBATDAGI BRON: {new Date(selectedPC.UpcomingReservations[0].startTime).getHours()}:{String(new Date(selectedPC.UpcomingReservations[0].startTime).getMinutes()).padStart(2, '0')}</p>
+                                                    <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {selectedPC.UpcomingReservations[0].guestName}</p>
+                                                </div>
+                                            )}
                                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                                                 <div className="timer-unit"><b style={{ fontSize: '38px', fontWeight: '950', color: '#fff' }}>{info.time[0]}</b></div>
                                                 <span className="timer-dot">:</span>

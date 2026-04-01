@@ -103,6 +103,22 @@ async function checkReservations(io) {
         await sendReservationAlert(res, io, '10 MINUT QOLDI ⚠️');
     }
 
+    // 🔔 30 MINUTE CUSTOMER REMINDER
+    const thirtyMinsLater = new Date(now.getTime() + 31 * 60000);
+    const reminderRes = await Session.findAll({
+        where: { status: 'reserved', startTime: { [Op.between]: [now, thirtyMinsLater] }, notifiedAt: null },
+        include: [{ model: User }, { model: Computer }]
+    });
+
+    for (const res of reminderRes) {
+        if (res.User?.telegramId) {
+            const botMsg = `🔔 <b>ESLATMA!</b>\n\n🖥 <b>PC:</b> ${res.Computer?.name || 'PC'}\n⏰ <b>Bron vaqti:</b> ${new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\n\nSizning broningizga 30 minut qoldi. Iltimos, o'z vaqtida yetib keling! 😊`;
+            broadcastMessage([res.User.telegramId], botMsg).catch(() => { });
+        }
+        res.notifiedAt = now;
+        await res.save();
+    }
+
     // ❗️ 5 MINUTE URGENT ALERT & AUTO-STOP
     const fiveMinsLater = new Date(now.getTime() + 6 * 60000);
     const urgentRes = await Session.findAll({
@@ -135,7 +151,11 @@ async function checkReservations(io) {
             pc.status = 'reserved';
             await pc.save();
 
-            if (io) io.emit('pc-status-updated', { pcId: pc.id, clubId: pc.ClubId, status: 'reserved' });
+            // Emit special alert to Manager
+            if (io) {
+                io.emit('upcoming-alert', { pcName: pc.name, guestName: res.guestName, time: res.startTime });
+                io.emit('pc-status-updated', { pcId: pc.id, clubId: pc.ClubId, status: 'reserved' });
+            }
         }
 
         const lastUrgent = `urgent_${res.id}`;

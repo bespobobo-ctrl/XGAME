@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { LayoutGrid, Monitor, Users, Wallet, BellRing, Clock, LogOut } from 'lucide-react';
+import { LayoutGrid, Monitor, Users, Wallet, BellRing, LogOut } from 'lucide-react';
 
 // Modules & Components
 import RevenueDashboard from '../components/stats/RevenueDashboard';
@@ -37,16 +37,15 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
             if (Array.isArray(r)) {
                 setRooms(r);
 
-                // 🔄 Sync current view room with fresh data
+                // 🔄 Sync current view room
                 setSelectedViewRoom(prev => {
                     if (!prev) return null;
                     return r.find(room => room.id === prev.id) || prev;
                 });
 
-                // 🔄 Sync current selected PC modal with fresh data
+                // 🔄 Sync selected PC modal
                 setSelectedPC(prev => {
                     if (!prev) return null;
-                    // Find the PC in the updated rooms list
                     for (const room of r) {
                         const freshPC = room.Computers?.find(pc => pc.id === prev.id);
                         if (freshPC) return { ...freshPC, roomPrice: room.pricePerHour };
@@ -58,25 +57,21 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         finally { setLoading(false); }
     };
 
-    // 🔄 PERIODIC DATA FETCHING
     useEffect(() => {
         fetchData();
-        const dataInterval = setInterval(fetchData, 5000);
-        return () => clearInterval(dataInterval);
+        const interval = setInterval(fetchData, 8000);
+        return () => clearInterval(interval);
     }, [activeTab]);
 
-    // 🔌 SOCKET.IO FOR REAL-TIME UPDATES
     useEffect(() => {
         let socket = null;
         if (window.io) {
             socket = window.io(API_URL || 'https://server.respect-game.uz', {
-                transports: ['websocket', 'polling'], // Fallback for various tunnels
-                reconnection: true,
-                timeout: 20000
+                transports: ['websocket', 'polling'],
+                reconnection: true
             });
 
             socket.on('connect', () => {
-                console.log("🔌 Socket connected!");
                 setSocketConnected(true);
                 if (stats?.clubId) socket.emit('join-club', stats.clubId);
             });
@@ -95,41 +90,36 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         return () => { if (socket) socket.disconnect(); };
     }, [stats?.clubId]);
 
-    const handleAction = async (action, expectedMinutes = null) => {
+    const handleAction = async (action, minutes = null, extraOptions = {}) => {
         if (!selectedPC || actionLoading) return;
-
-        // 🚀 INSTANT UI UPDATE (Optimistic)
-        const tempStatus = action === 'start' ? 'busy' : action === 'reserve' ? 'reserved' : action === 'stop' ? 'free' : action === 'pause' ? 'paused' : 'busy';
-
-        // Bu joyda PC'ni darhol to'xtatib qo'yamiz
-        setRooms(prevRooms => prevRooms.map(room => ({
-            ...room,
-            Computers: room.Computers?.map(pc =>
-                pc.id === selectedPC.id ? { ...pc, status: tempStatus } : pc
-            )
-        })));
-
-        if (action === 'stop' || action === 'pause') {
-            setSelectedPC(null); // Modalni yopish
-        }
-
         setActionLoading(true);
-        let finalMinutes = expectedMinutes;
-        if (action === 'start' && !expectedMinutes && startAmountInput > 0)
-            finalMinutes = Math.floor((parseInt(startAmountInput) / selectedPC.roomPrice) * 60);
+
+        const body = {
+            action,
+            expectedMinutes: minutes || (action === 'start' ? startAmountInput : null),
+            reserveTime: resTime,
+            guestName: extraOptions.guestName || resName,
+            guestPhone: extraOptions.guestPhone || resPhone,
+            userId: extraOptions.userId || null
+        };
 
         try {
             const res = await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
-                method: 'POST', body: JSON.stringify({ action, expectedMinutes: finalMinutes, reserveTime: resTime, guestName: resName, guestPhone: resPhone })
+                method: 'POST', body: JSON.stringify(body)
             });
+
             if (res.success) {
+                setGlobalAlert({ type: 'success', message: `Amal bajarildi: ${action}` });
+                setIsReserveMode(false);
+                setResName(''); setResPhone(''); setStartAmountInput('');
                 await fetchData();
-            } else { alert(res.error || "Error!"); await fetchData(); }
-        } catch (e) { alert("Network error!"); await fetchData(); }
-        finally {
+            } else {
+                alert(res.error || "Xatolik yuz berdi");
+            }
+        } catch (err) {
+            alert("Server ulanish xatosi");
+        } finally {
             setActionLoading(false);
-            setStartAmountInput('');
-            setIsReserveMode(false);
         }
     };
 
@@ -141,29 +131,27 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         </motion.div>
     );
 
-    if (loading && !stats) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#7000ff' }}><b>TIZIM ISHGA TUSHMOQDA...</b></div>;
+    if (loading && !stats) return <div className="loading-screen"><b>GAMEZONE BOSHQARUV PANEL...</b></div>;
 
     return (
-        <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '120px', overflowX: 'hidden' }}>
+        <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '120px' }}>
             <AnimatePresence>
                 {globalAlert && (
                     <motion.div initial={{ y: -100, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -100, opacity: 0 }} style={{ position: 'fixed', top: 0, left: '15px', right: '15px', zIndex: 5000, background: 'linear-gradient(90deg, #7000ff, #000)', padding: '24px', borderRadius: '35px', border: '1px solid #fff', display: 'flex', alignItems: 'center', gap: '15px' }}>
                         <BellRing size={28} />
-                        <div style={{ flex: 1 }}><b style={{ fontSize: '18px', display: 'block' }}>ESLATMA! 🚨</b><span><b>{globalAlert.pcName}</b> кутилмоқда!</span></div>
+                        <div style={{ flex: 1 }}><b style={{ fontSize: '18px', display: 'block' }}>OGOHLANTIRISH! 🚨</b><span><b>{globalAlert.pcName}</b>: 5 minutda bron boshlanadi!</span></div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(30px)', zIndex: 100, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '8px', height: '22px', background: '#7000ff', borderRadius: '4px' }} />
-                    <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '950' }}>{stats?.clubName || 'GAMEZONE'}</h1>
+            <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: 0, zIndex: 100 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '10px', height: '10px', background: socketConnected ? '#39ff14' : '#ff4444', borderRadius: '50%', boxShadow: socketConnected ? '0 0 10px #39ff14' : 'none' }} />
+                    <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '950' }}>{stats?.clubName || 'GAMEZONE'}</h1>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <LiveTimer />
-                    <button onClick={onLogout} style={{ background: 'transparent', border: 'none', color: '#ff3366', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '5px' }}>
-                        <LogOut size={22} />
-                    </button>
+                    <LogOut size={20} onClick={onLogout} style={{ color: '#ff3366', cursor: 'pointer' }} />
                 </div>
             </header>
 
@@ -190,7 +178,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                 handleAction={handleAction}
             />
 
-            <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: 'rgba(12,12,12,0.96)', backdropFilter: 'blur(40px)', padding: '15px 10px', borderRadius: '45px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: 'rgba(12,12,12,0.9)', backdropFilter: 'blur(30px)', padding: '15px 10px', borderRadius: '40px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.1)' }}>
                 {navItem('stats', 'Asosiy', <LayoutGrid size={22} />)}
                 {navItem('rooms', 'Xarita', <Monitor size={22} />)}
                 {navItem('users', 'Mijozlar', <Users size={22} />)}

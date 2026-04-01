@@ -7,7 +7,7 @@ class SessionService {
      * Centralized PC Action Handler (Start/Stop/Pause/Resume/Reserve)
      */
     async executeAction(pcId, clubId, options) {
-        const { action, expectedMinutes, reserveTime, guestName, guestPhone } = options;
+        const { action, expectedMinutes, reserveTime, guestName, guestPhone, userId } = options;
         if (!pcId || !clubId) throw new Error("PC_ID and CLUB_ID are required for tenant safety.");
 
         const transaction = await sequelize.transaction();
@@ -34,7 +34,7 @@ class SessionService {
                     await this._handleResume(pc, transaction);
                     break;
                 case 'reserve':
-                    await this._handleReserve(pc, reserveTime, guestName, guestPhone, transaction);
+                    await this._handleReserve(pc, reserveTime, guestName, guestPhone, transaction, userId);
                     break;
                 default:
                     throw new Error(`Invalid action: ${action}`);
@@ -92,21 +92,25 @@ class SessionService {
             }
 
             const roomPrice = pc.Room?.pricePerHour || 15000;
-            const totalCost = Math.floor((finalConsumedSeconds / 3600) * roomPrice);
+            let totalCost = Math.floor((finalConsumedSeconds / 3600) * roomPrice);
+
+            // Subtract any prepaid amount (deposit)
+            const paidAlready = activeSession.prepaidAmount || 0;
+            totalCost = Math.max(0, totalCost - paidAlready);
 
             await activeSession.update({
                 status: SESSION_STATUS.COMPLETED,
                 endTime: now,
                 consumedSeconds: finalConsumedSeconds,
-                totalCost: totalCost
+                totalCost: totalCost + paidAlready // Final actual total
             }, { transaction });
 
-            // Create financial log
+            // Create financial log for the REMAINING amount
             if (totalCost > 0) {
                 await Transaction.create({
                     amount: totalCost,
                     type: 'income',
-                    description: `${pc.name} Session (Stop)`,
+                    description: `${pc.name} Session (Final Balance)`,
                     ClubId: pc.ClubId,
                     SessionId: activeSession.id
                 }, { transaction });
@@ -151,13 +155,38 @@ class SessionService {
         await pc.update({ status: PC_STATUS.BUSY }, { transaction });
     }
 
-    async _handleReserve(pc, time, name, phone, transaction) {
-        // We allow reservation even if busy/free. 
-        // Logic: Create a reserved session for the future.
+    async _handleReserve(pc, time, name, phone, transaction, userId = null) {
         const today = new Date().toISOString().split('T')[0];
         const reserveDate = new Date(`${today}T${time}:00`);
+        const now = new Date();
 
-        // Check for overlaps with other reservations
+        if (reserveDate <= now) throw new Error("O'tgan vaqtga bron qilib bo'lmaydi!");
+
+        const roomPrice = pc.Room?.pricePerHour || 15000;
+        const depositAmount = roomPrice; // 1 soatlik depozit
+        const minRequired = roomPrice * 2; // Kamida 2 soatlik puli bo'lishi shart
+
+        // Check user balance if userId is provided
+        if (userId) {
+            const user = await User.findByPk(userId, { transaction, lock: true });
+            if (!user) throw new Error("Foydalanuvchi topilmadi!");
+            if (user.balance < minRequired) throw new Error(`Balans yetarli emas! Kamida ${minRequired.toLocaleString()} UZS bo'lishi shart.`);
+
+            user.balance -= depositAmount;
+            await user.save({ transaction, hooks: false });
+
+            // Create deposit transaction
+            await Transaction.create({
+                amount: depositAmount,
+                type: 'income',
+                description: `BRON DEPOZIT (PC: ${pc.name})`,
+                ClubId: pc.ClubId,
+                UserId: user.id,
+                status: 'approved'
+            }, { transaction });
+        }
+
+        // Check for overlaps
         const existingRes = await Session.findOne({
             where: {
                 ComputerId: pc.id,
@@ -176,10 +205,12 @@ class SessionService {
             status: SESSION_STATUS.RESERVED,
             startTime: reserveDate,
             guestName: name,
-            guestPhone: phone
+            guestPhone: phone,
+            UserId: userId,
+            prepaidAmount: depositAmount, // Track for later deduction
+            totalCost: depositAmount // For stats
         }, { transaction });
 
-        // IMPORTANT: Only set PC status to RESERVED if it's currently FREE
         if (pc.status === PC_STATUS.FREE) {
             await pc.update({ status: PC_STATUS.RESERVED }, { transaction });
         }

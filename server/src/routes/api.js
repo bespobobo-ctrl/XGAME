@@ -66,6 +66,7 @@ router.post('/manager/topups/:id/action', auth, authorize('manager'), asyncHandl
 router.patch('/manager/club/card', auth, authorize('manager'), asyncHandler(managerAppCtrl.updateClubCard));
 router.get('/manager/users', auth, authorize('manager'), asyncHandler(managerAppCtrl.getUsers));
 router.post('/manager/user/:id/balance', auth, authorize('manager'), asyncHandler(managerAppCtrl.addUserBalance));
+router.get('/manager/user/:id/details', auth, authorize('manager'), asyncHandler(managerAppCtrl.getUserDetails));
 
 /**
  * 🎮 PLAYER DASHBOARD (Gamer Profile)

@@ -56,11 +56,11 @@ class FinanceService {
         }, 0);
 
         // 4. Penalty Profit (Forfeited deposits from late cancellations)
-        const penaltyProfit = await Session.sum('prepaidAmount', {
+        const penaltyProfit = await Transaction.sum('amount', {
             where: {
                 ClubId: clubId,
-                status: 'cancelled',
-                updatedAt: { [Op.between]: [startOfDay, endOfDay] }
+                type: 'penalty',
+                createdAt: { [Op.between]: [startOfDay, endOfDay] }
             }
         }) || 0;
 

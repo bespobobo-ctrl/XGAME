@@ -60,9 +60,20 @@ class SessionService {
         });
 
         if (session) {
-            // Note: If you want to refund the deposit, add logic here.
-            // For now, we just cancel it.
-            await session.update({ status: 'cancelled' }, { transaction });
+            await session.update({ status: 'cancelled', penaltyApplied: true }, { transaction });
+
+            // Log as specific penalty transaction if deposit exists
+            if (session.prepaidAmount > 0) {
+                await Transaction.create({
+                    amount: session.prepaidAmount,
+                    type: 'penalty',
+                    description: `Shtarf: Bron qilingan vaqtda kelmadi (PC: ${pc.name})`,
+                    ClubId: pc.ClubId,
+                    UserId: session.UserId,
+                    SessionId: session.id,
+                    status: 'approved'
+                }, { transaction });
+            }
         }
         await pc.update({ status: PC_STATUS.FREE }, { transaction });
     }
@@ -181,32 +192,8 @@ class SessionService {
         const isoStr = `${todayStr}T${time}:00+05:00`;
         const reserveDate = new Date(isoStr);
 
-        const now = new Date(); // Actual global NOW
+        const now = new Date();
         if (reserveDate <= now) throw new Error("O'tgan vaqtga bron qilib bo'lmaydi!");
-
-        const roomPrice = pc.Room?.pricePerHour || 15000;
-        const depositAmount = roomPrice; // 1 soatlik depozit
-        const minRequired = roomPrice * 2; // Kamida 2 soatlik puli bo'lishi shart
-
-        // Check user balance if userId is provided
-        if (userId) {
-            const user = await User.findByPk(userId, { transaction, lock: true });
-            if (!user) throw new Error("Foydalanuvchi topilmadi!");
-            if (user.balance < minRequired) throw new Error(`Balans yetarli emas! Kamida ${minRequired.toLocaleString()} UZS bo'lishi shart.`);
-
-            user.balance -= depositAmount;
-            await user.save({ transaction, hooks: false });
-
-            // Create deposit transaction
-            await Transaction.create({
-                amount: depositAmount,
-                type: 'income',
-                description: `BRON DEPOZIT (PC: ${pc.name})`,
-                ClubId: pc.ClubId,
-                UserId: user.id,
-                status: 'approved'
-            }, { transaction });
-        }
 
         // Check for overlaps
         const existingRes = await Session.findOne({
@@ -217,10 +204,22 @@ class SessionService {
             },
             transaction
         });
-
         if (existingRes) throw new Error("Bu vaqtda allaqachon bron bor!");
 
-        await Session.create({
+        const roomPrice = pc.Room?.pricePerHour || 15000;
+        const depositAmount = roomPrice;
+        const minRequired = roomPrice * 2;
+
+        if (userId) {
+            const user = await User.findByPk(userId, { transaction, lock: true });
+            if (!user) throw new Error("Foydalanuvchi topilmadi!");
+            if (user.balance < minRequired) throw new Error(`Balans yetarli emas! Kamida ${minRequired.toLocaleString()} UZS bo'lishi shart.`);
+
+            user.balance -= depositAmount;
+            await user.save({ transaction, hooks: false });
+        }
+
+        const session = await Session.create({
             ComputerId: pc.id,
             RoomId: pc.RoomId,
             ClubId: pc.ClubId,
@@ -229,9 +228,21 @@ class SessionService {
             guestName: name,
             guestPhone: phone,
             UserId: userId,
-            prepaidAmount: depositAmount, // Track for later deduction
-            totalCost: depositAmount // For stats
+            prepaidAmount: depositAmount,
+            totalCost: depositAmount
         }, { transaction });
+
+        if (userId) {
+            await Transaction.create({
+                amount: depositAmount,
+                type: 'income',
+                description: `BRON DEPOZIT (PC: ${pc.name})`,
+                ClubId: pc.ClubId,
+                UserId: userId,
+                SessionId: session.id,
+                status: 'approved'
+            }, { transaction });
+        }
 
         if (pc.status === PC_STATUS.FREE) {
             await pc.update({ status: PC_STATUS.RESERVED }, { transaction });

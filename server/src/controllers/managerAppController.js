@@ -318,6 +318,44 @@ class ManagerAppController {
         }
     }
 
+    async getUserDetails(req, res) {
+        try {
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied." });
+
+            const user = await User.findOne({
+                where: { id: req.params.id, ClubId: clubId },
+                attributes: ['id', 'username', 'firstName', 'lastName', 'telegramId', 'phone', 'balance', 'createdAt', 'lastActive']
+            });
+            if (!user) return res.status(404).json({ error: "Foydalanuvchi topilmadi" });
+
+            // 📊 Stats: Visits with and without booking
+            const [withReserve, withoutReserve] = await Promise.all([
+                Session.count({ where: { UserId: user.id, status: 'completed', prepaidAmount: { [Op.gt]: 0 } } }),
+                Session.count({ where: { UserId: user.id, status: 'completed', prepaidAmount: 0 } })
+            ]);
+
+            // ⚠️ Penalty History
+            const penalties = await Transaction.findAll({
+                where: { UserId: user.id, type: 'penalty' },
+                order: [['createdAt', 'DESC']],
+                limit: 10
+            });
+
+            res.json({
+                user,
+                stats: {
+                    withReserve,
+                    withoutReserve,
+                    totalVisits: withReserve + withoutReserve
+                },
+                penalties
+            });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // ═══════════════════════════════════════
     // ⚙️ SETUP & BROADCAST
     // ═══════════════════════════════════════

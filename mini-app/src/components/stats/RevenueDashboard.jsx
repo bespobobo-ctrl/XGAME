@@ -21,7 +21,7 @@ const RevenueDashboard = ({ stats }) => {
                 <DashItem
                     label="SHTRAF FOYDA"
                     icon={<AlertTriangle size={14} color="#ffaa00" />}
-                    value={stats?.penaltyProfit?.toLocaleString() || '0'}
+                    value={stats?.revenue?.penaltyProfit?.toLocaleString() || '0'}
                     isWide={true}
                 />
             </div>

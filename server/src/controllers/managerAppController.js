@@ -47,7 +47,10 @@ class ManagerAppController {
 
             // Emit real-time update
             const io = req.app.get('io');
-            if (io) io.to(`club_${clubId}`).emit('room_update');
+            if (io) {
+                io.to(`club_${clubId}`).emit('room_update');
+                io.emit('pc-status-updated', { clubId, pcId }); // Fallback
+            }
 
             res.json(result);
         } catch (error) {
@@ -84,6 +87,10 @@ class ManagerAppController {
                 await Computer.bulkCreate(pcs);
             }
 
+            // Real-time update
+            const io = req.app.get('io');
+            if (io) io.to(`club_${clubId}`).emit('room_update');
+
             res.json({ success: true, room });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -103,6 +110,10 @@ class ManagerAppController {
             if (pricePerHour) room.pricePerHour = parseInt(pricePerHour);
             await room.save();
 
+            // Real-time update
+            const io = req.app.get('io');
+            if (io) io.to(`club_${clubId}`).emit('room_update');
+
             res.json({ success: true, room });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -121,6 +132,10 @@ class ManagerAppController {
             await Computer.destroy({ where: { RoomId: room.id } });
             await room.destroy();
 
+            // Real-time update
+            const io = req.app.get('io');
+            if (io) io.to(`club_${clubId}`).emit('room_update');
+
             res.json({ success: true, message: "Xona o'chirildi" });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -137,6 +152,10 @@ class ManagerAppController {
 
             room.status = room.status === 'active' ? 'locked' : 'active';
             await room.save();
+
+            // Real-time update
+            const io = req.app.get('io');
+            if (io) io.to(`club_${clubId}`).emit('room_update');
 
             res.json({ success: true, status: room.status });
         } catch (error) {

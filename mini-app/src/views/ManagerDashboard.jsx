@@ -115,7 +115,8 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
 
         const body = {
             action,
-            expectedMinutes: minutes || (action === 'start' ? startAmountInput : null),
+            amount: !minutes && action === 'start' ? startAmountInput : null,
+            expectedMinutes: minutes || null,
             reserveTime: resTime,
             guestName: extraOptions.guestName || resName,
             guestPhone: extraOptions.guestPhone || resPhone,

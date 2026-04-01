@@ -67,6 +67,14 @@ const Session = sequelize.define('Session', {
     penaltyApplied: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    lastResumeTime: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
+    consumedSeconds: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
     }
 });
 

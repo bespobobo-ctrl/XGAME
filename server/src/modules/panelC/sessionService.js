@@ -67,6 +67,8 @@ class SessionService {
             ClubId: pc.ClubId,
             status: SESSION_STATUS.ACTIVE,
             startTime: new Date(),
+            lastResumeTime: new Date(),
+            consumedSeconds: 0,
             expectedMinutes
         }, { transaction });
 
@@ -81,14 +83,21 @@ class SessionService {
 
         if (activeSession) {
             const now = new Date();
-            const start = new Date(activeSession.startTime);
-            const diffSeconds = Math.max(0, Math.floor((now - start) / 1000));
+            let finalConsumedSeconds = activeSession.consumedSeconds || 0;
+
+            if (activeSession.status === SESSION_STATUS.ACTIVE) {
+                const lastStart = new Date(activeSession.lastResumeTime || activeSession.startTime);
+                const currentInterval = Math.max(0, Math.floor((now - lastStart) / 1000));
+                finalConsumedSeconds += currentInterval;
+            }
+
             const roomPrice = pc.Room?.pricePerHour || 15000;
-            const totalCost = Math.floor((diffSeconds / 3600) * roomPrice);
+            const totalCost = Math.floor((finalConsumedSeconds / 3600) * roomPrice);
 
             await activeSession.update({
                 status: SESSION_STATUS.COMPLETED,
                 endTime: now,
+                consumedSeconds: finalConsumedSeconds,
                 totalCost: totalCost
             }, { transaction });
 
@@ -109,16 +118,33 @@ class SessionService {
 
     async _handlePause(pc, transaction) {
         if (pc.status !== PC_STATUS.BUSY) throw new Error("PC is not active!");
-        await Session.update({ status: SESSION_STATUS.PAUSED, pausedAt: new Date() }, {
+        const activeSession = await Session.findOne({
             where: { ComputerId: pc.id, status: SESSION_STATUS.ACTIVE },
             transaction
         });
+
+        if (activeSession) {
+            const now = new Date();
+            const lastStart = new Date(activeSession.lastResumeTime || activeSession.startTime);
+            const currentInterval = Math.max(0, Math.floor((now - lastStart) / 1000));
+            const newConsumed = (activeSession.consumedSeconds || 0) + currentInterval;
+
+            await activeSession.update({
+                status: SESSION_STATUS.PAUSED,
+                pausedAt: now,
+                consumedSeconds: newConsumed
+            }, { transaction });
+        }
         await pc.update({ status: PC_STATUS.PAUSED }, { transaction });
     }
 
     async _handleResume(pc, transaction) {
         if (pc.status !== PC_STATUS.PAUSED) throw new Error("PC is not paused!");
-        await Session.update({ status: SESSION_STATUS.ACTIVE, pausedAt: null }, {
+        await Session.update({
+            status: SESSION_STATUS.ACTIVE,
+            pausedAt: null,
+            lastResumeTime: new Date()
+        }, {
             where: { ComputerId: pc.id, status: SESSION_STATUS.PAUSED },
             transaction
         });

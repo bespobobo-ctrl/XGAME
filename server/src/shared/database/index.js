@@ -103,6 +103,12 @@ async function initializeDatabase() {
                 await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT;");
             } catch (e) { }
             try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `lastResumeTime` DATETIME;");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `consumedSeconds` INTEGER DEFAULT 0;");
+            } catch (e) { }
+            try {
                 await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0;");
             } catch (e) { }
 

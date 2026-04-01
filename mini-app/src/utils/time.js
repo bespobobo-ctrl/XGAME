@@ -31,10 +31,15 @@ export const calculateSessionInfo = (pc, roomPrice = 15000, nowTime = Date.now()
     if (!activeSession) return { time: ["00", "00", "00"], cost: 0, startTime: null };
 
     const sTime = activeSession.startTime ? formatTashkentTime(activeSession.startTime) : null;
-    const start = new Date(activeSession.startTime);
-    const effectiveNow = activeSession.status === 'paused' ? new Date(activeSession.pausedAt || Date.now()) : nowTime;
 
-    const diffSeconds = Math.max(0, Math.floor((effectiveNow - start) / 1000));
+    // Accurate dynamic calculation
+    let diffSeconds = activeSession.consumedSeconds || 0;
+    if (activeSession.status === 'active') {
+        const lastResume = new Date(activeSession.lastResumeTime || activeSession.startTime);
+        const currentInterval = Math.max(0, Math.floor((nowTime - lastResume) / 1000));
+        diffSeconds += currentInterval;
+    }
+
     const cost = Math.floor((diffSeconds / 3600) * (roomPrice || 15000));
 
     if (activeSession.status === 'reserved') return { time: ["--", "--", "--"], cost: 0, startTime: sTime };

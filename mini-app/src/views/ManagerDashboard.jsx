@@ -18,6 +18,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     const [selectedViewRoom, setSelectedViewRoom] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [globalAlert, setGlobalAlert] = useState(null);
+    const [socketConnected, setSocketConnected] = useState(false);
 
     // Modal States
     const [isReserveMode, setIsReserveMode] = useState(false);
@@ -50,15 +51,18 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         let socket = null;
         if (window.io) {
             socket = window.io(API_URL || 'https://server.respect-game.uz', {
-                transports: ['websocket'],
-                reconnection: true
+                transports: ['websocket', 'polling'], // Fallback for various tunnels
+                reconnection: true,
+                timeout: 20000
             });
 
-            // Join specific club room for instant updates
-            if (stats?.clubId) {
-                console.log("🔌 Joining club room:", stats.clubId);
-                socket.emit('join-club', stats.clubId);
-            }
+            socket.on('connect', () => {
+                console.log("🔌 Socket connected!");
+                setSocketConnected(true);
+                if (stats?.clubId) socket.emit('join-club', stats.clubId);
+            });
+
+            socket.on('disconnect', () => setSocketConnected(false));
 
             socket.on('upcoming-alert', (data) => {
                 setGlobalAlert(data);
@@ -68,10 +72,6 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
 
             socket.on('pc-status-updated', fetchData);
             socket.on('room_update', fetchData);
-
-            socket.on('connect', () => {
-                if (stats?.clubId) socket.emit('join-club', stats.clubId);
-            });
         }
         return () => { if (socket) socket.disconnect(); };
     }, [stats?.clubId]);
@@ -79,11 +79,20 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     const handleAction = async (action, expectedMinutes = null) => {
         if (!selectedPC || actionLoading) return;
 
-        // Optimistic UI Update
-        const tempStatus = action === 'start' ? 'busy' : action === 'reserve' ? 'reserved' : action === 'stop' ? 'free' : action === 'pause' ? 'paused' : 'active';
-        setRooms(prev => prev.map(room => ({
-            ...room, Computers: room.Computers?.map(pc => pc.id === selectedPC.id ? { ...pc, status: tempStatus } : pc)
+        // 🚀 INSTANT UI UPDATE (Optimistic)
+        const tempStatus = action === 'start' ? 'busy' : action === 'reserve' ? 'reserved' : action === 'stop' ? 'free' : action === 'pause' ? 'paused' : 'busy';
+
+        // Bu joyda PC'ni darhol to'xtatib qo'yamiz
+        setRooms(prevRooms => prevRooms.map(room => ({
+            ...room,
+            Computers: room.Computers?.map(pc =>
+                pc.id === selectedPC.id ? { ...pc, status: tempStatus } : pc
+            )
         })));
+
+        if (action === 'stop' || action === 'pause') {
+            setSelectedPC(null); // Modalni yopish
+        }
 
         setActionLoading(true);
         let finalMinutes = expectedMinutes;
@@ -96,12 +105,13 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
             });
             if (res.success) {
                 await fetchData();
-                setSelectedPC(null);
-                setIsReserveMode(false);
-                setStartAmountInput('');
-            } else { alert(res.error || "Error!"); fetchData(); }
-        } catch (e) { alert("Network error!"); fetchData(); }
-        finally { setActionLoading(false); }
+            } else { alert(res.error || "Error!"); await fetchData(); }
+        } catch (e) { alert("Network error!"); await fetchData(); }
+        finally {
+            setActionLoading(false);
+            setStartAmountInput('');
+            setIsReserveMode(false);
+        }
     };
 
     const navItem = (id, label, icon) => (

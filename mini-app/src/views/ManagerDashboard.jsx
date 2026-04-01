@@ -7,13 +7,12 @@ import { LayoutGrid, Monitor, Users, Wallet, BellRing, Clock } from 'lucide-reac
 import RevenueDashboard from '../components/stats/RevenueDashboard';
 import RoomGrid from '../components/inventory/RoomGrid';
 import PCControlModal from '../components/pc/PCControlModal';
-import { formatTashkentTime } from '../utils/time';
+import LiveTimer from '../components/common/LiveTimer';
 
 const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     const [stats, setStats] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [nowTime, setNowTime] = useState(Date.now());
 
     const [selectedPC, setSelectedPC] = useState(null);
     const [selectedViewRoom, setSelectedViewRoom] = useState(null);
@@ -42,7 +41,6 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     useEffect(() => {
         fetchData();
         const dataInterval = setInterval(fetchData, 5000);
-        const timerInterval = setInterval(() => setNowTime(Date.now()), 1000);
 
         let socket = null;
         if (window.io) {
@@ -54,7 +52,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
             });
             socket.on('pc-status-updated', fetchData);
         }
-        return () => { clearInterval(dataInterval); clearInterval(timerInterval); if (socket) socket.disconnect(); };
+        return () => { clearInterval(dataInterval); if (socket) socket.disconnect(); };
     }, [activeTab]);
 
     const handleAction = async (action, expectedMinutes = null) => {
@@ -111,7 +109,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                     <div style={{ width: '8px', height: '22px', background: '#7000ff', borderRadius: '4px' }} />
                     <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '950' }}>{stats?.clubName || 'GAMEZONE'}</h1>
                 </div>
-                <div className="live-clock-badge"><Clock size={14} color="#7000ff" /> {formatTashkentTime(nowTime, true)}</div>
+                <LiveTimer />
             </header>
 
             <main>
@@ -122,7 +120,6 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                         selectedViewRoom={selectedViewRoom}
                         setSelectedViewRoom={setSelectedViewRoom}
                         setSelectedPC={setSelectedPC}
-                        nowTime={nowTime}
                     />
                 )}
             </main>
@@ -134,7 +131,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                 resName={resName} setResName={setResName}
                 resPhone={resPhone} setResPhone={setResPhone}
                 resTime={resTime} setResTime={setResTime}
-                handleAction={handleAction} nowTime={nowTime}
+                handleAction={handleAction}
             />
 
             <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: 'rgba(12,12,12,0.96)', backdropFilter: 'blur(40px)', padding: '15px 10px', borderRadius: '45px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.1)' }}>

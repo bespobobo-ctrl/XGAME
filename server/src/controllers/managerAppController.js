@@ -9,7 +9,8 @@ class ManagerAppController {
      */
     async getRooms(req, res) {
         try {
-            const clubId = req.user?.ClubId || 1; // Fallback to 1 for MVP
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied: Missing Club Association." });
             const rooms = await inventoryService.getRoomsWithComputers(clubId);
             res.json(rooms);
         } catch (error) {
@@ -24,7 +25,8 @@ class ManagerAppController {
     async pcAction(req, res) {
         try {
             const pcId = req.params.id;
-            const clubId = req.user?.ClubId || 1;
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied: Missing Club Association." });
             const actionData = req.body;
 
             const result = await sessionService.executeAction(pcId, clubId, actionData);
@@ -40,7 +42,8 @@ class ManagerAppController {
      */
     async getStats(req, res) {
         try {
-            const clubId = req.user?.ClubId || 1;
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied: Missing Club Association." });
             const stats = await financeService.getClubStats(clubId);
             res.json(stats);
         } catch (error) {

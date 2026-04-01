@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Contact2, Phone, Clock, Play, Pause, Square } from 'lucide-react';
 import { calculateSessionInfo, formatTashkentTime } from '../../utils/time';
@@ -16,9 +16,17 @@ const PCControlModal = ({
     setResPhone,
     resTime,
     setResTime,
-    handleAction,
-    nowTime
+    handleAction
 }) => {
+    const [localTime, setLocalTime] = useState(Date.now());
+
+    // Isolated timer for modal view - only runs when modal is open
+    useEffect(() => {
+        if (!selectedPC) return;
+        const interval = setInterval(() => setLocalTime(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, [selectedPC]);
+
     if (!selectedPC) return null;
 
     return (
@@ -28,7 +36,7 @@ const PCControlModal = ({
                     <div><h1 style={{ margin: 0, fontSize: '32px', fontWeight: '950', letterSpacing: '-1px', color: '#fff' }}>{selectedPC.name}</h1><p className="secondary-label">COMMAND UNIT v0.6</p></div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
                         <button onClick={() => { setSelectedPC(null); setIsReserveMode(false); }} style={{ background: 'rgba(255,255,255,0.05)', width: '35px', height: '35px', borderRadius: '10px', border: 'none', color: '#fff' }}><X size={18} /></button>
-                        <div style={{ fontSize: '10px', color: '#7000ff', fontWeight: '950' }}>{formatTashkentTime(nowTime)}</div>
+                        <div style={{ fontSize: '10px', color: '#7000ff', fontWeight: '950' }}>{formatTashkentTime(localTime)}</div>
                     </div>
                 </div>
 
@@ -61,7 +69,7 @@ const PCControlModal = ({
                         ) : (
                             <div key="busy-ui">
                                 {(() => {
-                                    const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice, nowTime);
+                                    const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice, localTime);
                                     return (
                                         <div style={{ textAlign: 'center', marginBottom: '25px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
@@ -69,7 +77,7 @@ const PCControlModal = ({
                                                 <span className="timer-dot">:</span>
                                                 <div className="timer-unit"><b style={{ fontSize: '38px', fontWeight: '950', color: '#fff' }}>{info.time[1]}</b></div>
                                                 <span className="timer-dot">:</span>
-                                                <div className="timer-unit"><b style={{ fontSize: '42px', fontWeight: '950', color: '#fff' }}>{info.time[2]}</b></div>
+                                                <div className="timer-unit"><b style={{ fontSize: '38px', fontWeight: '950', color: '#fff' }}>{info.time[2]}</b></div>
                                             </div>
                                             <p className="secondary-label" style={{ marginBottom: '20px' }}>TIME {info.isCountdown ? 'REMAINING' : 'ELAPSED'}</p>
 
@@ -99,4 +107,4 @@ const QuickTapBtn = ({ label, onClick, className }) => (
     </motion.button>
 );
 
-export default PCControlModal;
+export default React.memo(PCControlModal);

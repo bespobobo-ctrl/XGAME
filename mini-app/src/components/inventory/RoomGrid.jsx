@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { calculateSessionInfo } from '../../utils/time';
 
-const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC, nowTime }) => {
+const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC }) => {
+    const [localTime, setLocalTime] = useState(Date.now());
+
+    // Local timer only for the grid view
+    useEffect(() => {
+        const interval = setInterval(() => setLocalTime(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     if (selectedViewRoom) {
         return (
             <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ padding: '15px' }}>
@@ -15,7 +23,7 @@ const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC,
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '10px' }}>
                     {selectedViewRoom.Computers?.map(pc => {
-                        const info = calculateSessionInfo(pc, selectedViewRoom.pricePerHour, nowTime);
+                        const info = calculateSessionInfo(pc, selectedViewRoom.pricePerHour, localTime);
                         const s = pc.status.toLowerCase();
                         const theme = s === 'busy' ? '#ff00ff' : s === 'paused' ? '#ffee32' : s === 'reserved' ? '#ffaa00' : '#333';
                         return (
@@ -75,4 +83,4 @@ const MiniStat = ({ color, count, label }) => (
     </div>
 );
 
-export default RoomGrid;
+export default React.memo(RoomGrid);

@@ -23,20 +23,28 @@ class InventoryService {
             order: [['id', 'ASC']]
         });
 
-        // Revenue calculation for each room (today)
+        // Optimized revenue calculation: One query to get all room revenues for today
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
-        for (let room of rooms) {
-            const revenue = await Session.sum('totalCost', {
-                where: {
-                    RoomId: room.id,
-                    status: 'completed',
-                    updatedAt: { [require('sequelize').Op.gte]: startOfDay }
-                }
-            });
-            room.setDataValue('todayRevenue', revenue || 0);
-        }
+        const roomRevenues = await Session.findAll({
+            attributes: [
+                'RoomId',
+                [require('sequelize').fn('SUM', require('sequelize').col('totalCost')), 'totalRoomRevenue']
+            ],
+            where: {
+                status: 'completed',
+                updatedAt: { [require('sequelize').Op.gte]: startOfDay }
+            },
+            group: ['RoomId'],
+            raw: true
+        });
+
+        // Map revenues back to rooms
+        const revMap = Object.fromEntries(roomRevenues.map(r => [r.RoomId, r.totalRoomRevenue || 0]));
+        rooms.forEach(room => {
+            room.setDataValue('todayRevenue', revMap[room.id] || 0);
+        });
 
         return rooms;
     }

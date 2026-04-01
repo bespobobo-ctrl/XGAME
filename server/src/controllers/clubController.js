@@ -8,7 +8,10 @@ const sequelize = require('../config/database');
 
 exports.getAllClubs = async (req, res, next) => {
     try {
-        const clubs = await Club.findAll({ order: [['id', 'DESC']] });
+        const clubs = await Club.findAll({
+            attributes: ['id', 'name', 'address', 'level', 'image', 'images', 'lat', 'lng', 'price', 'description', 'status'],
+            order: [['id', 'DESC']]
+        });
         res.json(clubs);
     } catch (err) {
         next(err);

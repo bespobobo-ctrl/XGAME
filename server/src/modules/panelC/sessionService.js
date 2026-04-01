@@ -7,7 +7,15 @@ class SessionService {
      * Centralized PC Action Handler (Start/Stop/Pause/Resume/Reserve)
      */
     async executeAction(pcId, clubId, options) {
-        const { action, amount, expectedMinutes: minutes, reserveTime, guestName, guestPhone, userId } = options;
+        let { action, amount, expectedMinutes: minutes, reserveTime, guestName, guestPhone, userId } = options;
+
+        // 🛡️ HEURISTIC SAFETY: If old/cached frontend sends a huge value (money) in minutes field
+        // 1440 mins = 24 hours. Anything more than that is definitely an amount (UZS).
+        if (minutes && parseInt(minutes) > 1440 && !amount) {
+            amount = minutes;
+            minutes = null;
+        }
+
         if (!pcId || !clubId) throw new Error("PC_ID and CLUB_ID are required for tenant safety.");
 
         const transaction = await sequelize.transaction();

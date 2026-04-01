@@ -2,10 +2,10 @@ const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
 const config = require('./config/index');
-const { initializeDatabase } = require('./database/index');
+const { initializeDatabase } = require('./shared/database/index');
 const { startBillingService } = require('./services/billingService');
 const { setupWebSockets } = require('./websocket/index');
-const User = require('./database/models/User');
+const { User } = require('./shared/database/index');
 
 const server = http.createServer(app);
 

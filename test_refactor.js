@@ -1,24 +1,24 @@
-const { initializeDatabase } = require('./server/src/database');
-const financeService = require('./server/src/modules/finance/financeService');
-const inventoryService = require('./server/src/modules/inventory/inventoryService');
+const { initializeDatabase } = require('./server/src/shared/database');
+const financeService = require('./server/src/modules/panelA/financeService');
+const inventoryService = require('./server/src/modules/panelB/inventoryService');
 
 async function testSystem() {
-    console.log("🚀 INITIALIZING DATABASE FOR TEST...");
+    console.log("🚀 INITIALIZING DATABASE FOR ARCHITECTURAL AUDIT...");
 
     try {
-        await initializeDatabase(); // Run migrations and associations
+        await initializeDatabase();
 
-        console.log("1. Testing FinanceService.getClubStats(1)...");
+        console.log("1. Testing PANEL A (Finance Service)...");
         const stats = await financeService.getClubStats(1);
-        console.log("✅ Finance Success:", stats.clubName);
+        console.log("✅ Panel A Success:", stats.clubName);
 
-        console.log("2. Testing InventoryService.getRoomsWithComputers(1)...");
+        console.log("2. Testing PANEL B (Inventory Service)...");
         const rooms = await inventoryService.getRoomsWithComputers(1);
-        console.log("✅ Inventory Success:", rooms.length, "rooms found.");
+        console.log("✅ Panel B Success:", rooms.length, "rooms found.");
 
-        console.log("\n🎊 ALL MODULES OPERATIONAL! No breaks detected.");
+        console.log("\n🎊 ARCHITECTURE VERIFIED! Panel-based structure is functional.");
     } catch (err) {
-        console.error("❌ TEST FAILED:", err.message);
+        console.error("❌ ARCHITECTURAL FAILURE:", err.message);
         process.exit(1);
     }
 }

@@ -1,4 +1,4 @@
-const { Room, Computer, Session } = require('../../database');
+const { Room, Computer, Session } = require('../../shared/database');
 const { PC_STATUS } = require('../../shared/constants/statuses');
 
 class InventoryService {

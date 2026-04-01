@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/index');
-const { User } = require('../database/index');
+const { User } = require('../shared/database/index');
 
 /**
  * 🔐 AUTH MIDDLEWARE

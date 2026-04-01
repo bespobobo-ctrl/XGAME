@@ -1,4 +1,4 @@
-const sequelize = require('../config/database');
+const sequelize = require('../../config/database');
 const User = require('./models/User');
 const Club = require('./models/Club');
 const Computer = require('./models/Computer');
@@ -62,7 +62,7 @@ AuditLog.belongsTo(User, { foreignKey: 'adminId' });
 // ═══════════════════════════════════════════════
 async function initializeDatabase() {
     try {
-        const config = require('../config/index');
+        const config = require('../../config/index');
 
         if (config.NODE_ENV === 'production') {
             await sequelize.authenticate();

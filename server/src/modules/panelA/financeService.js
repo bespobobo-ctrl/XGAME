@@ -1,4 +1,4 @@
-const { Session, Transaction, Club, User, Computer, Room } = require('../../database');
+const { Session, Transaction, Club, User, Computer, Room } = require('../../shared/database');
 const { Op } = require('sequelize');
 
 class FinanceService {

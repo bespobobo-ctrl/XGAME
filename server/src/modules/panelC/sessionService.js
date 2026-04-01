@@ -1,4 +1,4 @@
-const { Session, Computer, Room, Transaction, sequelize } = require('../../database');
+const { Session, Computer, Room, Transaction, sequelize } = require('../../shared/database');
 const { SESSION_STATUS, PC_STATUS } = require('../../shared/constants/statuses');
 const { Op } = require('sequelize');
 

@@ -1,6 +1,6 @@
-const inventoryService = require('../modules/inventory/inventoryService');
-const sessionService = require('../modules/session/sessionService');
-const financeService = require('../modules/finance/financeService');
+const inventoryService = require('../modules/panelB/inventoryService');
+const sessionService = require('../modules/panelC/sessionService');
+const financeService = require('../modules/panelA/financeService');
 const { ROLES } = require('../shared/constants/statuses');
 
 class ManagerAppController {

@@ -23,8 +23,7 @@ class InventoryService {
                     model: Session,
                     as: 'UpcomingReservations',
                     where: {
-                        status: 'reserved',
-                        startTime: { [Op.gte]: new Date() }
+                        status: 'reserved'
                     },
                     required: false
                 }]

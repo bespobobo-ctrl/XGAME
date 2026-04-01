@@ -42,7 +42,10 @@ export const calculateSessionInfo = (pc, roomPrice = 15000, nowTime = Date.now()
 
     const cost = Math.floor((diffSeconds / 3600) * (roomPrice || 15000));
 
-    if (activeSession.status === 'reserved') return { time: ["--", "--", "--"], cost: 0, startTime: sTime };
+    if (activeSession.status === 'reserved') {
+        const timeArr = sTime ? sTime.split(':') : ["--", "--"];
+        return { time: [timeArr[0], timeArr[1], "00"], cost: 0, startTime: sTime };
+    }
 
     if (activeSession.expectedMinutes) {
         const totalSeconds = activeSession.expectedMinutes * 60;

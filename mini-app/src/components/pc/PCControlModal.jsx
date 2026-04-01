@@ -101,12 +101,16 @@ const PCControlModal = ({
                     <>
                         {selectedPC.status === 'free' || selectedPC.status === 'reserved' ? (
                             <div key="free-ui">
-                                {selectedPC.UpcomingReservations?.[0] && (
-                                    <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
-                                        <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ BU PC BRON QILINGAN: {new Date(selectedPC.UpcomingReservations[0].startTime).getHours()}:{String(new Date(selectedPC.UpcomingReservations[0].startTime).getMinutes()).padStart(2, '0')}</p>
-                                        <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {selectedPC.UpcomingReservations[0].guestName} ({selectedPC.UpcomingReservations[0].guestPhone})</p>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const activeRes = selectedPC.Sessions?.find(s => s.status === 'reserved') || selectedPC.UpcomingReservations?.[0];
+                                    if (!activeRes) return null;
+                                    return (
+                                        <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
+                                            <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ BU PC BRON QILINGAN: {new Date(activeRes.startTime).getHours()}:{String(new Date(activeRes.startTime).getMinutes()).padStart(2, '0')}</p>
+                                            <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {activeRes.guestName} ({activeRes.guestPhone})</p>
+                                        </div>
+                                    );
+                                })()}
                                 <div style={{ textAlign: 'center', marginBottom: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '30px', padding: '25px 15px', border: '1px solid rgba(255,255,255,0.06)' }}>
                                     <input type="number" placeholder="0" value={startAmountInput} onChange={e => setStartAmountInput(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', color: '#39ff14', fontSize: '56px', fontWeight: '950', outline: 'none', textAlign: 'center', letterSpacing: '-2px' }} />
                                     <p className="secondary-label">KIRITISH SUMMASI</p>
@@ -128,12 +132,16 @@ const PCControlModal = ({
                                     const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice, localTime);
                                     return (
                                         <div style={{ textAlign: 'center', marginBottom: '25px' }}>
-                                            {selectedPC.UpcomingReservations?.[0] && (
-                                                <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
-                                                    <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ NAVBATDAGI BRON: {new Date(selectedPC.UpcomingReservations[0].startTime).getHours()}:{String(new Date(selectedPC.UpcomingReservations[0].startTime).getMinutes()).padStart(2, '0')}</p>
-                                                    <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {selectedPC.UpcomingReservations[0].guestName}</p>
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                const nextRes = selectedPC.Sessions?.find(s => s.status === 'reserved') || selectedPC.UpcomingReservations?.[0];
+                                                if (!nextRes) return null;
+                                                return (
+                                                    <div style={{ background: 'rgba(255,170,0,0.1)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: '15px', padding: '10px', marginBottom: '15px', textAlign: 'center' }}>
+                                                        <p style={{ margin: 0, fontSize: '11px', color: '#ffaa00', fontWeight: '950' }}>⚠️ NAVBATDAGI BRON: {new Date(nextRes.startTime).getHours()}:{String(new Date(nextRes.startTime).getMinutes()).padStart(2, '0')}</p>
+                                                        <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#ffaa00', opacity: 0.8 }}>Mijoz: {nextRes.guestName}</p>
+                                                    </div>
+                                                );
+                                            })()}
                                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                                                 <div className="timer-unit"><b style={{ fontSize: '38px', fontWeight: '950', color: '#fff' }}>{info.time[0]}</b></div>
                                                 <span className="timer-dot">:</span>

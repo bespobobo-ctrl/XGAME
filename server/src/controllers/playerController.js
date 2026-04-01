@@ -1,4 +1,4 @@
-const { User, Club, Session, Computer, Room } = require('../database');
+const { User, Club, Session, Computer, Room } = require('../shared/database');
 const { Op } = require('sequelize');
 
 exports.getMe = async (req, res, next) => {

@@ -1,5 +1,4 @@
-const User = require('../database/models/User');
-const Club = require('../database/models/Club');
+const { Club, User, Room, Computer, Session, Transaction } = require('../shared/database');
 
 exports.getAllManagers = async (req, res, next) => {
     try {

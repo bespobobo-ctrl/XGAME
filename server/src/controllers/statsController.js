@@ -1,4 +1,4 @@
-const { Club, User, Session, Transaction } = require('../database');
+const { Club, User, Session, Transaction } = require('../shared/database');
 const config = require('../config/index');
 const { Op } = require('sequelize');
 const os = require('os');

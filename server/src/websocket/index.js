@@ -1,4 +1,4 @@
-const { Computer } = require('../database/index');
+const { Computer } = require('../shared/database');
 
 function setupWebSockets(io) {
     io.on('connection', (socket) => {

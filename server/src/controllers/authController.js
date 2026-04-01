@@ -1,8 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const User = require('../database/models/User');
-const Broadcast = require('../database/models/Broadcast');
-const Club = require('../database/models/Club');
+const { User, Broadcast, Club } = require('../shared/database');
 const config = require('../config/index');
 const { Op } = require('sequelize');
 

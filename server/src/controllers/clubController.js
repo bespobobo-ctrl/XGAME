@@ -1,10 +1,4 @@
-const Club = require('../database/models/Club');
-const User = require('../database/models/User');
-const Room = require('../database/models/Room');
-const Computer = require('../database/models/Computer');
-const Session = require('../database/models/Session');
-const Transaction = require('../database/models/Transaction');
-const sequelize = require('../config/database');
+const { Club, User, Room, Computer, Session, Transaction, sequelize } = require('../shared/database');
 
 exports.getAllClubs = async (req, res, next) => {
     try {

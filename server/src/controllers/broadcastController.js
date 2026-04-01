@@ -1,4 +1,4 @@
-const { User, Broadcast } = require('../database');
+const { Broadcast, User, Club } = require('../shared/database');
 const { broadcastMessage } = require('../utils/bot');
 const { Op } = require('sequelize');
 

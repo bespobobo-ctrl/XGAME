@@ -1,7 +1,6 @@
-const { User, Computer, Session, Room, Transaction } = require('../database/index');
+const { User, Computer, Session, Room, Transaction, sequelize } = require('../shared/database');
 const { Op } = require('sequelize');
-const sequelize = require('../config/database');
-const logger = require('../utils/logger');
+const logger = require('../shared/utils/logger');
 
 /**
  * ⏰ BILLING SERVICE

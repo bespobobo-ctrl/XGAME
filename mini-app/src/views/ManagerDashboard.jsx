@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { LayoutGrid, Monitor, Users, Wallet, BellRing, LogOut } from 'lucide-react';
+import { LayoutGrid, Monitor, Users, Wallet, BellRing, LogOut, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 // Modules & Components
 import RevenueDashboard from '../components/stats/RevenueDashboard';
@@ -111,7 +111,12 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
             });
 
             if (res.success) {
-                setGlobalAlert({ type: 'success', message: `Amal bajarildi: ${action}` });
+                setGlobalAlert({
+                    type: 'success',
+                    message: `Amal bajarildi: ${action.toUpperCase()}`,
+                    pcName: selectedPC.name
+                });
+                setTimeout(() => setGlobalAlert(null), 5000);
                 setIsReserveMode(false);
                 setResName(''); setResPhone(''); setStartAmountInput('');
                 await fetchData();
@@ -155,25 +160,29 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                     >
                         <div style={{
                             width: '44px', height: '44px', borderRadius: '16px',
-                            background: 'linear-gradient(45deg, #7000ff, #39ff14)',
+                            background: globalAlert.type === 'success' ? 'linear-gradient(45deg, #10b981, #34d399)' : 'linear-gradient(45deg, #7000ff, #ff007a)',
                             display: 'flex', justifyContent: 'center', alignItems: 'center',
                             boxShadow: '0 0 15px rgba(112,0,255,0.4)', flexShrink: 0
                         }}>
-                            <BellRing size={20} color="#fff" strokeWidth={2.5} />
+                            {globalAlert.type === 'success' ? <CheckCircle2 size={20} color="#fff" strokeWidth={2.5} /> : <BellRing size={20} color="#fff" strokeWidth={2.5} />}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <h4 style={{ margin: 0, fontSize: '10px', fontWeight: '950', color: '#7000ff', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
-                                    NOTIFICATION
+                                <h4 style={{ margin: 0, fontSize: '10px', fontWeight: '950', color: globalAlert.type === 'success' ? '#10b981' : '#7000ff', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                                    {globalAlert.type === 'success' ? 'SUCCESS' : 'NOTIFICATION'}
                                 </h4>
                                 <motion.div animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#39ff14' }} />
                             </div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '1px' }}>
-                                <span style={{ fontSize: '15px', fontWeight: '950', color: '#fff', whiteSpace: 'nowrap' }}>{globalAlert.pcName || 'PC'}</span>
-                                <span style={{ fontSize: '12px', opacity: 0.4, fontWeight: 'bold' }}>•</span>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#39ff14', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{globalAlert.guestName || 'Mijoz'}</span>
+                                <span style={{ fontSize: '15px', fontWeight: '950', color: '#fff', whiteSpace: 'nowrap' }}>{globalAlert.pcName || 'Tizim'}</span>
+                                {globalAlert.guestName && (
+                                    <>
+                                        <span style={{ fontSize: '12px', opacity: 0.4, fontWeight: 'bold' }}>•</span>
+                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#39ff14', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{globalAlert.guestName}</span>
+                                    </>
+                                )}
                             </div>
-                            <p style={{ margin: 0, fontSize: '10px', opacity: 0.5, fontWeight: '800' }}>5 daqiqadan so'ng bron davri boshlanadi!</p>
+                            <p style={{ margin: 0, fontSize: '11px', opacity: 0.8, fontWeight: '700', color: '#fff' }}>{globalAlert.message || "5 daqiqadan so'ng bron davri boshlanadi!"}</p>
                         </div>
                         <div
                             onClick={() => setGlobalAlert(null)}

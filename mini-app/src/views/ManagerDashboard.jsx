@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { LayoutGrid, Monitor, Users, Wallet, BellRing, Clock } from 'lucide-react';
+import { LayoutGrid, Monitor, Users, Wallet, BellRing, Clock, LogOut } from 'lucide-react';
 
 // Modules & Components
 import RevenueDashboard from '../components/stats/RevenueDashboard';
@@ -109,7 +109,12 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                     <div style={{ width: '8px', height: '22px', background: '#7000ff', borderRadius: '4px' }} />
                     <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '950' }}>{stats?.clubName || 'GAMEZONE'}</h1>
                 </div>
-                <LiveTimer />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <LiveTimer />
+                    <button onClick={onLogout} style={{ background: 'transparent', border: 'none', color: '#ff3366', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '5px' }}>
+                        <LogOut size={22} />
+                    </button>
+                </div>
             </header>
 
             <main>

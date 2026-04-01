@@ -127,18 +127,18 @@ const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC,
                                 <div style={{ display: 'grid', gap: '18px' }}>
                                     <div>
                                         <label style={{ display: 'block', color: '#999', fontSize: '10px', fontWeight: '950', marginBottom: '8px', letterSpacing: '1px' }}>XONA NOMI (VIP, BOOTCAMP..)</label>
-                                        <input placeholder="Masalan: VIP ZAL" value={roomForm.name} onChange={e => setRoomForm({ ...roomForm, name: e.target.value })} className="res-input" style={{ width: '100%', boxSizing: 'border-box' }} />
+                                        <input placeholder="Masalan: VIP ZAL" value={roomForm.name} onChange={e => setRoomForm({ ...roomForm, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(112,0,255,0.4)', padding: '16px 20px', borderRadius: '15px', color: '#fff', fontSize: '15px', outline: 'none', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' }} />
                                     </div>
 
                                     <div>
                                         <label style={{ display: 'block', color: '#999', fontSize: '10px', fontWeight: '950', marginBottom: '8px', letterSpacing: '1px' }}>1 SOATLIK NARXI (UZS)</label>
-                                        <input type="number" placeholder="20000" value={roomForm.pricePerHour} onChange={e => setRoomForm({ ...roomForm, pricePerHour: e.target.value })} className="res-input" style={{ width: '100%', boxSizing: 'border-box' }} />
+                                        <input type="number" placeholder="20000" value={roomForm.pricePerHour} onChange={e => setRoomForm({ ...roomForm, pricePerHour: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(112,0,255,0.4)', padding: '16px 20px', borderRadius: '15px', color: '#39ff14', fontSize: '15px', fontWeight: '950', outline: 'none', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' }} />
                                     </div>
 
                                     {!editingRoom && (
                                         <div>
                                             <label style={{ display: 'block', color: '#999', fontSize: '10px', fontWeight: '950', marginBottom: '8px', letterSpacing: '1px' }}>NECHTA PC KIRITILADI? (AVTOMATIK)</label>
-                                            <input type="number" placeholder="Misol uchun: 10" value={roomForm.computers} onChange={e => setRoomForm({ ...roomForm, computers: e.target.value })} className="res-input" style={{ width: '100%', boxSizing: 'border-box' }} />
+                                            <input type="number" placeholder="Misol uchun: 10" value={roomForm.computers} onChange={e => setRoomForm({ ...roomForm, computers: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(112,0,255,0.4)', padding: '16px 20px', borderRadius: '15px', color: '#fff', fontSize: '15px', outline: 'none', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' }} />
                                             <p style={{ fontSize: '9px', color: '#7000ff', margin: '8px 0 0 0', fontWeight: 'bold' }}>💡 Tizim o'zi avtomat ravishda "PC-1, PC-2" kabi kompyuterlarni yaratadi</p>
                                         </div>
                                     )}

@@ -140,41 +140,50 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
             <AnimatePresence>
                 {globalAlert && (
                     <motion.div
-                        initial={{ y: -120, opacity: 0, scale: 0.9 }}
+                        initial={{ y: -100, opacity: 0, scale: 0.95 }}
                         animate={{ y: 20, opacity: 1, scale: 1 }}
-                        exit={{ y: -120, opacity: 0, scale: 0.9 }}
+                        exit={{ y: -100, opacity: 0, scale: 0.95 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 350 }}
                         style={{
-                            position: 'fixed', top: 0, left: '15px', right: '15px', zIndex: 9999,
-                            background: 'rgba(20, 20, 20, 0.7)', backdropFilter: 'blur(30px)',
-                            border: '1px solid rgba(112, 0, 255, 0.5)', borderRadius: '30px',
-                            padding: '24px', display: 'flex', alignItems: 'center', gap: '20px',
-                            boxShadow: '0 25px 50px rgba(0,0,0,0.6), 0 0 20px rgba(112,0,255,0.2)'
+                            position: 'fixed', top: 0, left: '20px', right: '20px', zIndex: 10000,
+                            background: 'rgba(12, 12, 12, 0.4)', backdropFilter: 'blur(45px)',
+                            border: '1px solid rgba(112, 0, 255, 0.5)', borderRadius: '40px',
+                            padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '16px',
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(112,0,255,0.2)',
+                            maxWidth: '520px', margin: '0 auto'
                         }}
                     >
                         <div style={{
-                            width: '55px', height: '55px', borderRadius: '18px',
+                            width: '44px', height: '44px', borderRadius: '16px',
                             background: 'linear-gradient(45deg, #7000ff, #39ff14)',
                             display: 'flex', justifyContent: 'center', alignItems: 'center',
-                            boxShadow: '0 0 20px rgba(112,0,255,0.4)', flexShrink: 0
+                            boxShadow: '0 0 15px rgba(112,0,255,0.4)', flexShrink: 0
                         }}>
-                            <BellRing size={28} color="#fff" strokeWidth={2.5} />
+                            <BellRing size={20} color="#fff" strokeWidth={2.5} />
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '900', color: '#7000ff', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
-                                Diqqat! Navbatdagi Bron 🚨
-                            </h4>
-                            <div style={{ marginTop: '4px', fontSize: '16px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ color: '#fff' }}>{globalAlert.pcName || 'PC'}</span>
-                                <span style={{ opacity: 0.4 }}>•</span>
-                                <span style={{ color: '#39ff14' }}>{globalAlert.guestName || 'Mijoz'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <h4 style={{ margin: 0, fontSize: '10px', fontWeight: '950', color: '#7000ff', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                                    NOTIFICATION
+                                </h4>
+                                <motion.div animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#39ff14' }} />
                             </div>
-                            <p style={{ margin: '4px 0 0', fontSize: '12px', opacity: 0.6 }}>5 minutda bron davri boshlanadi!</p>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '1px' }}>
+                                <span style={{ fontSize: '15px', fontWeight: '950', color: '#fff', whiteSpace: 'nowrap' }}>{globalAlert.pcName || 'PC'}</span>
+                                <span style={{ fontSize: '12px', opacity: 0.4, fontWeight: 'bold' }}>•</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#39ff14', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{globalAlert.guestName || 'Mijoz'}</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '10px', opacity: 0.5, fontWeight: '800' }}>5 daqiqadan so'ng bron davri boshlanadi!</p>
                         </div>
                         <div
                             onClick={() => setGlobalAlert(null)}
-                            style={{ padding: '10px', cursor: 'pointer', opacity: 0.3 }}
+                            style={{
+                                width: '28px', height: '28px', borderRadius: '50%',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                background: 'rgba(255,255,255,0.04)', cursor: 'pointer', opacity: 0.4
+                            }}
                         >
-                            ×
+                            <X size={14} />
                         </div>
                     </motion.div>
                 )}

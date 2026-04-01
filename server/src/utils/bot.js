@@ -1,5 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
-const logger = require('./logger');
+const logger = require('../shared/utils/logger');
 
 const token = process.env.BOT_TOKEN;
 let bot = null;

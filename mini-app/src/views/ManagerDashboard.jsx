@@ -7,7 +7,7 @@ import { LayoutGrid, Monitor, Users, Wallet, BellRing, Clock } from 'lucide-reac
 import RevenueDashboard from '../components/stats/RevenueDashboard';
 import RoomGrid from '../components/inventory/RoomGrid';
 import PCControlModal from '../components/pc/PCControlModal';
-import LiveTimer from '../components/common/LiveTimer';
+import LiveTimer from '../components/shared/LiveTimer';
 
 const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     const [stats, setStats] = useState(null);

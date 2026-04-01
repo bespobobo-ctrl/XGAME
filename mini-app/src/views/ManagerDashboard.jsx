@@ -34,7 +34,26 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                 callAPI(`/api/manager/rooms?t=${Date.now()}`)
             ]);
             if (s && !s.error) setStats(s);
-            if (Array.isArray(r)) setRooms(r);
+            if (Array.isArray(r)) {
+                setRooms(r);
+
+                // 🔄 Sync current view room with fresh data
+                setSelectedViewRoom(prev => {
+                    if (!prev) return null;
+                    return r.find(room => room.id === prev.id) || prev;
+                });
+
+                // 🔄 Sync current selected PC modal with fresh data
+                setSelectedPC(prev => {
+                    if (!prev) return null;
+                    // Find the PC in the updated rooms list
+                    for (const room of r) {
+                        const freshPC = room.Computers?.find(pc => pc.id === prev.id);
+                        if (freshPC) return { ...freshPC, roomPrice: room.pricePerHour };
+                    }
+                    return prev;
+                });
+            }
         } catch (err) { console.error("Sync error:", err); }
         finally { setLoading(false); }
     };

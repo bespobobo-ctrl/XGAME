@@ -147,7 +147,7 @@ exports.cancelReserve = async (req, res, next) => {
         // User faqat o'zining reservationini o'chira oladi (yoki manager bo'lmasa)
         // Biz player controlleridamiz, demak faqat player uchun
         const session = await Session.findOne({
-            where: { ComputerId: id, status: 'paused', reserveTime: { [Op.ne]: null } },
+            where: { ComputerId: id, status: 'reserved' },
             order: [['createdAt', 'DESC']]
         });
 

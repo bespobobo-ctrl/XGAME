@@ -1,4 +1,4 @@
-const { Session, Transaction, Club, User, Computer, Room } = require('../../database/models');
+const { Session, Transaction, Club, User, Computer, Room } = require('../../database');
 const { Op } = require('sequelize');
 
 class FinanceService {
@@ -15,7 +15,7 @@ class FinanceService {
         endOfDay.setHours(23, 59, 59, 999);
 
         // 1. Calculate Daily Revenue (Completed PC sessions)
-        const dayRevenue = await Session.sum('totalPrice', {
+        const dayRevenue = await Session.sum('totalCost', {
             where: {
                 ClubId: clubId,
                 status: 'completed',
@@ -24,7 +24,7 @@ class FinanceService {
         }) || 0;
 
         // 2. Identify Revenue Channels (Cash vs Portal)
-        const cashPcRevenue = await Session.sum('totalPrice', {
+        const cashPcRevenue = await Session.sum('totalCost', {
             where: {
                 ClubId: clubId,
                 status: 'completed',
@@ -33,7 +33,7 @@ class FinanceService {
             }
         }) || 0;
 
-        const userPcRevenue = await Session.sum('totalPrice', {
+        const userPcRevenue = await Session.sum('totalCost', {
             where: {
                 ClubId: clubId,
                 status: 'completed',

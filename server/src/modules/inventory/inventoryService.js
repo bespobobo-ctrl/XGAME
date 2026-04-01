@@ -1,4 +1,4 @@
-const { Room, Computer, Session } = require('../../database/models');
+const { Room, Computer, Session } = require('../../database');
 const { PC_STATUS } = require('../../shared/constants/statuses');
 
 class InventoryService {
@@ -28,7 +28,7 @@ class InventoryService {
         startOfDay.setHours(0, 0, 0, 0);
 
         for (let room of rooms) {
-            const revenue = await Session.sum('totalPrice', {
+            const revenue = await Session.sum('totalCost', {
                 where: {
                     RoomId: room.id,
                     status: 'completed',

@@ -41,11 +41,17 @@ Session.belongsTo(User);
 Computer.hasMany(Session);
 Session.belongsTo(Computer);
 
+// Room → Sessions
+Room.hasMany(Session);
+Session.belongsTo(Room);
+
 // Financial Associations
 User.hasMany(Transaction);
 Transaction.belongsTo(User);
 Club.hasMany(Transaction);
 Transaction.belongsTo(Club);
+Session.hasMany(Transaction);
+Transaction.belongsTo(Session);
 
 // Audit Associations
 User.hasMany(AuditLog, { foreignKey: 'adminId' });
@@ -69,6 +75,12 @@ async function initializeDatabase() {
             } catch (e) { }
             try {
                 await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `expectedMinutes` INTEGER;");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `RoomId` INTEGER;");
+            } catch (e) { }
+            try {
+                await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `ClubId` INTEGER;");
             } catch (e) { }
             try {
                 await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestName` TEXT;");

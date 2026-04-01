@@ -7,6 +7,18 @@ const Session = sequelize.define('Session', {
         autoIncrement: true,
         primaryKey: true,
     },
+    RoomId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
+    ComputerId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    ClubId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
     startTime: {
         type: DataTypes.DATE,
         allowNull: false,

@@ -1,4 +1,4 @@
-const { Session, Computer, Room, Transaction, sequelize } = require('../../database/models');
+const { Session, Computer, Room, Transaction, sequelize } = require('../../database');
 const { SESSION_STATUS, PC_STATUS } = require('../../shared/constants/statuses');
 const { Op } = require('sequelize');
 
@@ -84,18 +84,18 @@ class SessionService {
             const start = new Date(activeSession.startTime);
             const diffSeconds = Math.max(0, Math.floor((now - start) / 1000));
             const roomPrice = pc.Room?.pricePerHour || 15000;
-            const totalPrice = Math.floor((diffSeconds / 3600) * roomPrice);
+            const totalCost = Math.floor((diffSeconds / 3600) * roomPrice);
 
             await activeSession.update({
                 status: SESSION_STATUS.COMPLETED,
                 endTime: now,
-                totalPrice
+                totalCost: totalCost
             }, { transaction });
 
             // Create financial log
-            if (totalPrice > 0) {
+            if (totalCost > 0) {
                 await Transaction.create({
-                    amount: totalPrice,
+                    amount: totalCost,
                     type: 'income',
                     description: `${pc.name} Session (Stop)`,
                     ClubId: pc.ClubId,

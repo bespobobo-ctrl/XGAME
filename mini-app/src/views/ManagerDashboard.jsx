@@ -38,16 +38,25 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         finally { setLoading(false); }
     };
 
+    // 🔄 PERIODIC DATA FETCHING
     useEffect(() => {
         fetchData();
         const dataInterval = setInterval(fetchData, 5000);
+        return () => clearInterval(dataInterval);
+    }, [activeTab]);
 
+    // 🔌 SOCKET.IO FOR REAL-TIME UPDATES
+    useEffect(() => {
         let socket = null;
         if (window.io) {
-            socket = window.io(API_URL || 'https://server.respect-game.uz', { transports: ['websocket'] });
+            socket = window.io(API_URL || 'https://server.respect-game.uz', {
+                transports: ['websocket'],
+                reconnection: true
+            });
 
             // Join specific club room for instant updates
             if (stats?.clubId) {
+                console.log("🔌 Joining club room:", stats.clubId);
                 socket.emit('join-club', stats.clubId);
             }
 
@@ -59,9 +68,13 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
 
             socket.on('pc-status-updated', fetchData);
             socket.on('room_update', fetchData);
+
+            socket.on('connect', () => {
+                if (stats?.clubId) socket.emit('join-club', stats.clubId);
+            });
         }
-        return () => { clearInterval(dataInterval); if (socket) socket.disconnect(); };
-    }, [activeTab]);
+        return () => { if (socket) socket.disconnect(); };
+    }, [stats?.clubId]);
 
     const handleAction = async (action, expectedMinutes = null) => {
         if (!selectedPC || actionLoading) return;

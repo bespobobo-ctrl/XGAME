@@ -55,16 +55,26 @@ class FinanceService {
             return acc + (diffHours * (s.Room?.pricePerHour || 15000));
         }, 0);
 
-        // 4. Club Information
+        // 4. Penalty Profit (Forfeited deposits from late cancellations)
+        const penaltyProfit = await Session.sum('prepaidAmount', {
+            where: {
+                ClubId: clubId,
+                status: 'cancelled',
+                updatedAt: { [Op.between]: [startOfDay, endOfDay] }
+            }
+        }) || 0;
+
+        // 5. Club Information
         const club = await Club.findByPk(clubId);
 
         return {
             clubId: clubId,
             clubName: club?.name || 'Unknown Club',
             revenue: {
-                day: Math.round(dayRevenue + activeRevenue),
+                day: Math.round(dayRevenue + activeRevenue + penaltyProfit),
                 cashPcRevenue: Math.round(cashPcRevenue),
-                userPcRevenue: Math.round(userPcRevenue)
+                userPcRevenue: Math.round(userPcRevenue),
+                penaltyProfit: Math.round(penaltyProfit)
             },
             counts: {
                 activeSessions: activeSessions.length

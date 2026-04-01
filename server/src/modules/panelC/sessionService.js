@@ -156,10 +156,15 @@ class SessionService {
     }
 
     async _handleReserve(pc, time, name, phone, transaction, userId = null) {
-        const today = new Date().toISOString().split('T')[0];
-        const reserveDate = new Date(`${today}T${time}:00`);
-        const now = new Date();
+        // 🇺🇿 TOSHKENT VAQTI (GMT+5) QAT'IY HISOB-KITOB
+        const nowInTashkent = new Date(new Date().getTime() + (5 * 3600000));
+        const todayStr = nowInTashkent.toISOString().split('T')[0];
 
+        // Explicitly set offset as +05:00
+        const isoStr = `${todayStr}T${time}:00+05:00`;
+        const reserveDate = new Date(isoStr);
+
+        const now = new Date(); // Actual global NOW
         if (reserveDate <= now) throw new Error("O'tgan vaqtga bron qilib bo'lmaydi!");
 
         const roomPrice = pc.Room?.pricePerHour || 15000;

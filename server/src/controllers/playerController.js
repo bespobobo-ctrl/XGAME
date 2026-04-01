@@ -92,24 +92,30 @@ exports.reservePc = async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Bu kompyuter hozir bo'sh emas" });
         }
 
-        // 🇺🇿 TOSHKENT VAQTINI HISOBGA OLISH (UTC+5)
-        let rDate = new Date();
+        // 🇺🇿 TOSHKENT VAQTI (GMT+5) QAT'IY HISOB-KITOB
+        const nowInTashkent = new Date(new Date().getTime() + (5 * 3600000));
+        const todayStr = nowInTashkent.toISOString().split('T')[0];
+        const now = new Date();
+        let rDate;
+
         if (reserveTime && reserveTime.includes(':')) {
-            const [h, m] = reserveTime.split(':');
-            const now = new Date();
-            rDate = new Date(now.getTime());
-            rDate.setUTCHours(parseInt(h) - 5, parseInt(m), 0, 0);
+            rDate = new Date(`${todayStr}T${reserveTime}:00+05:00`);
+            // Agar vaqt o'tib ketgan bo'lsa, ertangi kunga
             if (rDate < now) {
-                rDate.setUTCDate(rDate.getUTCDate() + 1);
+                const tomorrowInTashkent = new Date(nowInTashkent.getTime() + 86400000);
+                const tomStr = tomorrowInTashkent.toISOString().split('T')[0];
+                rDate = new Date(`${tomStr}T${reserveTime}:00+05:00`);
             }
+        } else {
+            return res.status(400).json({ success: false, message: 'Vaqt noto\'g\'ri kiritilgan' });
         }
 
         await Session.create({
-            startTime: new Date(),
+            startTime: rDate, // ⬅️ BU MUHIM! Tanlangan vaqtni startTime ga yozamiz
             ComputerId: pc.id,
             ClubId: user.ClubId,
             UserId: user.id,
-            status: 'reserved', // Statusni to'g'ridan-to'g'ri 'reserved' qilamiz
+            status: 'reserved',
             reserveTime: rDate,
             guestName: user.firstName && user.firstName !== '_' ? user.firstName : user.username,
             guestPhone: user.telegramId || 'Telegram User'

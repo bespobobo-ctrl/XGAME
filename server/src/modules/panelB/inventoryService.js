@@ -1,5 +1,6 @@
 const { Room, Computer, Session } = require('../../shared/database');
 const { PC_STATUS } = require('../../shared/constants/statuses');
+const { Op } = require('sequelize');
 
 class InventoryService {
     /**
@@ -42,7 +43,7 @@ class InventoryService {
             ],
             where: {
                 status: 'completed',
-                updatedAt: { [require('sequelize').Op.gte]: startOfDay }
+                updatedAt: { [Op.gte]: startOfDay }
             },
             group: ['RoomId'],
             raw: true

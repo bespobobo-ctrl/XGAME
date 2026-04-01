@@ -112,8 +112,12 @@ async function checkReservations(io) {
             }
             pc.status = 'reserved'; await pc.save();
             if (io) {
-                io.emit('upcoming-alert', { pcName: pc.name, guestName: res.guestName });
-                io.emit('pc-status-updated', { pcId: pc.id, clubId: pc.ClubId, status: 'reserved' });
+                io.to(`club_${pc.ClubId}`).emit('upcoming-alert', {
+                    pcName: pc.name,
+                    guestName: res.guestName || 'Noma\'lum mijoz',
+                    type: 'warning'
+                });
+                io.to(`club_${pc.ClubId}`).emit('pc-status-updated', { pcId: pc.id, clubId: pc.ClubId, status: 'reserved' });
             }
         }
     }

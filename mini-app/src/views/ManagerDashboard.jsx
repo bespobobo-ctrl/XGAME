@@ -139,9 +139,43 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
         <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '120px' }}>
             <AnimatePresence>
                 {globalAlert && (
-                    <motion.div initial={{ y: -100, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -100, opacity: 0 }} style={{ position: 'fixed', top: 0, left: '15px', right: '15px', zIndex: 5000, background: 'linear-gradient(90deg, #7000ff, #000)', padding: '24px', borderRadius: '35px', border: '1px solid #fff', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <BellRing size={28} />
-                        <div style={{ flex: 1 }}><b style={{ fontSize: '18px', display: 'block' }}>OGOHLANTIRISH! 🚨</b><span><b>{globalAlert.pcName}</b>: 5 minutda bron boshlanadi!</span></div>
+                    <motion.div
+                        initial={{ y: -120, opacity: 0, scale: 0.9 }}
+                        animate={{ y: 20, opacity: 1, scale: 1 }}
+                        exit={{ y: -120, opacity: 0, scale: 0.9 }}
+                        style={{
+                            position: 'fixed', top: 0, left: '15px', right: '15px', zIndex: 9999,
+                            background: 'rgba(20, 20, 20, 0.7)', backdropFilter: 'blur(30px)',
+                            border: '1px solid rgba(112, 0, 255, 0.5)', borderRadius: '30px',
+                            padding: '24px', display: 'flex', alignItems: 'center', gap: '20px',
+                            boxShadow: '0 25px 50px rgba(0,0,0,0.6), 0 0 20px rgba(112,0,255,0.2)'
+                        }}
+                    >
+                        <div style={{
+                            width: '55px', height: '55px', borderRadius: '18px',
+                            background: 'linear-gradient(45deg, #7000ff, #39ff14)',
+                            display: 'flex', justifyContent: 'center', alignItems: 'center',
+                            boxShadow: '0 0 20px rgba(112,0,255,0.4)', flexShrink: 0
+                        }}>
+                            <BellRing size={28} color="#fff" strokeWidth={2.5} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '900', color: '#7000ff', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                                Diqqat! Navbatdagi Bron 🚨
+                            </h4>
+                            <div style={{ marginTop: '4px', fontSize: '16px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ color: '#fff' }}>{globalAlert.pcName || 'PC'}</span>
+                                <span style={{ opacity: 0.4 }}>•</span>
+                                <span style={{ color: '#39ff14' }}>{globalAlert.guestName || 'Mijoz'}</span>
+                            </div>
+                            <p style={{ margin: '4px 0 0', fontSize: '12px', opacity: 0.6 }}>5 minutda bron davri boshlanadi!</p>
+                        </div>
+                        <div
+                            onClick={() => setGlobalAlert(null)}
+                            style={{ padding: '10px', cursor: 'pointer', opacity: 0.3 }}
+                        >
+                            ×
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

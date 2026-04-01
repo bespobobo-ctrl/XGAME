@@ -64,7 +64,20 @@ class FinanceService {
             }
         }) || 0;
 
-        // 5. Club Information
+        // 5. Inventory Stats
+        const [totalRooms, allPCs] = await Promise.all([
+            Room.count({ where: { ClubId: clubId } }),
+            Computer.findAll({ where: { ClubId: clubId }, attributes: ['status'] })
+        ]);
+
+        const pcStats = {
+            total: allPCs.length,
+            busy: allPCs.filter(pc => ['busy', 'paused'].includes(pc.status)).length,
+            reserved: allPCs.filter(pc => pc.status === 'reserved').length,
+            free: allPCs.filter(pc => pc.status === 'free').length
+        };
+
+        // 6. Club Information
         const club = await Club.findByPk(clubId);
 
         return {
@@ -77,7 +90,8 @@ class FinanceService {
                 penaltyProfit: Math.round(penaltyProfit)
             },
             counts: {
-                activeSessions: activeSessions.length
+                totalRooms,
+                ...pcStats
             }
         };
     }

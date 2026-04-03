@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callAPI, API_URL } from '../api';
-import { LayoutGrid, Monitor, Users, Wallet, BellRing, LogOut, CheckCircle2, AlertCircle, X, Phone } from 'lucide-react';
+import { LayoutGrid, Monitor, Users, Wallet, BellRing, LogOut, CheckCircle2, AlertCircle, X, Phone, Coffee } from 'lucide-react';
 
 // Modules & Components
 import RevenueDashboard from '../components/stats/RevenueDashboard';
@@ -10,6 +10,7 @@ import PCControlModal from '../components/pc/PCControlModal';
 import LiveTimer from '../components/shared/LiveTimer';
 
 import ManageUsers from '../components/users/ManageUsers';
+import ManagerBar from '../components/bar/ManagerBar';
 
 const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     const [stats, setStats] = useState(null);
@@ -281,6 +282,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
 
             <main style={{ paddingBottom: '100px' }}>
                 {activeTab === 'stats' && <RevenueDashboard stats={stats} />}
+                {activeTab === 'bar' && <ManagerBar />}
                 {activeTab === 'rooms' && (
                     <RoomGrid
                         rooms={rooms}
@@ -310,9 +312,10 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                 handleAction={handleAction}
             />
 
-            <nav style={{ position: 'fixed', bottom: '25px', left: '20px', right: '20px', background: 'rgba(12,12,12,0.9)', backdropFilter: 'blur(30px)', padding: '15px 10px', borderRadius: '40px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <nav style={{ position: 'fixed', bottom: '25px', left: '15px', right: '15px', background: 'rgba(12,12,12,0.9)', backdropFilter: 'blur(30px)', padding: '15px 5px', borderRadius: '40px', display: 'flex', justifyContent: 'space-around', zIndex: 1000, border: '1px solid rgba(255,255,255,0.1)' }}>
                 {navItem('stats', 'Asosiy', <LayoutGrid size={22} />)}
                 {navItem('rooms', 'Xarita', <Monitor size={22} />)}
+                {navItem('bar', 'Bar', <Coffee size={22} />)}
                 {navItem('users', 'Mijozlar', <Users size={22} />)}
                 {navItem('payments', 'Kassa', <Wallet size={22} />)}
             </nav>

@@ -308,7 +308,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                     <h1 style={{ margin: 0, fontSize: '42px', fontWeight: '1000', letterSpacing: '-2px', color: '#fff' }}>{pcDetail.name}</h1>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
                                         <div style={{ width: '8px', height: '8px', background: '#7000ff', borderRadius: '50%', boxShadow: '0 0 10px #7000ff' }} />
-                                        <span style={{ fontSize: '11px', color: '#7000ff', fontWeight: '900', letterSpacing: '1.5px' }}>PREMIUM RESERVATION</span>
+                                        <span style={{ fontSize: '11px', color: '#7000ff', fontWeight: '900', letterSpacing: '1.5px' }}>PREMIUM BRON QILISH</span>
                                     </div>
                                 </div>
                                 <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPcDetail(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: '55px', height: '55px', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)' }}><X size={26} /></motion.button>
@@ -317,7 +317,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                             {((pcDetail.status || '').toLowerCase() === 'free' || (pcDetail.status || '').toLowerCase() === 'available') ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                                     <div style={{ background: '#000', padding: '40px 30px', borderRadius: '40px', border: '1.5px solid rgba(255,255,255,0.03)', boxShadow: 'inset 0 0 30px rgba(112,0,255,0.05)', position: 'relative' }}>
-                                        <p style={{ margin: '0 0 20px', fontSize: '12px', color: '#444', fontWeight: '1000', textAlign: 'center', letterSpacing: '2px' }}>SET VIRTUAL TIME</p>
+                                        <p style={{ margin: '0 0 20px', fontSize: '12px', color: '#444', fontWeight: '1000', textAlign: 'center', letterSpacing: '2px' }}>VAQTNI KIRITING</p>
                                         <input
                                             type="text"
                                             placeholder="00 : 00"
@@ -328,7 +328,7 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                                 if (val.length > 5) val = val.substring(0, 5);
                                                 setReserveTimeInput(val);
                                             }}
-                                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '66px', textAlign: 'center', fontWeight: '1000', fontFamily: 'monospace', outline: 'none', letterSpacing: '5px' }}
+                                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '48px', textAlign: 'center', fontWeight: '1000', fontFamily: 'monospace', outline: 'none', letterSpacing: '3px' }}
                                         />
                                     </div>
                                     <motion.button
@@ -349,13 +349,13 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                                         }}
                                     >
-                                        {reserveLoading ? 'PROCESSING...' : (reserveTimeInput.length < 5 ? 'COMPLETE TIME FORM' : 'CONFIRM RESERVATION ✅')}
+                                        {reserveLoading ? 'YUKLANMOQDA...' : (reserveTimeInput.length < 5 ? 'VAQTNI TO\'LIQ YAZING' : 'BRONNI TASDIQLASH ✅')}
                                     </motion.button>
                                 </div>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '50px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '40px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                                     <Info size={45} color="#222" style={{ marginBottom: '20px' }} />
-                                    <p style={{ margin: 0, fontSize: '14px', color: '#555', fontWeight: '900', letterSpacing: '0.5px' }}>This terminal is currently occupied.</p>
+                                    <p style={{ margin: 0, fontSize: '14px', color: '#555', fontWeight: '900', letterSpacing: '0.5px' }}>Bu kompyuter hozir band yoki ishlayabdi.</p>
                                 </div>
                             )}
                         </motion.div>

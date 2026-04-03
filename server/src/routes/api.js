@@ -80,6 +80,7 @@ router.post('/manager/reservation/:id/confirm-penalty-warning', auth, authorize(
 router.get('/manager/bar/products', auth, authorize('manager'), asyncHandler(managerAppCtrl.getProducts));
 router.post('/manager/bar/products', auth, authorize('manager'), asyncHandler(managerAppCtrl.addProduct));
 router.get('/manager/bar/history', auth, authorize('manager'), asyncHandler(managerAppCtrl.getBarHistory));
+router.get('/manager/kassa/history', auth, authorize('manager'), asyncHandler(managerAppCtrl.getKassaHistory));
 router.post('/manager/bar/sell', auth, authorize('manager'), asyncHandler(managerAppCtrl.sellProduct));
 
 /**

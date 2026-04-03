@@ -11,6 +11,7 @@ import LiveTimer from '../components/shared/LiveTimer';
 
 import ManageUsers from '../components/users/ManageUsers';
 import ManagerBar from '../components/bar/ManagerBar';
+import ManagerKassa from '../components/finance/ManagerKassa';
 
 const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
     const [stats, setStats] = useState(null);
@@ -293,13 +294,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
                     />
                 )}
                 {activeTab === 'users' && <ManageUsers stats={stats} />}
-                {activeTab === 'payments' && (
-                    <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>
-                        <Wallet size={48} style={{ marginBottom: '15px' }} />
-                        <h3>Kassa bo'limi</h3>
-                        <p>Тo'lovlar tarixi tez kunda qo'shiladi...</p>
-                    </div>
-                )}
+                {activeTab === 'payments' && <ManagerKassa />}
             </main>
 
             <PCControlModal

@@ -491,6 +491,30 @@ class ManagerAppController {
         }
     }
 
+    async getKassaHistory(req, res) {
+        try {
+            const clubId = req.user?.ClubId;
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const transactions = await Transaction.findAll({
+                where: {
+                    ClubId: clubId,
+                    createdAt: { [Op.gte]: startOfDay }
+                },
+                include: [
+                    { model: User, attributes: ['username'] },
+                    { model: Session, attributes: ['startTime', 'endTime', 'totalCost', 'guestName', 'status'] }
+                ],
+                order: [['createdAt', 'DESC']]
+            });
+
+            res.json(transactions);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // ═══════════════════════════════════════
     // ⚙️ SETUP & BROADCAST
     // ═══════════════════════════════════════

@@ -19,6 +19,12 @@ const UserDashboard = ({ user, onLogout, setView }) => {
     const [receiptFile, setReceiptFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [topupMethod, setTopupMethod] = useState('card'); // card, cash
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const clubName = profileData?.user?.clubName || 'GAME ZONE';
     const userName = (profileData?.user?.name || user?.username || 'GAMER').toUpperCase();
@@ -118,15 +124,17 @@ const UserDashboard = ({ user, onLogout, setView }) => {
     return (
         <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '130px', fontFamily: '"Outfit", "Inter", sans-serif' }}>
 
-            <header style={{ padding: '25px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(20px)', zIndex: 100 }}>
+            <header style={{ padding: '25px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(30px)', zIndex: 100, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#fff' }}>{clubName}</h1>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{ width: '7px', height: '7px', background: '#39ff14', borderRadius: '50%', boxShadow: '0 0 10px #39ff14' }} />
-                        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#555' }}>ONLINE XIZMAT</span>
+                    <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '1000', color: '#fff', letterSpacing: '-1.5px', textShadow: '0 0 20px rgba(112,0,255,0.3)' }}>{clubName}</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '6px', height: '6px', background: '#39ff14', borderRadius: '50%', boxShadow: '0 0 10px #39ff14' }} />
+                        <span style={{ fontSize: '10px', fontWeight: '900', color: '#39ff14', letterSpacing: '1px' }}>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                     </div>
                 </div>
-                <button onClick={onLogout} style={{ background: '#111', color: '#ff4444', border: '1px solid #1a1a1a', padding: '10px 15px', borderRadius: '15px', fontSize: '10px', fontWeight: '900' }}>CHIQISH</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button onClick={onLogout} style={{ background: 'rgba(255,68,68,0.1)', color: '#ff4444', border: '1px solid rgba(255,68,68,0.2)', padding: '12px 18px', borderRadius: '18px', fontSize: '11px', fontWeight: '1000', letterSpacing: '1px' }}>EXIT</button>
+                </div>
             </header>
 
             <AnimatePresence mode="wait">
@@ -139,21 +147,22 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                         </div>
 
                         <motion.button
-                            whileTap={{ scale: 0.96 }}
+                            whileTap={{ scale: 0.94 }}
                             onClick={handleScanQR}
-                            style={{ width: '100%', background: 'linear-gradient(135deg, #7000ff, #5000cc)', border: 'none', borderRadius: '35px', padding: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', boxShadow: '0 10px 30px -5px rgba(112,0,255,0.4)', marginBottom: '25px' }}
+                            style={{ width: '100%', background: 'linear-gradient(135deg, #7000ff, #ff00ff)', border: 'none', borderRadius: '35px', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', boxShadow: '0 15px 40px -10px rgba(112,0,255,0.6)', marginBottom: '25px', position: 'relative', overflow: 'hidden' }}
                         >
-                            <QrCode size={26} color="#fff" />
-                            <span style={{ fontSize: '17px', fontWeight: '950', color: '#fff' }}>QR BASHQARISH</span>
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(rgba(255,255,255,0.1), transparent)', pointerEvents: 'none' }} />
+                            <QrCode size={28} color="#fff" strokeWidth={3} />
+                            <span style={{ fontSize: '18px', fontWeight: '1000', color: '#fff', letterSpacing: '0.5px' }}>SCAN QR CODE</span>
                         </motion.button>
 
-                        <div style={{ background: 'linear-gradient(145deg, #121212, #050505)', borderRadius: '40px', padding: '30px', border: '1px solid #1a1a1a', marginBottom: '25px', position: 'relative', overflow: 'hidden' }}>
-                            <div style={{ position: 'absolute', bottom: '-40px', right: '-20px', width: '120px', height: '120px', background: '#7000ff', filter: 'blur(70px)', opacity: 0.15 }} />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Wallet size={14} color="#7000ff" /><span style={{ fontSize: '11px', color: '#444', fontWeight: 'bold' }}>BALANSINGIZ</span></div>
+                        <div style={{ background: 'linear-gradient(145deg, #0f0f0f, #050505)', borderRadius: '45px', padding: '35px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '25px', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', width: '150px', height: '150px', background: '#7000ff', filter: 'blur(80px)', opacity: 0.1 }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><Wallet size={16} color="#7000ff" strokeWidth={3} /><span style={{ fontSize: '12px', color: '#666', fontWeight: '900', letterSpacing: '1px' }}>MAX BALANCE</span></div>
                             </div>
-                            <h1 style={{ margin: 0, fontSize: '46px', fontWeight: '900', letterSpacing: '-2px' }}>{profileData?.user?.balance?.toLocaleString()} <span style={{ fontSize: '16px', color: '#333' }}>UZS</span></h1>
-                            <button onClick={() => setActiveTab('topup')} style={{ marginTop: '25px', width: '100%', padding: '18px', background: '#fff', color: '#000', borderRadius: '22px', fontWeight: '950', fontSize: '13px', border: 'none' }}>+ TO'LDIRISH</button>
+                            <h1 style={{ margin: 0, fontSize: '50px', fontWeight: '1000', letterSpacing: '-2.5px', color: '#fff' }}>{profileData?.user?.balance?.toLocaleString()} <span style={{ fontSize: '18px', color: '#333' }}>UZS</span></h1>
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveTab('topup')} style={{ marginTop: '30px', width: '100%', padding: '20px', background: '#fff', color: '#000', borderRadius: '25px', fontWeight: '1000', fontSize: '14px', border: 'none', boxShadow: '0 10px 20px rgba(255,255,255,0.1)' }}>TOP UP WALLET</motion.button>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '25px' }}>
@@ -293,18 +302,25 @@ const UserDashboard = ({ user, onLogout, setView }) => {
             <AnimatePresence>
                 {pcDetail && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={(e) => e.target === e.currentTarget && setPcDetail(null)}>
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#0a0a0a', width: '100%', padding: '40px 25px', borderRadius: '45px 45px 0 0', borderTop: '1.5px solid #131313' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '35px' }}>
-                                <div><h1 style={{ margin: 0, fontSize: '38px', fontWeight: '950', letterSpacing: '-1.5px' }}>{pcDetail.name}</h1><p style={{ margin: 0, fontSize: '12px', color: '#7000ff', fontWeight: 'bold' }}>VIP BRON QILISH TIZIMI</p></div>
-                                <button onClick={() => setPcDetail(null)} style={{ background: '#111', color: '#fff', width: '50px', height: '50px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={24} /></button>
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} style={{ background: '#080808', width: '100%', padding: '45px 25px', borderRadius: '50px 50px 0 0', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -20px 60px rgba(0,0,0,0.5)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
+                                <div>
+                                    <h1 style={{ margin: 0, fontSize: '42px', fontWeight: '1000', letterSpacing: '-2px', color: '#fff' }}>{pcDetail.name}</h1>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
+                                        <div style={{ width: '8px', height: '8px', background: '#7000ff', borderRadius: '50%', boxShadow: '0 0 10px #7000ff' }} />
+                                        <span style={{ fontSize: '11px', color: '#7000ff', fontWeight: '900', letterSpacing: '1.5px' }}>PREMIUM RESERVATION</span>
+                                    </div>
+                                </div>
+                                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPcDetail(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: '55px', height: '55px', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)' }}><X size={26} /></motion.button>
                             </div>
+
                             {((pcDetail.status || '').toLowerCase() === 'free' || (pcDetail.status || '').toLowerCase() === 'available') ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                                    <div style={{ background: '#000', padding: '30px', borderRadius: '35px', border: '1.5px solid #131313', position: 'relative' }}>
-                                        <p style={{ margin: '0 0 15px', fontSize: '11px', color: '#444', fontWeight: 'bold', textAlign: 'center' }}>VIRTUAL SOATNI KIRITING (masalan: 18:00)</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                                    <div style={{ background: '#000', padding: '40px 30px', borderRadius: '40px', border: '1.5px solid rgba(255,255,255,0.03)', boxShadow: 'inset 0 0 30px rgba(112,0,255,0.05)', position: 'relative' }}>
+                                        <p style={{ margin: '0 0 20px', fontSize: '12px', color: '#444', fontWeight: '1000', textAlign: 'center', letterSpacing: '2px' }}>SET VIRTUAL TIME</p>
                                         <input
                                             type="text"
-                                            placeholder="-- : --"
+                                            placeholder="00 : 00"
                                             value={reserveTimeInput}
                                             onChange={e => {
                                                 let val = e.target.value.replace(/[^0-9:]/g, '');
@@ -312,28 +328,35 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                                                 if (val.length > 5) val = val.substring(0, 5);
                                                 setReserveTimeInput(val);
                                             }}
-                                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '58px', textAlign: 'center', fontWeight: '900', fontFamily: 'monospace', outline: 'none' }}
+                                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '66px', textAlign: 'center', fontWeight: '1000', fontFamily: 'monospace', outline: 'none', letterSpacing: '5px' }}
                                         />
                                     </div>
-                                    <button
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
                                         onClick={() => handleReserve(pcDetail.id)}
                                         disabled={reserveLoading || reserveTimeInput.length < 5}
                                         style={{
                                             width: '100%',
-                                            padding: '25px',
-                                            background: (reserveTimeInput.length < 5) ? '#111' : '#39ff14',
+                                            padding: '28px',
+                                            background: (reserveTimeInput.length < 5) ? '#111' : 'linear-gradient(135deg, #39ff14, #00cc00)',
                                             color: (reserveTimeInput.length < 5) ? '#333' : '#000',
-                                            borderRadius: '30px',
-                                            fontWeight: '950',
+                                            borderRadius: '35px',
+                                            fontWeight: '1000',
                                             fontSize: '18px',
-                                            transition: 'all 0.3s ease'
+                                            border: 'none',
+                                            boxShadow: (reserveTimeInput.length < 5) ? 'none' : '0 15px 35px -10px rgba(57,255,20,0.5)',
+                                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                                         }}
                                     >
-                                        {reserveLoading ? '...' : (reserveTimeInput.length < 5 ? 'VAQTNI TO\'LIQ YAZING' : 'BRON QILISH ✅')}
-                                    </button>
+                                        {reserveLoading ? 'PROCESSING...' : (reserveTimeInput.length < 5 ? 'COMPLETE TIME FORM' : 'CONFIRM RESERVATION ✅')}
+                                    </motion.button>
                                 </div>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px' }}><Info size={40} color="#333" style={{ marginBottom: '15px' }} /><p style={{ margin: 0, fontSize: '14px', color: '#444', fontWeight: 'bold' }}>Hozirda bu PC band.</p></div>
+                                <div style={{ textAlign: 'center', padding: '50px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '40px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                    <Info size={45} color="#222" style={{ marginBottom: '20px' }} />
+                                    <p style={{ margin: 0, fontSize: '14px', color: '#555', fontWeight: '900', letterSpacing: '0.5px' }}>This terminal is currently occupied.</p>
+                                </div>
                             )}
                         </motion.div>
                     </motion.div>

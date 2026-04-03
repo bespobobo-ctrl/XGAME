@@ -1,4 +1,4 @@
-const { Session, User, Computer, sequelize } = require('../shared/database');
+const { Session, User, Computer, Room, sequelize } = require('../shared/database');
 const { Op } = require('sequelize');
 const notificationService = require('../services/notificationService');
 
@@ -25,7 +25,7 @@ class ReservationScheduler {
                     status: 'reserved',
                     startTime: { [Op.gte]: new Date(now.getTime() - 15 * 60000) } // Catch sessions that started recently too
                 },
-                include: [{ model: User }, { model: Computer }]
+                include: [{ model: User }, { model: Computer, include: [{ model: Room }] }]
             });
 
             for (const res of reservations) {
@@ -72,7 +72,8 @@ class ReservationScheduler {
 
     async notify30m(res, io) {
         if (!res.User?.telegramId || res.User.telegramId === '0') return;
-        const text = `🔔 <b>ESLATMA (30 DAQIQA):</b>\n\nHurmatli ${res.User.username}, bron qilingan vaqtingizga 30 daqiqa qoldi. Iltimos, o'z vaqtida kelishingizni so'raymiz! ✨`;
+        const timeString = new Date(res.startTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
+        const text = `🔔 <b>ESLATMA (30 DAQIQA):</b>\n\nHurmatli ${res.User.username}, soat <b>${timeString}</b> dagi bron qilingan vaqtingizga 30 daqiqa qoldi. Iltimos, o'z vaqtida kelishingizni so'raymiz! ✨`;
         await notificationService.sendTelegramToUser(res.User.telegramId, text);
         await res.update({ notifiedAt: new Date() });
     }
@@ -84,19 +85,24 @@ class ReservationScheduler {
             inline_keyboard: [[{ text: "🚀 BORYABMAN", callback_data: `coming_${res.id}` }]]
         };
 
-        const text = `🔔 <b>HURMATLI ${res.User.username.toUpperCase()}!</b>\n\nSizni 10 daqiqadan so'ng <b>GAMEZONE</b> klubimizda (PC: ${res.Computer?.name || '?'}) kutib qolamiz. Ko'rishguncha hursandmiz! ✨`;
+        const timeString = new Date(res.startTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
+        const roomName = res.Computer?.Room?.name || 'Umumiy zal';
+
+        const text = `🔔 <b>HURMATLI ${res.User.username.toUpperCase()}!</b>\n\nSizni soat <b>${timeString}</b> da <b>GAMEZONE</b> klubimizda (XONA: ${roomName}, PC: ${res.Computer?.name || '?'}) kutib qolamiz. Ko'rishguncha xursandmiz! ✨`;
 
         await notificationService.sendTelegramToUser(res.User.telegramId, text, markup);
         await res.update({ notified10m: true });
     }
 
     async notify5m(res, io) {
+        const timeString = new Date(res.startTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
+
         // User reminder
         if (res.User?.telegramId && res.User.telegramId !== '0') {
             const markup = {
                 inline_keyboard: [[{ text: "🏃 YO'LDAMAN", callback_data: `coming_${res.id}` }]]
             };
-            const text = `⚠️ <b>ESLATMA (5 DAQIQA QOLDI):</b>\n\nHurmatli ${res.User.username}, bron qilingan vaqtga oz qoldi. Iltimos, o'z vaqtida kelishingizni so'raymiz.`;
+            const text = `⚠️ <b>ESLATMA (5 DAQIQA QOLDI):</b>\n\nHurmatli ${res.User.username}, soat <b>${timeString}</b> dagi broningizga oz qoldi. Iltimos, o'z vaqtida kelishingizni so'raymiz.`;
             await notificationService.sendTelegramToUser(res.User.telegramId, text, markup);
         }
 

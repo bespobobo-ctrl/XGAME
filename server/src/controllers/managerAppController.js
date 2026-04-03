@@ -515,6 +515,45 @@ class ManagerAppController {
         }
     }
 
+    async getKassaDetail(req, res) {
+        try {
+            const { id } = req.params;
+            const clubId = req.user?.ClubId;
+
+            const baseTx = await Transaction.findOne({
+                where: { id, ClubId: clubId },
+                include: [User]
+            });
+
+            if (!baseTx) return res.status(404).json({ error: "Topilmadi" });
+
+            if (baseTx.SessionId) {
+                const session = await Session.findByPk(baseTx.SessionId, {
+                    include: [
+                        { model: Transaction },
+                        { model: Computer, attributes: ['name'] }
+                    ]
+                });
+
+                return res.json({
+                    type: 'session_detail',
+                    transaction: baseTx,
+                    session: session,
+                    user: baseTx.User
+                });
+            }
+
+            res.json({
+                type: 'standard_detail',
+                transaction: baseTx,
+                user: baseTx.User
+            });
+
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // ═══════════════════════════════════════
     // ⚙️ SETUP & BROADCAST
     // ═══════════════════════════════════════

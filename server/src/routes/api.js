@@ -81,6 +81,7 @@ router.get('/manager/bar/products', auth, authorize('manager'), asyncHandler(man
 router.post('/manager/bar/products', auth, authorize('manager'), asyncHandler(managerAppCtrl.addProduct));
 router.get('/manager/bar/history', auth, authorize('manager'), asyncHandler(managerAppCtrl.getBarHistory));
 router.get('/manager/kassa/history', auth, authorize('manager'), asyncHandler(managerAppCtrl.getKassaHistory));
+router.get('/manager/kassa/detail/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.getKassaDetail));
 router.post('/manager/bar/sell', auth, authorize('manager'), asyncHandler(managerAppCtrl.sellProduct));
 
 /**

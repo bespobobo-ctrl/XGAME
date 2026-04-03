@@ -156,6 +156,10 @@ const PCControlModal = ({
                             <div key="busy-ui">
                                 {(() => {
                                     const info = calculateSessionInfo(selectedPC, selectedPC.roomPrice, localTime);
+                                    const activeS = selectedPC.Sessions?.find(s => ['active', 'paused'].includes(s.status));
+                                    const barTotal = activeS?.Transactions?.reduce((acc, t) => acc + t.amount, 0) || 0;
+                                    const grandTotal = parseInt(info.cost) + barTotal;
+
                                     return (
                                         <div style={{ textAlign: 'center', marginBottom: '25px' }}>
                                             {(() => {
@@ -188,9 +192,18 @@ const PCControlModal = ({
                                             </div>
                                             <p className="secondary-label" style={{ marginBottom: '20px' }}>VAQT ({info.isCountdown ? "QOLDI" : "O'TDI"})</p>
 
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '18px', borderRadius: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <div style={{ textAlign: 'left' }}><p className="secondary-label" style={{ margin: '0 0 5px', fontSize: '9px' }}>NARX</p><b style={{ fontSize: '20px', color: '#39ff14', fontWeight: '950' }}>{parseInt(info.cost).toLocaleString()} <span style={{ fontSize: '10px', color: '#555' }}>UZS</span></b></div>
-                                                <div style={{ textAlign: 'right' }}><p className="secondary-label" style={{ margin: '0 0 5px', fontSize: '9px' }}>BOSHLANDI</p><b style={{ fontSize: '18px', color: '#fff', fontWeight: '950' }}>{info.startTime || '--:--'}</b></div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '18px', borderRadius: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div style={{ textAlign: 'left' }}><p className="secondary-label" style={{ margin: '0 0 5px', fontSize: '9px' }}>PC VAQTI ({info.startTime || '--:--'})</p><b style={{ fontSize: '18px', color: '#fff', fontWeight: '950' }}>{parseInt(info.cost).toLocaleString()} <span style={{ fontSize: '10px', color: '#555' }}>UZS</span></b></div>
+                                                    {barTotal > 0 && <div style={{ textAlign: 'right' }}><p className="secondary-label" style={{ margin: '0 0 5px', fontSize: '9px', color: '#00d1ff' }}>BAR HISOBI</p><b style={{ fontSize: '18px', color: '#00d1ff', fontWeight: '950' }}>+{barTotal.toLocaleString()} <span style={{ fontSize: '10px', color: '#555' }}>UZS</span></b></div>}
+                                                </div>
+
+                                                {barTotal > 0 && (
+                                                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <p className="secondary-label" style={{ margin: 0, fontSize: '11px', color: '#39ff14' }}>JAMI YAKUNIY HISOB:</p>
+                                                        <b style={{ fontSize: '22px', color: '#39ff14', fontWeight: '950' }}>{grandTotal.toLocaleString()} <span style={{ fontSize: '12px', color: '#555' }}>UZS</span></b>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );

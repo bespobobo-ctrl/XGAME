@@ -1,4 +1,4 @@
-const { Room, Computer, Session } = require('../../shared/database');
+const { Room, Computer, Session, Transaction } = require('../../shared/database');
 const { PC_STATUS } = require('../../shared/constants/statuses');
 const { Op } = require('sequelize');
 
@@ -18,7 +18,12 @@ class InventoryService {
                     where: {
                         status: ['active', 'paused', 'reserved']
                     },
-                    required: false
+                    required: false,
+                    include: [{
+                        model: Transaction,
+                        where: { type: 'bar_sale', status: 'unpaid' },
+                        required: false
+                    }]
                 }, {
                     model: Session,
                     as: 'UpcomingReservations',

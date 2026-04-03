@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Coins, Zap, AlertTriangle, Monitor, DoorOpen, PlayCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { Coins, Zap, AlertTriangle, Monitor, DoorOpen, PlayCircle, Clock, CheckCircle2, Coffee } from 'lucide-react';
 
 const RevenueDashboard = ({ stats }) => {
     const counts = stats?.counts || {};
@@ -19,13 +19,20 @@ const RevenueDashboard = ({ stats }) => {
                 <DashItem label="PORTAL" icon={<Zap size={14} color="#39ff14" />} value={stats?.revenue?.userPcRevenue?.toLocaleString() || '0'} color="rgba(57,255,20,0.05)" />
             </div>
 
-            <DashItem
-                label="SHTRAF FOYDA"
-                icon={<AlertTriangle size={14} color="#ffaa00" />}
-                value={stats?.revenue?.penaltyProfit?.toLocaleString() || '0'}
-                color="rgba(255,170,0,0.05)"
-                isWide={true}
-            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                <DashItem
+                    label="SHTRAF FOYDA"
+                    icon={<AlertTriangle size={14} color="#ffaa00" />}
+                    value={stats?.revenue?.penaltyProfit?.toLocaleString() || '0'}
+                    color="rgba(255,170,0,0.05)"
+                />
+                <DashItem
+                    label="BAR HISOBI"
+                    icon={<Coffee size={14} color="#00d1ff" />}
+                    value={stats?.revenue?.barRevenue?.toLocaleString() || '0'}
+                    color="rgba(0,209,255,0.05)"
+                />
+            </div>
 
             {/* 🖥️ CLUBS INVENTORY STATS (PREMIUM UI) */}
             <h4 style={{ margin: '25px 0 15px', fontSize: '11px', fontWeight: '950', opacity: 0.4, letterSpacing: '1.5px', textTransform: 'uppercase', paddingLeft: '5px' }}>KLUB HOLATI</h4>

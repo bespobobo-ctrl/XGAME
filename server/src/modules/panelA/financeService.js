@@ -64,6 +64,15 @@ class FinanceService {
             }
         }) || 0;
 
+        // 4.1 Bar Revenue (Placeholder for Daily Bar Sales)
+        const barRevenue = await Transaction.sum('amount', {
+            where: {
+                ClubId: clubId,
+                type: 'bar_sale',
+                createdAt: { [Op.between]: [startOfDay, endOfDay] }
+            }
+        }) || 0;
+
         // 5. Inventory Stats
         const [totalRooms, allPCs] = await Promise.all([
             Room.count({ where: { ClubId: clubId } }),
@@ -84,10 +93,11 @@ class FinanceService {
             clubId: clubId,
             clubName: club?.name || 'Unknown Club',
             revenue: {
-                day: Math.round(dayRevenue + activeRevenue + penaltyProfit),
+                day: Math.round(dayRevenue + activeRevenue + penaltyProfit + barRevenue),
                 cashPcRevenue: Math.round(cashPcRevenue),
                 userPcRevenue: Math.round(userPcRevenue),
-                penaltyProfit: Math.round(penaltyProfit)
+                penaltyProfit: Math.round(penaltyProfit),
+                barRevenue: Math.round(barRevenue)
             },
             counts: {
                 totalRooms,

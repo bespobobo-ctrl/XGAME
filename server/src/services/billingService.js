@@ -6,7 +6,11 @@ const logger = require('../shared/utils/logger');
  * ⏰ BILLING SERVICE
  * Har daqiqa faol seanslarni tekshiradi va foydalanuvchi balansini nazorat qiladi.
  */
+let isRunning = false;
+
 async function runBillingCycle(io) {
+    if (isRunning) return; // ⛔ Oldingi cycle hali tugamagan
+    isRunning = true;
     try {
         const activeSessions = await Session.findAll({
             where: { status: 'active' },
@@ -67,6 +71,8 @@ async function runBillingCycle(io) {
 
     } catch (err) {
         logger.error('❌ Global Billing Error:', err);
+    } finally {
+        isRunning = false;
     }
 }
 

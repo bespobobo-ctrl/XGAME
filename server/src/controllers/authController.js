@@ -101,9 +101,21 @@ exports.registerPlayer = async (req, res, next) => {
 
 exports.telegramAuth = async (req, res, next) => {
     try {
-        const { tgUser, clubId } = req.body;
+        const { tgUser, clubId, initData } = req.body;
         if (!tgUser || !tgUser.id) {
             return res.status(400).json({ success: false, message: "Telegram ma'lumoti yo'q" });
+        }
+
+        // 🔐 KRIPTOGRAFIK TASDIQLASH (Telegram WebApp)
+        const { validateTelegramInitData } = require('../middlewares/telegramValidator');
+        const isValid = validateTelegramInitData(initData, config.BOT_TOKEN);
+
+        if (!isValid) {
+            if (config.NODE_ENV === 'production') {
+                return res.status(403).json({ success: false, message: "Telegram ma'lumotlari tasdiqlanmadi! ⛔" });
+            } else {
+                console.warn('[⚠️ DEV MODE] Telegram initData tekshiruvsiz o\'tkazildi');
+            }
         }
 
         let user = await User.findOne({ where: { telegramId: tgUser.id.toString() } });

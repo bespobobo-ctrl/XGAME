@@ -53,12 +53,16 @@ class ReservationScheduler {
                     await this.notifyStart(res, io);
                 }
 
-                // --- Case 4: 10 Minutes AFTER Start (Auto-Penalty Deadline) ---
-                // If not arrived and no response, process penalty automatically
-                if (diffMin <= -10 && res.status === 'reserved' && !res.penaltyApplied) {
-                    // This is for auto-check if admin didn't take action
-                    // But the requested flow says admin gets permission first.
-                    // I will implement a task to check those that passed 10m past start.
+                // --- Case 4: AUTO FINAL WARNING (DB-based, setTimeout o'rniga) ---
+                // notifiedStart=true, lekin notifiedPenalty=false va 1 daqiqa o'tgan
+                if (res.notifiedStart && !res.notifiedPenalty) {
+                    await this.checkAutoFinalWarning(res);
+                }
+
+                // --- Case 5: AUTO PENALTY (DB-based, setTimeout o'rniga) ---
+                // notifiedPenalty=true va 10 daqiqa o'tgan — auto-cancel
+                if (res.notifiedPenalty && !res.penaltyApplied) {
+                    await this.checkAutoPenalty(res);
                 }
             }
         } catch (error) {
@@ -116,18 +120,34 @@ class ReservationScheduler {
             user: res.User?.username || res.guestName
         });
 
-        // Auto-send warning after 60 seconds if no action
-        setTimeout(async () => {
-            const freshRes = await Session.findByPk(res.id);
-            if (freshRes && freshRes.status === 'reserved' && !freshRes.notifiedPenalty) {
-                await this.sendFinalPenaltyWarning(freshRes);
-            }
-        }, 60000);
+        // notifiedStart vaqtini saqlaymiz — keyingi check'larda DB orqali tekshiriladi
+        // setTimeout EMAS — server restart bo'lsa ham ishlaydi!
+        await res.update({ notifiedStart: true, notifiedAt: new Date() });
+    }
 
-        await res.update({ notifiedStart: true });
+    /**
+     * DB-BASED auto penalty warning (setTimeout o'rniga)
+     * checkReservations() interval'da chaqiriladi, notifiedStart=true, notifiedPenalty=false
+     * va notifiedAt + 1 daqiqa o'tgan bo'lsa avtomatik ishlaydi
+     */
+    async checkAutoFinalWarning(res) {
+        // notifiedAt dan 1 daqiqa o'tganmi?
+        if (!res.notifiedAt) return;
+        const elapsed = Date.now() - new Date(res.notifiedAt).getTime();
+        if (elapsed < 60000) return; // 1 daqiqa kutamiz
+
+        await this.sendFinalPenaltyWarning(res);
     }
 
     async sendFinalPenaltyWarning(res) {
+        const user = res.User;
+        if (!user?.telegramId || user.telegramId === '0') {
+            // User ma'lumotlari yo'q — qayta yuklash
+            const freshRes = await Session.findByPk(res.id, { include: [User] });
+            if (!freshRes) return;
+            res = freshRes;
+        }
+
         if (!res.User?.telegramId || res.User.telegramId === '0') return;
 
         const markup = {
@@ -141,14 +161,20 @@ class ReservationScheduler {
 
         await notificationService.sendTelegramToUser(res.User.telegramId, text, markup);
         await res.update({ notifiedPenalty: true, notifiedAt: new Date() });
+    }
 
-        // Set ultimate auto-penalty timer for 10 MORE minutes
-        setTimeout(async () => {
-            const finalCheck = await Session.findByPk(res.id);
-            if (finalCheck && finalCheck.status === 'reserved' && finalCheck.penaltyApplied === false) {
-                await notificationService.processPenalty(res.id);
-            }
-        }, 600000);
+    /**
+     * DB-BASED auto penalty execution (setTimeout o'rniga)
+     * notifiedPenalty=true va notifiedAt + 10 daqiqa o'tgan bo'lsa ishlaydi
+     */
+    async checkAutoPenalty(res) {
+        if (!res.notifiedAt) return;
+        const elapsed = Date.now() - new Date(res.notifiedAt).getTime();
+        if (elapsed < 600000) return; // 10 daqiqa kutamiz
+
+        if (res.penaltyApplied) return;
+        await notificationService.processPenalty(res.id);
+        console.log(`⚖️ Auto-penalty applied for Session #${res.id}`);
     }
 }
 

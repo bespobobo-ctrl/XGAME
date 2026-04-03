@@ -19,7 +19,7 @@ const UserRegister = ({ club, onBack, onComplete }) => {
         try {
             const res = await callAPI('/api/telegram-auth', {
                 method: 'POST',
-                body: JSON.stringify({ tgUser, clubId: currentClubId })
+                body: JSON.stringify({ tgUser, clubId: currentClubId, initData: tg.initData })
             });
 
             if (res.success) {

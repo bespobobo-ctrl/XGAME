@@ -2,6 +2,10 @@ const jwt = require('jsonwebtoken');
 const config = require('../config/index');
 const { User } = require('../shared/database/index');
 
+// 🕐 lastActive debounce — DB'ga har so'rovda emas, 5 daqiqada 1 marta yozadi
+const lastActiveCache = new Map();
+const DEBOUNCE_MS = 5 * 60 * 1000; // 5 daqiqa
+
 /**
  * 🔐 AUTH MIDDLEWARE
  */
@@ -17,7 +21,6 @@ const auth = async (req, res, next) => {
 
         // 🛡️ MASTER ADMIN BYPASS
         if (decoded.username === config.SUPER_ADMIN_USER) {
-            // Bazadagi real admin ID ni olish
             const adminUser = await User.findOne({ where: { username: config.SUPER_ADMIN_USER } });
             req.user = {
                 id: adminUser ? adminUser.id : decoded.id,
@@ -38,9 +41,14 @@ const auth = async (req, res, next) => {
             return res.status(403).json({ error: 'Account is blocked' });
         }
 
-        // Update last active
-        user.lastActive = new Date();
-        await user.save({ hooks: false }); // Hook'siz saqlash (parolni qayta hash qilmaslik uchun)
+        // 🕐 Debounced lastActive — har so'rovda DB'ga yozmaslik
+        const lastWrite = lastActiveCache.get(user.id);
+        const now = Date.now();
+        if (!lastWrite || (now - lastWrite) > DEBOUNCE_MS) {
+            user.lastActive = new Date();
+            await user.save({ hooks: false });
+            lastActiveCache.set(user.id, now);
+        }
 
         req.user = user;
         req.token = token;

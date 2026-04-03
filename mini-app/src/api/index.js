@@ -1,4 +1,4 @@
-export const API_URL = '';
+export const API_URL = 'https://criticism-spreading-cigarette-penny.trycloudflare.com';
 
 export const callAPI = async (endpoint, options = {}) => {
     const token = localStorage.getItem('x-token');

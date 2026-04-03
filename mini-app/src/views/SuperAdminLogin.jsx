@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import API_URL, { callAPI } from '../api';
 
@@ -6,10 +6,13 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
     const [user, setUser] = useState('');
     const [pass, setPass] = useState('');
     const [loading, setLoading] = useState(false);
-    const [serverStatus, setServerStatus] = useState('checking'); // checking, online, offline
+    const [errorMsg, setErrorMsg] = useState('');
+    const [serverStatus, setServerStatus] = useState('checking');
+    const userRef = useRef(null);
+    const passRef = useRef(null);
 
     useEffect(() => {
-        // 🛰️ SERVER STATUS CHECK (Global Sync Ready)
+        try { window.Telegram?.WebApp?.expand(); } catch (e) { }
         const checkServer = async () => {
             try {
                 const res = await fetch(`${API_URL}/ping`);
@@ -20,12 +23,29 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
             }
         };
         checkServer();
+        setTimeout(() => userRef.current?.focus(), 400);
     }, []);
+
+    // Xato xabari 3 sekunddan keyin yo'qoladi
+    useEffect(() => {
+        if (errorMsg) {
+            const t = setTimeout(() => setErrorMsg(''), 3000);
+            return () => clearTimeout(t);
+        }
+    }, [errorMsg]);
+
+    const showError = (msg) => {
+        setErrorMsg(msg);
+        setPass('');
+        setLoading(false);
+        setTimeout(() => passRef.current?.focus(), 100);
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
         if (!user || !pass) return;
         setLoading(true);
+        setErrorMsg('');
         try {
             const data = await callAPI('/api/login', {
                 method: 'POST',
@@ -35,14 +55,11 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
             if (data && data.success) {
                 onLogin(data);
             } else {
-                alert(data?.message || 'Login yoki parol xato! ❌');
-                setPass(''); // Parolni tozalash (Senior UX)
+                showError(data?.message || 'Login yoki parol xato! ❌');
             }
         } catch (err) {
             console.error(err);
-            alert(err.message || 'Serverga bog\'lanishda xatolik yuz berdi. 🚫');
-        } finally {
-            setLoading(false);
+            showError(err.message || 'Serverga bog\'lanishda xatolik! 🚫');
         }
     };
 
@@ -57,7 +74,6 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
                     <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '0', color: '#fff', letterSpacing: '2px' }}>SUPER ADMIN</h1>
                     <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '5px' }}>Nexus Command Center-ga kirish</p>
 
-                    {/* 🛰️ SERVER STATUS INDICATOR */}
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '15px', padding: '5px 15px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: serverStatus === 'online' ? '#39ff14' : (serverStatus === 'offline' ? '#ff4444' : '#ffaa00'), boxShadow: serverStatus === 'online' ? '0 0 10px #39ff14' : 'none' }} />
                         <span style={{ fontSize: '10px', fontWeight: 'bold', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>
@@ -66,15 +82,33 @@ const SuperAdminLogin = ({ onLogin, onCancel }) => {
                     </div>
                 </motion.div>
 
+                {/* ⚠️ XATO XABARI */}
+                <AnimatePresence>
+                    {errorMsg && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            style={{ padding: '15px 20px', background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)', borderRadius: '15px', marginBottom: '20px', color: '#ff4444', fontSize: '14px', fontWeight: 'bold' }}
+                        >
+                            {errorMsg}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 <form onSubmit={handleLogin} style={{ display: 'grid', gap: '20px' }}>
                     <input
+                        ref={userRef}
                         className="glass-input"
                         type="text" placeholder="Login" value={user} onChange={e => setUser(e.target.value)}
+                        onTouchStart={() => userRef.current?.focus()}
                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '22px', borderRadius: '20px', color: '#fff', fontSize: '18px', textAlign: 'center', transition: 'all 0.3s' }}
                     />
                     <input
+                        ref={passRef}
                         className="glass-input"
                         type="password" placeholder="Parol" value={pass} onChange={e => setPass(e.target.value)}
+                        onTouchStart={() => passRef.current?.focus()}
                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '22px', borderRadius: '20px', color: '#fff', fontSize: '18px', textAlign: 'center', transition: 'all 0.3s' }}
                     />
 

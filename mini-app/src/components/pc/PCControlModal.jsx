@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Contact2, Phone, Clock, Play, Pause, Square, Trash2, BellRing, LogOut } from 'lucide-react';
+import { X, Contact2, Phone, Clock, Play, Pause, Square, Trash2, Coffee, Cross } from 'lucide-react';
 import { calculateSessionInfo, formatTashkentTime } from '../../utils/time';
 import { callAPI } from '../../api';
 
@@ -39,6 +39,42 @@ const PCControlModal = ({
     const [foundUsers, setFoundUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [localTime, setLocalTime] = useState(Date.now());
+
+    // Bar Menu Internal
+    const [showBarMenu, setShowBarMenu] = useState(false);
+    const [barProducts, setBarProducts] = useState([]);
+    const [barLoading, setBarLoading] = useState(false);
+
+    useEffect(() => {
+        if (showBarMenu && barProducts.length === 0) {
+            setBarLoading(true);
+            callAPI('/api/manager/bar/products').then(data => {
+                if (Array.isArray(data)) setBarProducts(data);
+                setBarLoading(false);
+            }).catch(() => setBarLoading(false));
+        }
+    }, [showBarMenu]);
+
+    const handleSellInsidePC = async (product) => {
+        try {
+            const res = await callAPI('/api/manager/bar/sell', {
+                method: 'POST',
+                body: JSON.stringify({
+                    productId: product.id,
+                    quantity: 1,
+                    type: 'pc',
+                    pcId: selectedPC.id
+                })
+            });
+            if (res.success) {
+                setShowBarMenu(false);
+            } else {
+                alert(res.error || "Xatolik yuz berdi");
+            }
+        } catch (e) {
+            alert("Xatolik");
+        }
+    };
 
     // Isolated timer for modal view - only runs when modal is open
     useEffect(() => {
@@ -204,6 +240,10 @@ const PCControlModal = ({
                                                         <b style={{ fontSize: '22px', color: '#39ff14', fontWeight: '950' }}>{grandTotal.toLocaleString()} <span style={{ fontSize: '12px', color: '#555' }}>UZS</span></b>
                                                     </div>
                                                 )}
+
+                                                <button onClick={() => setShowBarMenu(true)} style={{ marginTop: '5px', padding: '12px', borderRadius: '15px', background: 'rgba(0,209,255,0.1)', color: '#00d1ff', border: '1px dashed rgba(0,209,255,0.3)', fontWeight: '900', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                    <Coffee size={16} /> BARDAN QO'SHISH (Fanta, Suv ...)
+                                                </button>
                                             </div>
                                         </div>
                                     );
@@ -217,6 +257,40 @@ const PCControlModal = ({
                     </>
                 )}
             </motion.div>
+
+            {/* INNER BAR MENU MODAL */}
+            <AnimatePresence>
+                {showBarMenu && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 3000, display: 'flex', flexDirection: 'column', padding: '20px' }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ margin: 0, color: '#fff', fontSize: '22px', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '8px' }}><Coffee color="#00d1ff" size={24} /> BARDAN QO'SHISH</h2>
+                            <button onClick={() => setShowBarMenu(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
+                        </div>
+
+                        <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '20px' }}>
+                            {barLoading ? <div style={{ color: '#aaa', textAlign: 'center', marginTop: '50px' }}>Yuklanmoqda...</div> : (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                                    {barProducts.length === 0 ? <p style={{ color: '#666', textAlign: 'center' }}>Omborda mahsulot yo'q</p> : barProducts.map(p => (
+                                        <div key={p.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                            <div>
+                                                <b style={{ color: '#fff', fontSize: '15px', display: 'block', marginBottom: '4px' }}>{p.name}</b>
+                                                <span style={{ color: '#00d1ff', fontSize: '12px', fontWeight: 'bold' }}>{p.price.toLocaleString()} UZS</span>
+                                            </div>
+                                            <button onClick={() => handleSellInsidePC(p)} style={{ background: 'linear-gradient(45deg, #00d1ff, #7000ff)', border: 'none', padding: '10px 18px', borderRadius: '12px', color: '#fff', fontWeight: '900', cursor: 'pointer' }}>QO'SHISH</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
         </motion.div>
     );
 };

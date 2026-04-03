@@ -7,6 +7,7 @@ const Session = require('./models/Session');
 const Transaction = require('./models/Transaction');
 const AuditLog = require('./models/AuditLog');
 const Broadcast = require('./models/Broadcast');
+const Product = require('./models/Product');
 const logger = require('../utils/logger');
 
 // ═══════════════════════════════════════════════
@@ -20,6 +21,10 @@ User.belongsTo(Club);
 // Club → Rooms
 Club.hasMany(Room);
 Room.belongsTo(Club);
+
+// Club → Products
+Club.hasMany(Product);
+Product.belongsTo(Club);
 
 // Room → Computers
 Room.hasMany(Computer);
@@ -76,6 +81,7 @@ async function initializeDatabase() {
         }
 
         // 🛠️ DATABASE MIGRATIONS (Always run these check-and-adds)
+        try { await sequelize.query("CREATE TABLE IF NOT EXISTS `Products` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` VARCHAR(255) NOT NULL, `price` INTEGER NOT NULL, `category` VARCHAR(255) DEFAULT 'Boshqa', `stock` INTEGER DEFAULT 0, `image` VARCHAR(255), `ClubId` INTEGER NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL, FOREIGN KEY (`ClubId`) REFERENCES `Clubs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE);"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedAt` DATETIME;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `expectedMinutes` INTEGER;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `RoomId` INTEGER;"); } catch (e) { }

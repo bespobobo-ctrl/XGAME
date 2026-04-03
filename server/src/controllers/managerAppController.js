@@ -1,7 +1,7 @@
 const inventoryService = require('../modules/panelB/inventoryService');
 const sessionService = require('../modules/panelC/sessionService');
 const financeService = require('../modules/panelA/financeService');
-const { Club, User, Room, Computer, Session, Transaction, Broadcast } = require('../shared/database');
+const { Club, User, Room, Computer, Session, Transaction, Broadcast, Product } = require('../shared/database');
 const { Op } = require('sequelize');
 
 class ManagerAppController {
@@ -368,6 +368,47 @@ class ManagerAppController {
             await reservationScheduler.sendFinalPenaltyWarning(session);
 
             res.json({ success: true, message: "Oxirgi ogohlantirish yuborildi." });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // ☕ BAR & PRODUCTS
+    // ═══════════════════════════════════════
+
+    async getProducts(req, res) {
+        try {
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied." });
+
+            const products = await Product.findAll({
+                where: { ClubId: clubId },
+                order: [['category', 'ASC'], ['name', 'ASC']]
+            });
+            res.json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async addProduct(req, res) {
+        try {
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied." });
+
+            const { name, price, category, stock } = req.body;
+            if (!name || !price) return res.status(400).json({ error: "Nomi va narxi majburiy" });
+
+            const product = await Product.create({
+                name,
+                price: parseInt(price),
+                category: category || 'Boshqa',
+                stock: parseInt(stock) || 0,
+                ClubId: clubId
+            });
+
+            res.json({ success: true, product });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

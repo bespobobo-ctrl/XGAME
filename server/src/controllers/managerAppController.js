@@ -470,6 +470,27 @@ class ManagerAppController {
         }
     }
 
+    async getBarHistory(req, res) {
+        try {
+            const clubId = req.user?.ClubId;
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const sales = await Transaction.findAll({
+                where: {
+                    ClubId: clubId,
+                    type: 'bar_sale',
+                    createdAt: { [Op.gte]: startOfDay }
+                },
+                order: [['createdAt', 'DESC']]
+            });
+
+            res.json(sales);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // ═══════════════════════════════════════
     // ⚙️ SETUP & BROADCAST
     // ═══════════════════════════════════════

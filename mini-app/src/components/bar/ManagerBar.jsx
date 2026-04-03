@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coffee, ShoppingBag, PlusCircle, ShoppingCart, Monitor } from 'lucide-react';
+import { Coffee, ShoppingBag, PlusCircle, ShoppingCart, Monitor, Clock, List, LayoutGrid, Trash2, ArrowUpRight } from 'lucide-react';
 import { callAPI } from '../../api';
+import { formatTashkentTime } from '../../utils/time';
 
 const ManagerBar = ({ rooms = [] }) => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('inventory'); // 'inventory', 'history'
+    const [history, setHistory] = useState([]);
+    const [histLoading, setHistLoading] = useState(false);
 
     // Form state
     const [name, setName] = useState('');
@@ -35,9 +39,29 @@ const ManagerBar = ({ rooms = [] }) => {
         }
     };
 
+    const fetchHistory = async () => {
+        setHistLoading(true);
+        try {
+            const data = await callAPI('/api/manager/bar/history');
+            if (Array.isArray(data)) setHistory(data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setHistLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchProducts();
-    }, []);
+        if (activeTab === 'history') fetchHistory();
+    }, [activeTab]);
+
+    const stats = {
+        totalItems: products.length,
+        outOfStock: products.filter(p => !p.stock || p.stock === 0).length,
+        todaySalesCount: history.length,
+        todayProfit: history.reduce((acc, sale) => acc + sale.amount, 0)
+    };
 
     const handleAddProduct = async (e) => {
         e.preventDefault();
@@ -98,7 +122,7 @@ const ManagerBar = ({ rooms = [] }) => {
                     <h2 style={{ margin: 0, fontSize: '26px', fontWeight: '950', letterSpacing: '-1px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Coffee size={28} color="#7000ff" /> BAR BO'LIMI
                     </h2>
-                    <p style={{ color: '#888', fontSize: '12px', margin: '5px 0 0' }}>Jami mahsulotlar: {products.length} ta</p>
+                    <p style={{ color: '#888', fontSize: '12px', margin: '5px 0 0' }}>Jami mahsulotlar: {stats.totalItems} ta</p>
                 </div>
                 <motion.button
                     whileTap={{ scale: 0.9 }}
@@ -109,56 +133,102 @@ const ManagerBar = ({ rooms = [] }) => {
                 </motion.button>
             </div>
 
+            {/* TAB SELECTOR */}
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', borderRadius: '18px', padding: '6px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <button
+                    onClick={() => setActiveTab('inventory')}
+                    style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'inventory' ? '#1a1a1a' : 'transparent', color: activeTab === 'inventory' ? '#fff' : '#666', fontWeight: '900', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: '0.3s' }}
+                >
+                    <LayoutGrid size={16} color={activeTab === 'inventory' ? '#7000ff' : '#666'} /> OMBOR
+                </button>
+                <button
+                    onClick={() => setActiveTab('history')}
+                    style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'history' ? '#1a1a1a' : 'transparent', color: activeTab === 'history' ? '#fff' : '#666', fontWeight: '900', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: '0.3s' }}
+                >
+                    <Clock size={16} color={activeTab === 'history' ? '#00d1ff' : '#666'} /> SOTUVLAR
+                </button>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
                 <div className="premium-glass" style={{ padding: '20px', borderRadius: '25px', textAlign: 'center', border: '1px solid rgba(57,255,20,0.2)' }}>
-                    <ShoppingBag size={24} color="#39ff14" style={{ marginBottom: '10px' }} />
-                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '900' }}>SOTUVLAR</h3>
-                    <p style={{ margin: '5px 0 0', fontSize: '10px', color: '#666' }}>Bugungi buyurtmalar tez kunda...</p>
+                    <h3 style={{ margin: 0, fontSize: '12px', fontWeight: '900', color: '#666' }}>BUGUNGI DAROMAD</h3>
+                    <p style={{ margin: '5px 0 0', fontSize: '18px', fontWeight: '950', color: '#39ff14' }}>{stats.todayProfit.toLocaleString()} <span style={{ fontSize: '10px' }}>UZS</span></p>
                 </div>
-
                 <div className="premium-glass" style={{ padding: '20px', borderRadius: '25px', textAlign: 'center', border: '1px solid rgba(0,209,255,0.2)' }}>
-                    <PlusCircle size={24} color="#00d1ff" style={{ marginBottom: '10px' }} />
-                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '900' }}>OMBOR</h3>
-                    <p style={{ margin: '5px 0 0', fontSize: '10px', color: '#666' }}>Sotiladigan barcha tovarlar</p>
+                    <h3 style={{ margin: 0, fontSize: '12px', fontWeight: '900', color: '#666' }}>TUGAGANLAR</h3>
+                    <p style={{ margin: '5px 0 0', fontSize: '18px', fontWeight: '950', color: stats.outOfStock > 0 ? '#ff007a' : '#00d1ff' }}>{stats.outOfStock} <span style={{ fontSize: '10px' }}>tur</span></p>
                 </div>
             </div>
 
-            <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#fff', marginBottom: '15px' }}>MAHSULOTLAR RO'YXATI</h3>
-
-            {loading ? <div style={{ textAlign: 'center', color: '#666', padding: '30px' }}>Yuklanmoqda...</div> : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                    {products.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                            <p style={{ color: '#888', margin: 0, fontSize: '13px' }}>Hozircha birorta mahsulot qo'shilmagan.</p>
+            {activeTab === 'inventory' ? (
+                <>
+                    <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#fff', marginBottom: '15px' }}>MAHSULOTLAR VA QOLDIQLAR</h3>
+                    {loading ? <div style={{ textAlign: 'center', color: '#666', padding: '30px' }}>Yuklanmoqda...</div> : (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                            {products.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                    <p style={{ color: '#888', margin: 0, fontSize: '13px' }}>Hozircha birorta mahsulot qo'shilmagan.</p>
+                                </div>
+                            ) : (
+                                products.map(p => (
+                                    <motion.div
+                                        key={p.id}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => { setSellProduct(p); setSellType('pc'); }}
+                                        style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                            <div style={{ width: '45px', height: '45px', background: '#111', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Coffee size={20} color={p.stock > 0 ? "#7000ff" : "#555"} />
+                                            </div>
+                                            <div>
+                                                <b style={{ fontSize: '16px', color: '#fff', display: 'block', marginBottom: '4px' }}>{p.name}</b>
+                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '11px', color: '#00d1ff', background: 'rgba(0,209,255,0.1)', padding: '2px 8px', borderRadius: '10px' }}>{p.category}</span>
+                                                    <span style={{ fontSize: '11px', color: p.stock > 0 ? '#39ff14' : '#ff007a', fontWeight: 'bold' }}>Qoldi: {p.stock || 0}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <b style={{ fontSize: '16px', color: '#fff' }}>{p.price.toLocaleString()}</b>
+                                            <span style={{ fontSize: '10px', color: '#666', marginLeft: '4px', display: 'block' }}>UZS</span>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )}
                         </div>
-                    ) : (
-                        products.map(p => (
-                            <motion.div
-                                key={p.id}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => { setSellProduct(p); setSellType('pc'); }}
-                                style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    <div style={{ width: '45px', height: '45px', background: '#111', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Coffee size={20} color={p.stock > 0 ? "#7000ff" : "#555"} />
-                                    </div>
-                                    <div>
-                                        <b style={{ fontSize: '16px', color: '#fff', display: 'block', marginBottom: '4px' }}>{p.name}</b>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <span style={{ fontSize: '11px', color: '#00d1ff', background: 'rgba(0,209,255,0.1)', padding: '2px 8px', borderRadius: '10px' }}>{p.category}</span>
-                                            <span style={{ fontSize: '11px', color: p.stock > 0 ? '#39ff14' : '#ff007a' }}>Qoldiq: {p.stock}</span>
+                    )}
+                </>
+            ) : (
+                <>
+                    <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#fff', marginBottom: '15px' }}>SOTUVLAR TARIXI (BUGUN)</h3>
+                    {histLoading ? <div style={{ textAlign: 'center', color: '#666', padding: '30px' }}>Yuklanmoqda...</div> : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {history.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                    <p style={{ color: '#888', margin: 0, fontSize: '13px' }}>Bugun hali mahsulot sotilmadi.</p>
+                                </div>
+                            ) : history.map(sale => (
+                                <div key={sale.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '20px', borderLeft: `4px solid ${sale.status === 'unpaid' ? '#ffaa00' : '#39ff14'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                            <b style={{ color: '#fff', fontSize: '14px' }}>{sale.description.split('->')[0].replace('Bar: ', '')}</b>
+                                            {sale.status === 'unpaid' && <span style={{ fontSize: '8px', background: 'rgba(255,170,0,0.1)', color: '#ffaa00', padding: '2px 6px', borderRadius: '10px' }}>Qarz/PC</span>}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '10px', color: '#666' }}><Clock size={10} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {formatTashkentTime(new Date(sale.createdAt))}</span>
+                                            <span style={{ fontSize: '10px', color: '#7000ff', fontWeight: 'bold' }}>{sale.description.includes('sessiya') ? 'PC Session' : 'Admin/Naqd'}</span>
                                         </div>
                                     </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <b style={{ color: '#39ff14', fontSize: '15px' }}>{sale.amount.toLocaleString()}</b>
+                                        <span style={{ display: 'block', fontSize: '9px', color: '#666' }}>UZS</span>
+                                    </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <b style={{ fontSize: '16px', color: '#39ff14' }}>{p.price.toLocaleString()}</b>
-                                    <span style={{ fontSize: '10px', color: '#666', marginLeft: '4px', display: 'block' }}>UZS</span>
-                                </div>
-                            </motion.div>
-                        ))
+                            ))}
+                        </div>
                     )}
-                </div>
+                </>
             )}
 
             {/* ADD MODAL */}

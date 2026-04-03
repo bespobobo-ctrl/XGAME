@@ -12,6 +12,22 @@ if (!token) {
 const bot = new TelegramBot(token, { polling: true });
 console.log('🤖 GameZone boti muvaffaqiyatli ulangan!');
 
+const http = require('http');
+function notifyApiServer(clubId, event, data) {
+    if (!clubId) return;
+    const postData = JSON.stringify({ clubId, event, data });
+    const req = http.request({
+        hostname: 'localhost',
+        port: process.env.PORT || 3001,
+        path: '/api/internal/bot-event',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+    });
+    req.on('error', e => console.error("API notification error:", e.message));
+    req.write(postData);
+    req.end();
+}
+
 // 🚀 PERSISTENT MENU BUTTON (Senior UX)
 const miniAppUrl = process.env.MINI_APP_URL;
 if (miniAppUrl) {
@@ -134,27 +150,34 @@ bot.on('callback_query', async (query) => {
 
         if (action.startsWith('coming_')) {
             const sessionId = action.split('_')[1];
-            const session = await Session.findByPk(sessionId);
+            const session = await Session.findByPk(sessionId, { include: [{ model: Computer }] });
             if (session) {
                 await session.update({ userResponse: 'coming' });
                 bot.sendMessage(chatId, "✅ <b>Ajoyib!</b>\n\nSizni kutyapmiz. Adminga 'yo'lda' ekanligingiz haqida xabar yuborildi. ✨", { parse_mode: 'HTML' });
                 bot.answerCallbackQuery(query.id);
-                // Trigger manager notification via server API if possible, or just let DB do it
-                // For now, DB update is enough, scheduler/app can pull it.
+
+                // Trigger real-time Manager Alert
+                notifyApiServer(session.ClubId, 'USER_COMING', {
+                    message: `Mijoz (${user.username}) kompyuter tomon yo'lga chiqdi! 🏃`,
+                    user: user.username,
+                    pc: session.Computer?.name
+                });
             }
         }
 
         if (action.startsWith('cancel_penalty_')) {
             const sessionId = action.split('_')[2];
-            const session = await Session.findByPk(sessionId);
+            const session = await Session.findByPk(sessionId, { include: [{ model: Computer }] });
             if (session && session.status === 'reserved') {
-                // This is a forced cancellation by user after warning
-                // Bot doesn't have NotificationService (server only), so we should use an API or raw DB
-                // Since bot shares database, we can do raw DB logic but we need Transaction model
-                // For simplicity, let's just mark it and the scheduler or server will handle the money.
                 await session.update({ status: 'cancelled', penaltyApplied: true, userResponse: 'cancelled_user' });
                 bot.sendMessage(chatId, "📉 <b>Bron bekor qilindi.</b>\n\nAfsuski, shartnomaga ko'ra to'langan depozit qaytarilmaydi. Kelgusida kutib qolamiz.", { parse_mode: 'HTML' });
                 bot.answerCallbackQuery(query.id);
+
+                // Notify admin
+                notifyApiServer(session.ClubId, 'USER_CANCELLED', {
+                    message: `Mijoz bronni bekor qildi (Shtraf olib qolindi). PC: ${session.Computer?.name} bo'shadi.`,
+                    pc: session.Computer?.name
+                });
             }
         }
 

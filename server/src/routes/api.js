@@ -20,6 +20,14 @@ router.get('/health', (req, res) => res.status(200).send('API Healthy'));
 router.post('/login', asyncHandler(authCtrl.login));
 router.post('/register', asyncHandler(authCtrl.registerPlayer));
 router.post('/telegram-auth', asyncHandler(authCtrl.telegramAuth));
+router.post('/internal/bot-event', express.json(), (req, res) => {
+    const { clubId, event, data } = req.body;
+    const io = req.app.get('io');
+    if (io && clubId) {
+        require('../services/notificationService').notifyManager(io, clubId, event, data);
+    }
+    res.status(200).send('ok');
+});
 
 /**
  * 🏛️ CLUB ROUTES (Admin Protected)

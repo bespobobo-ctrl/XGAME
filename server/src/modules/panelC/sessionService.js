@@ -72,15 +72,14 @@ class SessionService {
 
             // Log as specific penalty transaction if deposit exists
             if (session.prepaidAmount > 0) {
-                await Transaction.create({
-                    amount: session.prepaidAmount,
-                    type: 'penalty',
-                    description: `Shtarf: Bron qilingan vaqtda kelmadi (PC: ${pc.name})`,
-                    ClubId: pc.ClubId,
-                    UserId: session.UserId,
-                    SessionId: session.id,
-                    status: 'approved'
-                }, { transaction });
+                // Find existing deposit and convert it to penalty
+                const existingTx = await Transaction.findOne({ where: { SessionId: session.id, type: 'income' }, transaction });
+                if (existingTx) {
+                    await existingTx.update({
+                        type: 'penalty',
+                        description: `Shtraf: Bron qilingan vaqtda kelmadi (PC: ${pc.name})`
+                    }, { transaction });
+                }
             }
         }
         await pc.update({ status: PC_STATUS.FREE }, { transaction });

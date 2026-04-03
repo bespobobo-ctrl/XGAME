@@ -53,15 +53,13 @@ class NotificationService {
             }, { transaction });
 
             if (penaltyAmount > 0) {
-                await Transaction.create({
-                    amount: penaltyAmount,
-                    type: 'penalty',
-                    description: `Shtarf: Bron vaqtida kelmagani uchun (PC: ${session.Computer?.name || '?'})`,
-                    ClubId: session.ClubId,
-                    UserId: session.UserId,
-                    SessionId: session.id,
-                    status: 'approved'
-                }, { transaction });
+                const existingTx = await Transaction.findOne({ where: { SessionId: session.id, type: 'income' }, transaction });
+                if (existingTx) {
+                    await existingTx.update({
+                        type: 'penalty',
+                        description: `Shtraf: Bron vaqtida kelmagani uchun (PC: ${session.Computer?.name || '?'})`
+                    }, { transaction });
+                }
             }
 
             // Free the PC

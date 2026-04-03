@@ -124,5 +124,6 @@ module.exports = {
     Transaction,
     AuditLog,
     Broadcast,
+    Product,
     initializeDatabase,
 };

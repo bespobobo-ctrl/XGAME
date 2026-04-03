@@ -300,11 +300,37 @@ const UserDashboard = ({ user, onLogout, setView }) => {
                             </div>
                             {((pcDetail.status || '').toLowerCase() === 'free' || (pcDetail.status || '').toLowerCase() === 'available') ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                                    <div style={{ background: '#000', padding: '30px', borderRadius: '35px', border: '1.5px solid #131313' }}>
-                                        <p style={{ margin: '0 0 15px', fontSize: '11px', color: '#444', fontWeight: 'bold', textAlign: 'center' }}>VIRTUAL SOATNI TANLANG</p>
-                                        <input type="time" value={reserveTimeInput} onChange={e => setReserveTimeInput(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '58px', textAlign: 'center', fontWeight: '900', fontFamily: 'monospace', outline: 'none' }} />
+                                    <div style={{ background: '#000', padding: '30px', borderRadius: '35px', border: '1.5px solid #131313', position: 'relative' }}>
+                                        <p style={{ margin: '0 0 15px', fontSize: '11px', color: '#444', fontWeight: 'bold', textAlign: 'center' }}>VIRTUAL SOATNI KIRITING (masalan: 18:00)</p>
+                                        <input
+                                            type="text"
+                                            placeholder="-- : --"
+                                            value={reserveTimeInput}
+                                            onChange={e => {
+                                                let val = e.target.value.replace(/[^0-9:]/g, '');
+                                                if (val.length === 2 && !val.includes(':')) val += ':';
+                                                if (val.length > 5) val = val.substring(0, 5);
+                                                setReserveTimeInput(val);
+                                            }}
+                                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '58px', textAlign: 'center', fontWeight: '900', fontFamily: 'monospace', outline: 'none' }}
+                                        />
                                     </div>
-                                    <button onClick={() => handleReserve(pcDetail.id)} disabled={reserveLoading} style={{ width: '100%', padding: '25px', background: '#39ff14', color: '#000', borderRadius: '30px', fontWeight: '950', fontSize: '18px' }}>{reserveLoading ? '...' : 'BRON QILISH ✅'}</button>
+                                    <button
+                                        onClick={() => handleReserve(pcDetail.id)}
+                                        disabled={reserveLoading || reserveTimeInput.length < 5}
+                                        style={{
+                                            width: '100%',
+                                            padding: '25px',
+                                            background: (reserveTimeInput.length < 5) ? '#111' : '#39ff14',
+                                            color: (reserveTimeInput.length < 5) ? '#333' : '#000',
+                                            borderRadius: '30px',
+                                            fontWeight: '950',
+                                            fontSize: '18px',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    >
+                                        {reserveLoading ? '...' : (reserveTimeInput.length < 5 ? 'VAQTNI TO\'LIQ YAZING' : 'BRON QILISH ✅')}
+                                    </button>
                                 </div>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '40px' }}><Info size={40} color="#333" style={{ marginBottom: '15px' }} /><p style={{ margin: 0, fontSize: '14px', color: '#444', fontWeight: 'bold' }}>Hozirda bu PC band.</p></div>

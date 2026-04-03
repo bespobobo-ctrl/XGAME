@@ -64,6 +64,17 @@ bot.onText(/\/start/, async (msg) => {
         }
 
         const lang = user.language || 'uz';
+
+        if (!user.phone) {
+            return bot.sendMessage(chatId, "📱 Iltimos, xizmatlardan to'liq foydalanish va bron qilish uchun telefon raqamingizni tasdiqlang:", {
+                reply_markup: {
+                    keyboard: [[{ text: "📞 Raqamni yuborish (Tasdiqlash)", request_contact: true }]],
+                    resize_keyboard: true,
+                    one_time_keyboard: true
+                }
+            });
+        }
+
         const welcomeMsg = i18n.get('welcome', lang).replace('{name}', msg.from.first_name);
 
         bot.sendMessage(chatId, welcomeMsg, {
@@ -80,6 +91,33 @@ bot.onText(/\/lang/, (msg) => {
     bot.sendMessage(msg.chat.id, "🌐 Tilni tanlang / Выберите язык:", {
         reply_markup: getLangKeyboard()
     });
+});
+
+bot.on('contact', async (msg) => {
+    const chatId = msg.chat.id;
+    if (msg.contact && msg.contact.user_id === msg.from.id) {
+        try {
+            const user = await User.findOne({ where: { telegramId: String(chatId) } });
+            if (user) {
+                await user.update({ phone: msg.contact.phone_number });
+                const lang = user.language || 'uz';
+                const welcomeMsg = i18n.get('welcome', lang).replace('{name}', msg.from.first_name);
+
+                bot.sendMessage(chatId, "✅ Raqamingiz muvaffaqiyatli saqlandi!\n\n" + welcomeMsg, {
+                    parse_mode: 'HTML',
+                    reply_markup: { remove_keyboard: true }
+                }).then(() => {
+                    bot.sendMessage(chatId, "🎮 Asosiy menyu:", {
+                        reply_markup: getMainMenu(user)
+                    });
+                });
+            }
+        } catch (e) {
+            console.error("Contact save error:", e);
+        }
+    } else {
+        bot.sendMessage(chatId, "⚠️ Iltimos, o'zgartirilmagan haqiqiy raqamingizni pastdagi tugma orqali tasdiqlang.");
+    }
 });
 
 // --- Callbacks ---

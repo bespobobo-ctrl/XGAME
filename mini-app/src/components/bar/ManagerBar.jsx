@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coffee, ShoppingBag, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { Coffee, ShoppingBag, PlusCircle, ShoppingCart, Monitor } from 'lucide-react';
 import { callAPI } from '../../api';
 
-const ManagerBar = () => {
+const ManagerBar = ({ rooms = [] }) => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -13,6 +13,16 @@ const ManagerBar = () => {
     const [price, setPrice] = useState('');
     const [category, setCategory] = useState('');
     const [stock, setStock] = useState('');
+
+    // Sell state
+    const [sellProduct, setSellProduct] = useState(null);
+    const [sellType, setSellType] = useState('pc'); // 'pc' or 'direct'
+    const [sellQty, setSellQty] = useState(1);
+    const [sellPcId, setSellPcId] = useState('');
+    const [sellLoading, setSellLoading] = useState(false);
+
+    // Active PCs
+    const activePCs = rooms.flatMap(r => r.Computers || []).filter(pc => pc.status === 'active' || pc.status === 'paused');
 
     const fetchProducts = async () => {
         try {
@@ -46,6 +56,38 @@ const ManagerBar = () => {
             }
         } catch (error) {
             alert("Ulanishda xatolik");
+        }
+    };
+
+    const handleSell = async (e) => {
+        e.preventDefault();
+        if (!sellProduct) return;
+        if (sellType === 'pc' && !sellPcId) return alert("Kompyuterni tanlang!");
+
+        setSellLoading(true);
+        try {
+            const res = await callAPI('/api/manager/bar/sell', {
+                method: 'POST',
+                body: JSON.stringify({
+                    productId: sellProduct.id,
+                    quantity: sellQty,
+                    type: sellType,
+                    pcId: sellPcId || null
+                })
+            });
+
+            if (res.success) {
+                setSellProduct(null);
+                setSellQty(1);
+                setSellPcId('');
+                fetchProducts();
+            } else {
+                alert(res.error || "Xatolik yuz berdi");
+            }
+        } catch (e) {
+            alert("Server ulanish xatosi");
+        } finally {
+            setSellLoading(false);
         }
     };
 
@@ -84,31 +126,36 @@ const ManagerBar = () => {
             <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#fff', marginBottom: '15px' }}>MAHSULOTLAR RO'YXATI</h3>
 
             {loading ? <div style={{ textAlign: 'center', color: '#666', padding: '30px' }}>Yuklanmoqda...</div> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                     {products.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                             <p style={{ color: '#888', margin: 0, fontSize: '13px' }}>Hozircha birorta mahsulot qo'shilmagan.</p>
                         </div>
                     ) : (
                         products.map(p => (
-                            <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <motion.div
+                                key={p.id}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => { setSellProduct(p); setSellType('pc'); }}
+                                style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                            >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                     <div style={{ width: '45px', height: '45px', background: '#111', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Coffee size={20} color="#7000ff" />
+                                        <Coffee size={20} color={p.stock > 0 ? "#7000ff" : "#555"} />
                                     </div>
                                     <div>
                                         <b style={{ fontSize: '16px', color: '#fff', display: 'block', marginBottom: '4px' }}>{p.name}</b>
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <span style={{ fontSize: '11px', color: '#00d1ff', background: 'rgba(0,209,255,0.1)', padding: '2px 8px', borderRadius: '10px' }}>{p.category}</span>
-                                            {p.stock > 0 && <span style={{ fontSize: '11px', color: '#888' }}>Soni: {p.stock}</span>}
+                                            <span style={{ fontSize: '11px', color: p.stock > 0 ? '#39ff14' : '#ff007a' }}>Qoldiq: {p.stock}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <b style={{ fontSize: '16px', color: '#39ff14' }}>{p.price.toLocaleString()}</b>
-                                    <span style={{ fontSize: '10px', color: '#666', marginLeft: '4px' }}>UZS</span>
+                                    <span style={{ fontSize: '10px', color: '#666', marginLeft: '4px', display: 'block' }}>UZS</span>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))
                     )}
                 </div>
@@ -158,6 +205,61 @@ const ManagerBar = () => {
                                     <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '15px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '20px', fontWeight: '900', cursor: 'pointer' }}>BEKOR</button>
                                     <button type="submit" disabled={!name || !price} style={{ flex: 2, padding: '15px', background: (!name || !price) ? '#222' : 'linear-gradient(45deg, #7000ff, #ff007a)', color: '#fff', border: 'none', borderRadius: '20px', fontWeight: '900', cursor: (!name || !price) ? 'not-allowed' : 'pointer' }}>QO'SHISH</button>
                                 </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* SELL MODAL */}
+            <AnimatePresence>
+                {sellProduct && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(15px)', zIndex: 2000, display: 'flex', alignItems: 'flex-end' }}
+                        onClick={(e) => e.target === e.currentTarget && setSellProduct(null)}
+                    >
+                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} style={{ background: '#0a0a0a', width: '100%', borderTopLeftRadius: '35px', borderTopRightRadius: '35px', padding: '30px', borderTop: '1px solid rgba(112,0,255,0.4)', paddingBottom: '90px' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '950', color: '#fff' }}>{sellProduct.name}</h3>
+                                <p style={{ color: '#39ff14', margin: '5px 0 0', fontWeight: '900', fontSize: '18px' }}>{(sellProduct.price * sellQty).toLocaleString()} UZS</p>
+                            </div>
+
+                            <div style={{ display: 'flex', background: '#111', borderRadius: '15px', padding: '5px', marginBottom: '20px' }}>
+                                <button onClick={() => setSellType('pc')} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: sellType === 'pc' ? 'rgba(112,0,255,0.2)' : 'transparent', color: sellType === 'pc' ? '#00d1ff' : '#666', border: 'none', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <Monitor size={16} /> PC-ga
+                                </button>
+                                <button onClick={() => setSellType('direct')} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: sellType === 'direct' ? 'rgba(57,255,20,0.1)' : 'transparent', color: sellType === 'direct' ? '#39ff14' : '#666', border: 'none', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <ShoppingBag size={16} /> Naqd
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSell} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                {sellType === 'pc' && (
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: '700' }}>Qaysi kompyuterga berasiz?</label>
+                                        <select required value={sellPcId} onChange={e => setSellPcId(e.target.value)} style={{ width: '100%', background: '#151515', border: '1px solid #333', padding: '18px', borderRadius: '15px', color: '#fff', fontSize: '16px', outline: 'none' }}>
+                                            <option value="">Kompyuterni tanlang...</option>
+                                            {activePCs.map(pc => (
+                                                <option key={pc.id} value={pc.id}>{pc.name} (Hozir o'ynayapti)</option>
+                                            ))}
+                                        </select>
+                                        {activePCs.length === 0 && <p style={{ color: '#ff007a', fontSize: '11px', marginTop: '5px' }}>Hozir hech kim kompyuterda o'ynamayapti!</p>}
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: '700' }}>Soni (Ehtiyot bo'ling)</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', background: '#151515', borderRadius: '15px', border: '1px solid #333', overflow: 'hidden' }}>
+                                        <button type="button" onClick={() => setSellQty(Math.max(1, sellQty - 1))} style={{ width: '60px', padding: '15px', background: 'transparent', color: '#fff', border: 'none', fontSize: '20px', cursor: 'pointer' }}>-</button>
+                                        <input type="number" readOnly value={sellQty} style={{ flex: 1, background: 'transparent', border: 'none', color: '#00d1ff', fontSize: '22px', fontWeight: '900', textAlign: 'center', width: '100%', outline: 'none' }} />
+                                        <button type="button" onClick={() => setSellQty(sellQty + 1)} style={{ width: '60px', padding: '15px', background: 'transparent', color: '#fff', border: 'none', fontSize: '20px', cursor: 'pointer' }}>+</button>
+                                    </div>
+                                </div>
+
+                                <button type="submit" disabled={sellLoading || (sellType === 'pc' && !sellPcId)} style={{ width: '100%', padding: '18px', background: (sellType === 'pc' && !sellPcId) ? '#222' : 'linear-gradient(45deg, #7000ff, #00d1ff)', color: '#fff', border: 'none', borderRadius: '20px', fontWeight: '950', fontSize: '16px', cursor: 'pointer', marginTop: '10px', boxShadow: '0 10px 20px rgba(112,0,255,0.3)' }}>
+                                    {sellLoading ? 'KUTING...' : "SOTISH / ZAKAZ qilish"}
+                                </button>
                             </form>
                         </motion.div>
                     </motion.div>

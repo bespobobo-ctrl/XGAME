@@ -139,23 +139,41 @@ class SessionService {
             }
 
             const roomPrice = pc.Room?.pricePerHour || 15000;
-            let totalCost = Math.floor((finalConsumedSeconds / 3600) * roomPrice);
+            let pcCost = Math.floor((finalConsumedSeconds / 3600) * roomPrice);
 
-            // Subtract any prepaid amount (deposit)
+            // 1. Calculate Unpaid Bar Sales connected to this session
+            const unpaidBarSales = await Transaction.findAll({
+                where: { SessionId: activeSession.id, type: 'bar_sale', status: 'unpaid' },
+                transaction
+            });
+            const barCost = unpaidBarSales.reduce((acc, t) => acc + t.amount, 0);
+
+            // 2. Grand Total and Remaining
+            let grandTotal = pcCost + barCost;
             const paidAlready = activeSession.prepaidAmount || 0;
-            totalCost = Math.max(0, totalCost - paidAlready);
+            let amountToPay = Math.max(0, grandTotal - paidAlready);
+
+            // 3. Mark bar sales as approved so they enter finance stats
+            for (const tx of unpaidBarSales) {
+                await tx.update({ status: 'approved' }, { transaction });
+            }
 
             await activeSession.update({
                 status: SESSION_STATUS.COMPLETED,
                 endTime: now,
                 consumedSeconds: finalConsumedSeconds,
-                totalCost: totalCost + paidAlready // Final actual total
+                totalCost: grandTotal
             }, { transaction });
 
-            // Create financial log for the REMAINING amount
-            if (totalCost > 0) {
+            // 4. Create income log ONLY for the PC time deficit (to avoiding double counting bar)
+            // If they owe money, we check how much is for PC.
+            // If grandTotal = 14k (8k pc + 6k bar), paid = 0 -> amountToPay = 14k.
+            // But we already marked 6k as 'bar_sale' approved! So we only need 8k as 'income'!
+            let pcAmountToPay = Math.max(0, pcCost - paidAlready);
+
+            if (pcAmountToPay > 0) {
                 await Transaction.create({
-                    amount: totalCost,
+                    amount: pcAmountToPay,
                     type: 'income',
                     description: `${pc.name} Session (Final Balance)`,
                     ClubId: pc.ClubId,

@@ -282,7 +282,7 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
 
             <main style={{ paddingBottom: '100px' }}>
                 {activeTab === 'stats' && <RevenueDashboard stats={stats} />}
-                {activeTab === 'bar' && <ManagerBar />}
+                {activeTab === 'bar' && <ManagerBar rooms={rooms} />}
                 {activeTab === 'rooms' && (
                     <RoomGrid
                         rooms={rooms}

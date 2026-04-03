@@ -414,6 +414,62 @@ class ManagerAppController {
         }
     }
 
+    async sellProduct(req, res) {
+        try {
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied." });
+
+            const { productId, quantity, type, pcId } = req.body; // type: 'direct' or 'pc'
+            const qty = parseInt(quantity) || 1;
+
+            const product = await Product.findByPk(productId);
+            if (!product) return res.status(404).json({ error: "Mahsulot topilmadi" });
+
+            const totalAmount = product.price * qty;
+
+            if (type === 'pc') {
+                if (!pcId) return res.status(400).json({ error: "PC tanlanmagan" });
+                const activeSession = await Session.findOne({
+                    where: { ComputerId: pcId, status: ['active', 'paused'] }
+                });
+                if (!activeSession) return res.status(400).json({ error: "Bu kompyuterda faol vaqt yo'q" });
+
+                await Transaction.create({
+                    amount: totalAmount,
+                    type: 'bar_sale',
+                    status: 'unpaid', // Will be approved when session stops
+                    description: `Bar: ${product.name} (x${qty}) -> ${activeSession.id}-sessiya`,
+                    ClubId: clubId,
+                    SessionId: activeSession.id
+                });
+
+            } else {
+                // Direct Cash
+                await Transaction.create({
+                    amount: totalAmount,
+                    type: 'bar_sale',
+                    status: 'approved',
+                    description: `Bar: Naqd sotuv - ${product.name} (x${qty})`,
+                    ClubId: clubId
+                });
+            }
+
+            // Deduct stock if there is stock management
+            if (product.stock > 0) {
+                product.stock = Math.max(0, product.stock - qty);
+                await product.save();
+            }
+
+            // Trigger sync
+            const io = req.app.get('io');
+            if (io) io.to(`club_${clubId}`).emit('room_update');
+
+            res.json({ success: true, message: "Sotuv amalga oshdi" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // ═══════════════════════════════════════
     // ⚙️ SETUP & BROADCAST
     // ═══════════════════════════════════════

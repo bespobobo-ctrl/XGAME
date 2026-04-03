@@ -79,6 +79,7 @@ router.post('/manager/reservation/:id/confirm-penalty-warning', auth, authorize(
 
 router.get('/manager/bar/products', auth, authorize('manager'), asyncHandler(managerAppCtrl.getProducts));
 router.post('/manager/bar/products', auth, authorize('manager'), asyncHandler(managerAppCtrl.addProduct));
+router.post('/manager/bar/sell', auth, authorize('manager'), asyncHandler(managerAppCtrl.sellProduct));
 
 /**
  * 🎮 PLAYER DASHBOARD (Gamer Profile)

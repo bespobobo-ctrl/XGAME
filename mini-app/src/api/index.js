@@ -34,9 +34,8 @@ export const callAPI = async (endpoint, options = {}) => {
         // Agar user topilmasa, localStorage tozalanib, qaytadan login so'raladi
         if (data.error === 'User not found' || data.error?.includes('Auth token missing')) {
             localStorage.removeItem('x-token');
-            if (window.location.pathname !== '/') {
-                window.location.href = '/';
-            }
+            localStorage.removeItem('x-user');
+            window.location.reload();
         }
 
         return data;

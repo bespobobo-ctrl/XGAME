@@ -108,6 +108,13 @@ async function initializeDatabase() {
         try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `pairingCode` TEXT;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `lastOnline` DATETIME;"); } catch (e) { }
 
+        // Rooms table migrations
+        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `isLocked` BOOLEAN DEFAULT 0;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `openTime` TEXT DEFAULT '00:00';"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `closeTime` TEXT DEFAULT '23:59';"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `pcSpecs` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `pcCount` INTEGER DEFAULT 0;"); } catch (e) { }
+
         const clubCount = await Club.count();
         logger.info(`ℹ️ Jami ${clubCount} ta klub mavjud.`);
 

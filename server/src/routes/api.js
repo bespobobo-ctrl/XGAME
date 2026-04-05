@@ -12,6 +12,7 @@ const clubCtrl = require('../controllers/clubController');
 const managerCtrl = require('../controllers/managerController');
 const broadcastCtrl = require('../controllers/broadcastController');
 const statsCtrl = require('../controllers/statsController');
+const agentCtrl = require('../controllers/agentController');
 
 /**
  * 🏁 PUBLIC ROUTES
@@ -28,6 +29,12 @@ router.post('/internal/bot-event', express.json(), (req, res) => {
     }
     res.status(200).send('ok');
 });
+
+/**
+ * 🤖 PC AGENT ROUTES
+ */
+router.post('/agent/pair', asyncHandler(agentCtrl.pairAgent));
+router.post('/agent/status', asyncHandler(agentCtrl.updateStatus));
 
 /**
  * 🏛️ CLUB ROUTES (Admin Protected)
@@ -65,6 +72,7 @@ router.get('/manager/rooms', auth, authorize('manager'), asyncHandler(managerApp
 router.post('/manager/setup', auth, authorize('manager'), asyncHandler(managerAppCtrl.setup));
 router.post('/manager/broadcast', auth, authorize('manager'), asyncHandler(managerAppCtrl.broadcast));
 router.post('/manager/pc/:id/action', auth, authorize('manager'), asyncHandler(managerAppCtrl.pcAction));
+router.post('/manager/pc/:id/pairing-code', auth, authorize('manager'), asyncHandler(managerAppCtrl.generatePairingCode));
 router.post('/manager/rooms', auth, authorize('manager'), asyncHandler(managerAppCtrl.addRoom));
 router.put('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.editRoom));
 router.delete('/manager/room/:id', auth, authorize('manager'), asyncHandler(managerAppCtrl.deleteRoom));

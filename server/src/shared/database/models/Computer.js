@@ -21,6 +21,16 @@ const Computer = sequelize.define('Computer', {
     macAddress: {
         type: DataTypes.STRING,
     },
+    agentToken: {
+        type: DataTypes.STRING,
+        unique: true
+    },
+    pairingCode: {
+        type: DataTypes.STRING,
+    },
+    lastOnline: {
+        type: DataTypes.DATE,
+    },
     ClubId: {
         type: DataTypes.INTEGER,
         allowNull: false

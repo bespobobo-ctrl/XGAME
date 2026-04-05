@@ -59,6 +59,26 @@ class ManagerAppController {
         }
     }
 
+    async generatePairingCode(req, res) {
+        try {
+            const pcId = req.params.id;
+            const clubId = req.user?.ClubId;
+            if (!clubId) return res.status(403).json({ error: "Access Denied." });
+
+            const pc = await Computer.findOne({ where: { id: pcId, ClubId: clubId } });
+            if (!pc) return res.status(404).json({ error: "Kompyuter topilmadi" });
+
+            // 6 xonali tasodifiy kod (masalan: 123456)
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            pc.pairingCode = code;
+            await pc.save();
+
+            res.json({ success: true, pairingCode: code });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // ═══════════════════════════════════════
     // 🏠 ROOM MANAGEMENT
     // ═══════════════════════════════════════

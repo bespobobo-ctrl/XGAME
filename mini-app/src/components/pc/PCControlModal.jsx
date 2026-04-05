@@ -107,7 +107,7 @@ const PCControlModal = ({
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', backdropFilter: 'blur(30px)' }} onClick={() => { setSelectedPC(null); setIsReserveMode(false); setSelectedUser(null); }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="premium-glass" style={{ width: '100%', maxWidth: '380px', padding: '25px 20px', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="premium-glass" style={{ width: '100%', maxWidth: '380px', maxHeight: '85vh', overflowY: 'auto', padding: '25px 20px', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                     <div><h1 style={{ margin: 0, fontSize: '32px', fontWeight: '950', letterSpacing: '-1px', color: '#fff' }}>{selectedPC.name}</h1><p className="secondary-label">BOSHQARUV PANELI</p></div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
@@ -186,6 +186,34 @@ const PCControlModal = ({
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '12px' }}>
                                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => setIsReserveMode(true)} style={{ padding: '18px', borderRadius: '22px', background: 'rgba(255,255,255,0.03)', color: '#999', border: '1px solid rgba(255,255,255,0.08)', fontWeight: '950', fontSize: '13px' }}>BRON QILISH 🗓️</motion.button>
                                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('start')} style={{ padding: '18px', borderRadius: '22px', background: 'linear-gradient(45deg, #7000ff, #a000ff)', color: '#fff', border: 'none', fontWeight: '950', fontSize: '18px' }}>ISHGA TUSHIRISH 🚀</motion.button>
+                                </div>
+
+                                {/* 🔗 AGENT PAIRING SECTION */}
+                                <div style={{ marginTop: '15px', padding: '15px', borderRadius: '20px', background: 'rgba(0,209,255,0.05)', border: '1px dashed rgba(0,209,255,0.2)', textAlign: 'center' }}>
+                                    {selectedPC.pairingCode ? (
+                                        <>
+                                            <p style={{ margin: '0 0 5px', fontSize: '10px', color: '#00d1ff', fontWeight: 'bold' }}>AGENTNI ULASH KODI:</p>
+                                            <h2 style={{ margin: 0, fontSize: '28px', letterSpacing: '4px', color: '#fff', fontWeight: '950' }}>{selectedPC.pairingCode}</h2>
+                                            <p style={{ margin: '5px 0 0', fontSize: '9px', color: '#aaa' }}>Ushbu kodni PC Agent dasturiga kiriting</p>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                    const res = await callAPI(`/api/manager/pc/${selectedPC.id}/pairing-code`, { method: 'POST' });
+                                                    if (res.success) {
+                                                        // Update the PC object locally to show the code
+                                                        selectedPC.pairingCode = res.pairingCode;
+                                                        setLocalTime(Date.now()); // trigger re-render
+                                                    }
+                                                } catch (e) { alert("Xatolik"); }
+                                            }}
+                                            style={{ background: 'transparent', border: 'none', color: '#00d1ff', fontSize: '12px', fontWeight: '950', cursor: 'pointer', textDecoration: 'underline' }}
+                                        >
+                                            🔗 AGENTNI BOG'LASH KODINI OLISH
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ) : (

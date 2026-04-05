@@ -104,6 +104,9 @@ async function initializeDatabase() {
         try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `SessionId` INTEGER;"); } catch (e) { }
         try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `ClubId` INTEGER;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `agentToken` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `pairingCode` TEXT;"); } catch (e) { }
+        try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `lastOnline` DATETIME;"); } catch (e) { }
 
         const clubCount = await Club.count();
         logger.info(`ℹ️ Jami ${clubCount} ta klub mavjud.`);

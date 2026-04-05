@@ -31,6 +31,14 @@ export const callAPI = async (endpoint, options = {}) => {
             data.success = false;
         }
 
+        // Agar user topilmasa, localStorage tozalanib, qaytadan login so'raladi
+        if (data.error === 'User not found' || data.error?.includes('Auth token missing')) {
+            localStorage.removeItem('x-token');
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
+        }
+
         return data;
 
     } catch (e) {

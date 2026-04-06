@@ -1,25 +1,24 @@
-const { Computer, Room, Session, sequelize } = require('./index');
+const { Computer, Room, Session, Transaction, sequelize } = require('./index');
 
 async function totalCleanup() {
     try {
-        console.log('🧹 Bazani tozalash boshlandi...');
+        console.log('🧹 SQLite bazasini tozalash va ID-larni 1-ga qaytarish boshlandi...');
 
-        // 1. Avval sessiyalarni o'chirish (Foreign key xatosi bo'lmasligi uchun)
-        await Session.destroy({ where: {}, truncate: { cascade: true } });
-        console.log('✅ Sessiyalar o\'chirildi.');
+        // 1. Bog'liqliklarni o'chirish
+        await Transaction.destroy({ where: {} });
+        await Session.destroy({ where: {} });
+        await Computer.destroy({ where: {} });
+        await Room.destroy({ where: {} });
 
-        // 2. Kompyuterlarni o'chirish
-        await Computer.destroy({ where: {}, truncate: { cascade: true } });
-        console.log('✅ Kompyuterlar o\'chirildi.');
+        // 2. MUHIM: SQLite-da ID sanoqlarini (Auto-increment) 1-ga qaytarish
+        await sequelize.query("DELETE FROM sqlite_sequence WHERE name='Computers'");
+        await sequelize.query("DELETE FROM sqlite_sequence WHERE name='Rooms'");
+        await sequelize.query("DELETE FROM sqlite_sequence WHERE name='Sessions'");
+        await sequelize.query("DELETE FROM sqlite_sequence WHERE name='Transactions'");
 
-        // 3. Xonalarni o'chirish
-        await Room.destroy({ where: {}, truncate: { cascade: true } });
-        console.log('✅ Xonalar o\'chirildi.');
+        console.log('✅ Barcha jadvallar tozalandi va ID sanoqlari 1-ga qaytarildi!');
+        console.log('✨ Endi Admin paneldan yangi xona yaratsangiz, hammasi #1 dan boshlanadi.');
 
-        // 4. ID raqamlarini (Auto-increment) 1 ga qaytarish (PostgreSQL/MySQL/SQLite da farq qiladi)
-        // Biz Sequelize ishlatyapmiz, TRUNCATE bu ishni o'zi qiladi.
-
-        console.log('\n✨ Baza ideal holatda! Endi xonalarni 1 dan boshlab qaytadan yarata olasiz.');
         process.exit(0);
     } catch (error) {
         console.error('❌ Cleanup Error:', error);

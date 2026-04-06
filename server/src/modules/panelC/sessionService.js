@@ -77,6 +77,7 @@ class SessionService {
     }
 
     async _handleStop(pc, transaction, origin, socketId) {
+        console.trace('🛑 [DETEKTIV] _handleStop chaqirildi! Kim chaqirdi?');
         const activeSession = await Session.findOne({
             where: { ComputerId: pc.id, status: [SESSION_STATUS.ACTIVE, SESSION_STATUS.PAUSED] },
             transaction

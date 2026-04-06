@@ -86,12 +86,9 @@ class SessionService {
             const now = new Date();
 
             // 🛡️ ANTI-FLICKER GUARD: 15 soniya ichida sessiyani yopish mumkin emas!
-            const ageSeconds = Math.floor((now - new Date(activeSession.startTime)) / 1000);
             if (ageSeconds < 15) {
                 console.log(`⚠️ BLOCKED: Stop request for ${pc.name} rejected (Session age: ${ageSeconds}s < 15s minimum)`);
-                // Transaction-ni rollback qilish uchun xato tashlash SHART EMAS
-                // Shunchaki return qilsak, session saqlanib qoladi
-                return;
+                throw new Error(`Kuting! Kompyuter endi ochildi. Yopish uchun yana ${15 - ageSeconds} soniya qoldi.`);
             }
 
             console.log(`✅ Closing Session ID: ${activeSession.id}. Age: ${ageSeconds}s. Origin: ${origin || 'unknown'}, Socket: ${socketId || 'none'}`);

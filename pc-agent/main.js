@@ -21,7 +21,7 @@ let locking = true;
 let socket = null;
 let heartbeatTimer = null;
 let lastUnlockTime = 0; // 🛡️ Anti-Flicker Guard (Client-Side)
-const UNLOCK_GUARD_MS = 20000; // 20 soniya ichida qayta qulflashga ruxsat YO'Q!
+const UNLOCK_GUARD_MS = 2000; // 2 soniya yengil himoya, ortiqcha qotishsiz
 
 function canLock() {
     const elapsed = Date.now() - lastUnlockTime;
@@ -166,9 +166,9 @@ async function connectSocket() {
 
     socket = io(config.serverUrl, {
         auth: { token: config.agentToken },
-        transports: ['websocket', 'polling'],
-        reconnectionDelay: 2000,
-        reconnectionDelayMax: 5000
+        transports: ['websocket'], // Majburiy WebSocket orqali Real-Time, sekin Polling ni olib tashlaymiz
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 3000
     });
 
     socket.on('connect', () => {

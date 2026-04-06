@@ -105,7 +105,7 @@ exports.unlockWithQR = async (req, res, next) => {
             setTimeout(() => {
                 io.to(`pc_${pc.id}`).emit('unlock');
                 io.to(`club_${pc.ClubId}`).emit('room_update');
-            }, 500);
+            }, 100);
         }
 
         res.json({ success: true, message: 'Kompyuter ochildi! O\'yinga tayyorlaning 🎮' });

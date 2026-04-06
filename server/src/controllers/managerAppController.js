@@ -48,7 +48,6 @@ class ManagerAppController {
 
             const result = await sessionService.executeAction(pcId, clubId, actionData);
 
-            // Emit real-time update with a small delay for stability
             const io = req.app.get('io');
             if (io) {
                 const action = actionData.action;
@@ -60,7 +59,7 @@ class ManagerAppController {
                     }
                     io.to(`club_${clubId}`).emit('room_update');
                     io.emit('pc-status-updated', { clubId, pcId });
-                }, 500); // 500ms delay for agent re-connection sync
+                }, 100); // 100ms delay - tezroq ishlashi uchun qisqartirildi
             }
 
             res.json(result);

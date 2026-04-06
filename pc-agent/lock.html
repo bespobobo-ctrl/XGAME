@@ -305,15 +305,18 @@
 
 <body>
     <div class="bg-container">
-        <!-- 📂 LOCAL IMAGE LAYER (Maximum Reliability) -->
+        <!-- 🎨 NEON MESH MOCKUP (Background layer) -->
+        <div
+            style="position: absolute; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at 15% 15%, rgba(125, 0, 255, 0.7), transparent 50%), radial-gradient(circle at 85% 85%, rgba(255, 0, 122, 0.6), transparent 50%), #0c001a; z-index: -4;">
+        </div>
+
+        <!-- 📂 LOCAL IMAGE LAYER -->
         <img id="bgImage" src="./assets/img/bg.jpg"
             style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; z-index: -3;"
-            onerror="this.src='./assets/img/bg.png'; this.onerror=null;">
+            onerror="this.src='./assets/img/bg.png'; this.style.display='none';">
     </div>
 
-    <div class="sparks-container">
-        <canvas id="sparksCanvas"></canvas>
-    </div>
+    <canvas id="sparks"></canvas>
 
     <div class="status-bar">
         <div id="timeDisplay">00:00</div>

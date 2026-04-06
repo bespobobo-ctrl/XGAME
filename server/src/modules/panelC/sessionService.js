@@ -76,7 +76,7 @@ class SessionService {
         await pc.update({ status: PC_STATUS.BUSY }, { transaction });
     }
 
-    async _handleStop(pc, transaction) {
+    async _handleStop(pc, transaction, origin, socketId) {
         const activeSession = await Session.findOne({
             where: { ComputerId: pc.id, status: [SESSION_STATUS.ACTIVE, SESSION_STATUS.PAUSED] },
             transaction

@@ -34,7 +34,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000 url('./bg.png') no-repeat center center;
+            /* 1. Global CDN fallback (Very high quality CS-GO background) */
+            background-color: #000;
+            background-image:
+                url('https://wallpapers.com/images/hd/cs-go-all-characters-y6rnuv9k6m0it4v0.jpg'),
+                url('./bg.png');
+            background-repeat: no-repeat;
+            background-position: center center;
             background-size: cover;
             z-index: -2;
             animation: zoomBg 20s infinite alternate;

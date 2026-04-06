@@ -83,7 +83,8 @@ function createLockWindow() {
         backgroundColor: '#000000',
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false
+            contextIsolation: false,
+            webSecurity: false // 🔓 Allow loading remote assets from file://
         }
     });
 

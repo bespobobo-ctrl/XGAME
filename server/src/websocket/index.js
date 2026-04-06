@@ -1,4 +1,4 @@
-const { Computer } = require('../shared/database');
+const { Computer, Session } = require('../shared/database');
 
 function setupWebSockets(io) {
     io.on('connection', (socket) => {
@@ -6,7 +6,7 @@ function setupWebSockets(io) {
 
         // Agent o'z ismini aytib ro'yxatdan o'tganda ishlaydi
         socket.on('register-agent', async (data) => {
-            const { pcId, pcName, macAddress } = data || {};
+            const { pcId, macAddress } = data || {};
 
             let computer = null;
             if (pcId) computer = await Computer.findByPk(pcId);
@@ -15,20 +15,26 @@ function setupWebSockets(io) {
             if (computer) {
                 console.log(`🖥️ Agent ulandi: ${computer.name} (ID: ${computer.id})`);
                 socket.join(`pc_${computer.id}`);
-                socket.join(`pc_${computer.name}`); // Fallback
 
                 computer.lastOnline = new Date();
                 if (computer.status === 'offline') computer.status = 'free';
                 await computer.save();
 
-                // 🔄 STATUS SYNC: Sessiya borligini tekshiramiz
-                const { Session } = require('../shared/database');
+                // 🔄 FINAL SYNC: Sessiya borligini tekshiramiz
                 const activeSession = await Session.findOne({
-                    where: { ComputerId: computer.id, status: 'active' }
+                    where: {
+                        ComputerId: computer.id,
+                        status: ['active', 'paused']
+                    }
                 });
 
-                if (activeSession || computer.status === 'busy' || computer.status === 'paused') {
-                    console.log(`🔓 Sync: Unlocking ${computer.name} (Active Session Found)`);
+                if (activeSession) {
+                    console.log(`🔓 Sync: Unlocking ${computer.name} (Session: ${activeSession.id})`);
+                    // Agar bazada status 'busy' bo'lmay qolgan bo'lsa - to'g'rilaymiz
+                    if (computer.status === 'free') {
+                        computer.status = 'busy';
+                        await computer.save();
+                    }
                     socket.emit('unlock');
                 } else {
                     console.log(`🔒 Sync: Locking ${computer.name} (No Active Session)`);
@@ -37,14 +43,6 @@ function setupWebSockets(io) {
             }
         });
 
-        // Eskicha usul moshligini saqlash uchun (agar eski agentlar bo'lsa)
-        socket.on('register-pc', async (pcName) => {
-            socket.join(pcName);
-        });
-
-        /**
-         * 👥 MANAGER JOIN CLUB ROOM
-         */
         socket.on('join-club', (clubId) => {
             if (clubId) {
                 const roomName = `club_${clubId}`;
@@ -55,7 +53,6 @@ function setupWebSockets(io) {
 
         socket.on('disconnect', () => {
             console.log(`🔌 Kimdir tarmoqdan uzildi. Socket: ${socket.id}`);
-            // Aslida kutilmaganda kompyuterdan LAN uzilsa ham uni darhol topa olamiz bu orqali
         });
     });
 }

@@ -64,20 +64,21 @@ exports.updateStatus = async (req, res, next) => {
 
         // 🔄 FINAL SYNC check for active sessions
         const activeSession = await Session.findOne({
-            where: { ComputerId: pc.id, status: ['active', 'paused'] }
+            where: { ComputerId: pc.id, status: ['active', 'paused'] },
+            order: [['createdAt', 'DESC']] // Har doim eng so'nggisini o'qiymiz
         });
 
-        // Agar sessiya bo'lsa - status har doim 'busy' yoki 'paused' bo'ladi
+        // ⚠️ ENTI-FLICKER SYNC: Agar sessiya bo'lsa, statusni 'busy' qilib qotiramiz
         let effectiveStatus = pc.status;
         if (activeSession) {
             effectiveStatus = activeSession.status === 'paused' ? 'paused' : 'busy';
-            if (pc.status !== effectiveStatus) {
-                pc.status = effectiveStatus;
-            }
-        } else if (status && (pc.status === 'free' || pc.status === 'offline')) {
-            pc.status = status;
+        } else {
+            effectiveStatus = 'free';
         }
 
+        console.log(`🔒 SYNC [PC-${pc.id}]: Database says ${activeSession ? 'ACTIVE' : 'NONE'}, Reporting ${effectiveStatus}`);
+
+        pc.status = effectiveStatus;
         pc.lastOnline = new Date();
         await pc.save();
 

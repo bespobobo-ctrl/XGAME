@@ -32,19 +32,19 @@ function canLock() {
     return true;
 }
 
-function doUnlock() {
+function doUnlock(reason = 'Unknown') {
     if (!locking) return; // Allaqachon ochiq
     lastUnlockTime = Date.now();
     locking = false;
-    console.log('🔓 PC OCHILDI (Unlock)');
+    console.log(`🔓 PC OCHILDI (Unlock) | Sabab: ${reason}`);
     updateWindowState();
 }
 
-function doLock() {
+function doLock(reason = 'Unknown') {
     if (locking) return; // Allaqachon qulflangan
     if (!canLock()) return; // Guard faol — qulflamaymiz!
     locking = true;
-    console.log('🔒 PC QULFLANDI (Lock)');
+    console.log(`🔒 PC QULFLANDI (Lock) | Sabab: ${reason}`);
     updateWindowState();
 }
 
@@ -144,12 +144,14 @@ async function sendHeartbeat() {
 
             // 2. Sync state (Guard bilan himoyalangan)
             const shouldBeOpen = (serverPC.status === 'busy' || serverPC.status === 'paused');
+            console.log(`💓 API STATUS KELDI: ${serverPC.status}`);
+
             if (shouldBeOpen && locking) {
                 console.log('🔄 Heartbeat Sync: Ochilmoqda...');
-                doUnlock();
+                doUnlock('heartbeat');
             } else if (!shouldBeOpen && !locking) {
                 console.log('🔄 Heartbeat Sync: Qulflanmoqda...');
-                doLock();
+                doLock('heartbeat');
             }
         }
     } catch (e) {
@@ -174,8 +176,8 @@ async function connectSocket() {
         if (mainWindow) mainWindow.webContents.send('status-connected', { id: config.pcId });
     });
 
-    socket.on('lock', () => { console.log('📡 Socket: lock signal received'); doLock(); });
-    socket.on('unlock', () => { console.log('📡 Socket: unlock signal received'); doUnlock(); });
+    socket.on('lock', () => { console.log('📡 Socket: lock signal received'); doLock('socket'); });
+    socket.on('unlock', () => { console.log('📡 Socket: unlock signal received'); doUnlock('socket'); });
 
     socket.on('disconnect', (reason) => {
         console.log(`❌ Disconnected: ${reason}`);
@@ -188,7 +190,7 @@ async function connectSocket() {
             setTimeout(() => {
                 if (socket && !socket.connected && !locking) {
                     console.log('🚨 Shutdown: 30s ichida qayta ulanmadi, qulflaymiz.');
-                    doLock();
+                    doLock('timeout');
                 }
             }, 30000); // 30 soniya grace period
         }

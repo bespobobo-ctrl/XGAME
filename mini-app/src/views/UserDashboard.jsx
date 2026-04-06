@@ -29,6 +29,19 @@ const UserDashboard = ({ user, onLogout, setView }) => {
     const clubName = profileData?.user?.clubName || 'GAME ZONE';
     const userName = (profileData?.user?.name || user?.username || 'GAMER').toUpperCase();
 
+    useEffect(() => {
+        if (startParam && startParam.startsWith('pc_') && profileData) {
+            const pcId = startParam.substring(3);
+            if (window.confirm(`${pcId}-sonli PC ni ochmoqchimisiz?`)) {
+                callAPI('/api/player/pc/unlock-with-qr', { method: 'POST', body: JSON.stringify({ qrData: startParam }) })
+                    .then(res => {
+                        if (res.success) { alert(res.message); fetchData(); }
+                        else alert(res.error);
+                    });
+            }
+        }
+    }, [startParam, profileData]);
+
     const fetchData = async () => {
         try {
             const timestamp = Date.now();

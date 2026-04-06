@@ -113,6 +113,7 @@ exports.reservePc = async (req, res, next) => {
         await Session.create({
             startTime: rDate, // ⬅️ BU MUHIM! Tanlangan vaqtni startTime ga yozamiz
             ComputerId: pc.id,
+            RoomId: pc.RoomId, // 🛡️ Analytics Xona daromadini hisoblashi uchun majburiy
             ClubId: user.ClubId,
             UserId: user.id,
             status: 'reserved',
@@ -183,15 +184,32 @@ exports.unlockWithQR = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Balansingiz yetarli emas (kamida 1000 UZS)' });
         }
 
-        // Try to find PC by Name (typical for Agents) or ID
+        // Extract PC ID if it's a URL or formatted as "pc_ID"
+        let pcIdOrName = qrData;
+        if (qrData.includes('startapp=pc_')) {
+            pcIdOrName = qrData.split('startapp=pc_')[1].split('&')[0];
+        } else if (qrData.startsWith('pc_')) {
+            pcIdOrName = qrData.substring(3);
+        }
+
+        // Fix: Don't restrict by user.ClubId as the user might be new and not assigned yet
         const pc = await Computer.findOne({
             where: {
-                [Op.or]: [{ id: qrData }, { name: qrData }],
-                ClubId: user.ClubId
+                [Op.or]: [
+                    { id: isNaN(pcIdOrName) ? -1 : parseInt(pcIdOrName) },
+                    { name: pcIdOrName }
+                ]
             }
         });
 
         if (!pc) return res.status(404).json({ success: false, message: 'Kompyuter topilmadi' });
+
+        // Auto-assign user to this club if not assigned
+        if (!user.ClubId) {
+            user.ClubId = pc.ClubId;
+            await user.save();
+        }
+
         if (pc.status === 'busy' || pc.status === 'paused') {
             return res.status(400).json({ success: false, message: 'Bu kompyuter hozir band' });
         }
@@ -213,7 +231,7 @@ exports.unlockWithQR = async (req, res, next) => {
 
         const io = req.app.get('io');
         if (io) {
-            io.to(pc.name).emit('unlock', { sessionId: session.id, guestName: user.username });
+            io.to(`pc_${pc.id}`).emit('unlock', { sessionId: session.id, guestName: user.username });
             io.to(`club_${user.ClubId}`).emit('room_update');
         }
 

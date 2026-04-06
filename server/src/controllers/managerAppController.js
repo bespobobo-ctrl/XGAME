@@ -48,8 +48,15 @@ class ManagerAppController {
             // Emit real-time update
             const io = req.app.get('io');
             if (io) {
+                const action = actionData.action;
+                if (action === 'start' || action === 'resume') {
+                    io.to(`pc_${pcId}`).emit('unlock');
+                } else if (action === 'stop' || action === 'pause') {
+                    io.to(`pc_${pcId}`).emit('lock');
+                }
+
                 io.to(`club_${clubId}`).emit('room_update');
-                io.emit('pc-status-updated', { clubId, pcId }); // Fallback
+                io.emit('pc-status-updated', { clubId, pcId });
             }
 
             res.json(result);

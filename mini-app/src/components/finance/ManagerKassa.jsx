@@ -126,7 +126,7 @@ const ManagerKassa = () => {
                                             <span style={{ fontSize: '10px', color: '#555', display: 'flex', alignItems: 'center', gap: '3px' }}><Clock size={10} /> {formatTashkentTime(new Date(t.createdAt))}</span>
                                         </div>
                                         <b style={{ color: '#fff', fontSize: '14px', display: 'block' }}>
-                                            {isPC ? (t.description || "PC SEANSI YOPILDI") : isBar ? t.description.replace('Bar: ', '') : t.description}
+                                            {isPC ? (t.description || "PC SEANSI YOPILDI") : isBar ? (t.description?.replace('Bar: ', '') || 'Bar xaridi') : (t.description || 'Noma\'lum xarid')}
                                         </b>
                                     </div>
                                 </div>

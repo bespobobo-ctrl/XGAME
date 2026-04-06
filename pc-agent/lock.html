@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>GameZone Locked</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+        }
+
+        .container {
+            text-align: center;
+            z-index: 10;
+        }
+
+        .logo-circle {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(45deg, #7000ff, #ff007a);
+            border-radius: 50%;
+            margin: 0 auto 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 100px rgba(112, 0, 255, 0.4);
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 60px rgba(112, 0, 255, 0.4);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 120px rgba(112, 0, 255, 0.6);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 60px rgba(112, 0, 255, 0.4);
+            }
+        }
+
+        h1 {
+            font-size: 80px;
+            font-weight: 950;
+            margin: 0;
+            letter-spacing: -3px;
+        }
+
+        p {
+            font-size: 24px;
+            color: #999;
+            font-weight: 700;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px 30px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+            font-weight: 950;
+            letter-spacing: 1px;
+            backdrop-filter: blur(10px);
+        }
+
+        .glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: #7000ff;
+            border-radius: 50%;
+            filter: blur(200px);
+            opacity: 0.1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glow"></div>
+    <div class="container">
+        <div class="logo-circle">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+        </div>
+        <h1 id="pcLabel">PC QULFLANGAN</h1>
+        <div id="pcIdDisplay"
+            style="color: rgba(255,255,255,0.2); font-size: 14px; font-weight: 950; margin-top: -10px; letter-spacing: 2px;">
+            #---</div>
+        <p>Admin tomonidan o'yin vaqti belgilanishini kuting</p>
+
+        <div id="statusIndicator"
+            style="position: fixed; top: 20px; right: 20px; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255,255,255,0.1);">
+            <div id="statusDot"
+                style="width: 8px; height: 8px; background: #ff3366; border-radius: 50%; box-shadow: 0 0 10px #ff3366;">
+            </div>
+            <span id="statusText">SERVERDAN UZILGAN</span>
+        </div>
+
+        <div id="qrContainer"
+            style="margin-top: 30px; background: #fff; padding: 15px; border-radius: 20px; display: inline-block;">
+            <img id="qrImage" src="" alt="QR Code" style="display: block; width: 180px; height: 180px;">
+        </div>
+        <p style="font-size: 14px; color: #7000ff; margin-top: 15px;">MOBIL ILOVA ORQALI SCAN QILING</p>
+    </div>
+    <div class="footer">🕹️ GAMEZONE COMMAND CENTER</div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('set-pc-details', (event, data) => {
+            document.getElementById('pcLabel').innerText = data.name.toUpperCase() + ' QULFLANGAN';
+
+            // Build the URL for QR code (Link to the bot or mini-app with PC ID)
+            const botUrl = `https://t.me/X_Game123_bot/app?startapp=pc_${data.id}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(botUrl)}&color=7000ff`;
+            document.getElementById('qrImage').src = qrUrl;
+        });
+
+        ipcRenderer.on('status-connected', (event, data) => {
+            document.getElementById('statusDot').style.background = '#00ff7a';
+            document.getElementById('statusDot').style.boxShadow = '0 0 15px #00ff7a';
+            document.getElementById('statusText').innerText = 'STATUS: ONLINE (' + (data?.id || 'NO ID') + ')';
+
+            if (data?.id) {
+                document.getElementById('pcIdDisplay').innerText = '#' + data.id;
+            }
+        });
+
+        ipcRenderer.on('status-disconnected', () => {
+            document.getElementById('statusDot').style.background = '#ff3366';
+            document.getElementById('statusDot').style.boxShadow = '0 0 15px #ff3366';
+            document.getElementById('statusText').innerText = 'STATUS: OFFLINE';
+        });
+    </script>
+    </script>
+</body>
+
+</html>

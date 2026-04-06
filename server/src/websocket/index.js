@@ -5,25 +5,37 @@ function setupWebSockets(io) {
         console.log(`📡 Yangi bog'lanish (Socket ID: ${socket.id})`);
 
         // Agent o'z ismini aytib ro'yxatdan o'tganda ishlaydi
-        socket.on('register-pc', async (pcName) => {
-            console.log(`🖥️ Agent ulandi: ${pcName}`);
+        socket.on('register-agent', async (data) => {
+            const { pcId, pcName, macAddress } = data || {};
 
-            // Ixtiyoriy xavfsizlik: Barcha shu ismdagi eskilarni o'chirib, shu yangi ulanishni qo'shamiz
-            socket.join(pcName);
+            let computer = null;
+            if (pcId) computer = await Computer.findByPk(pcId);
+            if (!computer && macAddress) computer = await Computer.findOne({ where: { macAddress } });
 
-            try {
-                const computer = await Computer.findOne({ where: { name: pcName } });
-                if (computer) {
-                    // Ulanganini bildirish uchun (offline dan free ga o'tkazish)
-                    if (computer.status === 'offline') {
-                        computer.status = 'free';
-                        await computer.save();
-                    }
-                    console.log(`🟢 ${pcName} holati 'online (free)' qilindi.`);
+            if (computer) {
+                console.log(`🖥️ Agent ulandi: ${computer.name} (ID: ${computer.id})`);
+                socket.join(`pc_${computer.id}`);
+                socket.join(`pc_${computer.name}`); // Fallback
+
+                computer.lastOnline = new Date();
+                if (computer.status === 'offline') computer.status = 'free';
+                await computer.save();
+
+                // 🔄 STATUS SYNC: Agent ulanishi bilan uning holatini serverdagi holat bilan moslaymiz
+                // Agar PC band (busy) bo'lsa, agentga 'unlock' yuboramiz
+                if (computer.status === 'busy' || computer.status === 'paused') {
+                    console.log(`🔓 Sync: Unlocking ${computer.name} (Status: ${computer.status})`);
+                    socket.emit('unlock');
+                } else {
+                    console.log(`🔒 Sync: Locking ${computer.name} (Status: ${computer.status})`);
+                    socket.emit('lock');
                 }
-            } catch (err) {
-                console.log("Xato register pc", err);
             }
+        });
+
+        // Eskicha usul moshligini saqlash uchun (agar eski agentlar bo'lsa)
+        socket.on('register-pc', async (pcName) => {
+            socket.join(pcName);
         });
 
         /**

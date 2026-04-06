@@ -21,8 +21,15 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [showSuperLogin, setShowSuperLogin] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState(null);
+  const [startParam, setStartParam] = useState(null);
 
-  // 🔄 SESSION RECOVERY (Senior Level Logic)
+  useEffect(() => {
+    // 🧬 TELEGRAM START_PARAM DETECTION (Deep Linking)
+    const tg = window.Telegram?.WebApp;
+    if (tg?.initDataUnsafe?.start_param) {
+      setStartParam(tg.initDataUnsafe.start_param);
+    }
+  }, []);
   useEffect(() => {
     const token = localStorage.getItem('x-token');
     const savedUser = localStorage.getItem('x-user');
@@ -124,7 +131,7 @@ const App = () => {
                 }}
               />
             )}
-            {view === 'userDashboard' && <UserDashboard user={user} onLogout={logout} setView={setView} />}
+            {view === 'userDashboard' && <UserDashboard user={user} onLogout={logout} setView={setView} startParam={startParam} />}
             {view === 'superAdmin' && <SuperAdminDashboard activeTab={adminTab} />}
             {view === 'managerLogin' && <ManagerLogin onLogin={handleManagerLogin} onBack={() => setView('home')} />}
             {view === 'managerSetup' && <ManagerSetup onFinish={() => setView('managerDashboard')} />}

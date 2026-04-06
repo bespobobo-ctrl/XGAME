@@ -27,7 +27,7 @@ exports.pairAgent = async (req, res, next) => {
 
         // 3. Bazani yangilash
         pc.macAddress = macAddress || pc.macAddress;
-        pc.name = hostname || pc.name;
+        // pc.name = hostname || pc.name; // Keep the original PC name (e.g. PC-1)
         pc.agentToken = agentToken;
         pc.pairingCode = null; // Bir marta ishlatilgandan so'ng o'chiriladi
         pc.status = 'free';
@@ -68,8 +68,11 @@ exports.updateStatus = async (req, res, next) => {
 
         const { status, metrics } = req.body;
 
-        // Agar status yuborilgan bo'lsa, uni yangilaymiz
-        if (status) pc.status = status;
+        // Agar status yuborilgan bo'lsa va PC hozir band bo'lmasa, uni yangilaymiz
+        // (Sessiya vaqtida agent statusni o'zgartirmasligi kerak)
+        if (status && (pc.status === 'free' || pc.status === 'offline')) {
+            pc.status = status;
+        }
 
         pc.lastOnline = new Date();
         await pc.save();
@@ -77,7 +80,12 @@ exports.updateStatus = async (req, res, next) => {
         res.json({
             success: true,
             serverTime: new Date(),
-            commands: [] // Kelajakda bu yerda serverdan agentga buyruqlar yuborish mumkin
+            pcDetails: {
+                id: pc.id,
+                name: pc.name,
+                status: pc.status
+            },
+            commands: []
         });
     } catch (err) {
         next(err);

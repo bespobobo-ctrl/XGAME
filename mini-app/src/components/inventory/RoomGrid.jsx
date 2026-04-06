@@ -47,7 +47,7 @@ const RoomGrid = ({ rooms, selectedViewRoom, setSelectedViewRoom, setSelectedPC,
                     <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '950', color: '#fff' }}>{selectedViewRoom.name?.toUpperCase()}</h1>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '10px' }}>
-                    {selectedViewRoom.Computers?.map(pc => {
+                    {[...(selectedViewRoom.Computers || [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map(pc => {
                         const info = calculateSessionInfo(pc, selectedViewRoom.pricePerHour, localTime);
                         const s = pc.status.toLowerCase();
                         const nextRes = pc.UpcomingReservations?.[0]; // Navbatdagi bron

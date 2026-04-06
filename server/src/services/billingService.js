@@ -30,6 +30,7 @@ async function runBillingCycle(io) {
 
                 session.consumedSeconds = (session.consumedSeconds || 0) + 60;
                 session.totalCost = Math.ceil((session.consumedSeconds / 3600) * pricePerHour);
+                session.lastResumeTime = new Date(); // 🛡️ RESET TIMER: Keyingi delta hisoblashda xatolik bo'lmasligi uchun
 
                 let isLimitReached = false;
                 if (session.expectedMinutes && (session.consumedSeconds / 60) >= session.expectedMinutes) {
@@ -55,7 +56,7 @@ async function runBillingCycle(io) {
                     session.endTime = new Date();
                     computer.status = 'free';
                     if (io) {
-                        io.to(computer.name).emit('lock');
+                        io.to(`pc_${computer.id}`).emit('lock');
                         io.emit('pc-status-updated', { pcId: computer.id, clubId: computer.ClubId, status: 'free' });
                     }
                 }

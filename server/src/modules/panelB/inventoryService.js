@@ -57,6 +57,13 @@ class InventoryService {
         const revMap = Object.fromEntries(roomRevenues.map(r => [r.RoomId, r.totalRoomRevenue || 0]));
         rooms.forEach(room => {
             room.setDataValue('todayRevenue', revMap[room.id] || 0);
+            if (room.Computers && Array.isArray(room.Computers)) {
+                room.Computers.sort((a, b) => {
+                    const nameA = a.name || '';
+                    const nameB = b.name || '';
+                    return nameA.localeCompare(nameB, undefined, { numeric: true });
+                });
+            }
         });
 
         return rooms;

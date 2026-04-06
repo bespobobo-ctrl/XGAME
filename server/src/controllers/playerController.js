@@ -95,6 +95,8 @@ exports.unlockWithQR = async (req, res, next) => {
             action: 'start',
             userId: user.id,
             guestName: user.username
+        }, {
+            origin: 'player-qr'
         });
 
         // Emit Unlock via Socket

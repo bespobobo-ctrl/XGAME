@@ -1,6 +1,4 @@
-const { Computer } = require('../shared/database');
-const jwt = require('jsonwebtoken');
-const config = require('../config/index');
+const { Computer, Session } = require('../shared/database');
 const crypto = require('crypto');
 
 /**
@@ -9,27 +7,23 @@ const crypto = require('crypto');
  */
 exports.pairAgent = async (req, res, next) => {
     try {
-        const { pairingCode, macAddress, hostname } = req.body;
+        const { pairingCode, macAddress } = req.body;
 
         if (!pairingCode) {
             return res.status(400).json({ success: false, message: 'Pairing code kiritilmadi' });
         }
 
-        // 1. Shu kodga ega kompyuterni topish
         const pc = await Computer.findOne({ where: { pairingCode } });
 
         if (!pc) {
             return res.status(404).json({ success: false, message: "Noto'g'ri yoki muddati o'tgan kod" });
         }
 
-        // 2. Agent uchun maxfiy Token va ID yaratish
         const agentToken = crypto.randomBytes(32).toString('hex');
 
-        // 3. Bazani yangilash
         pc.macAddress = macAddress || pc.macAddress;
-        // pc.name = hostname || pc.name; // Keep the original PC name (e.g. PC-1)
         pc.agentToken = agentToken;
-        pc.pairingCode = null; // Bir marta ishlatilgandan so'ng o'chiriladi
+        pc.pairingCode = null;
         pc.status = 'free';
         pc.lastOnline = new Date();
         await pc.save();
@@ -66,11 +60,21 @@ exports.updateStatus = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Yaroqsiz token' });
         }
 
-        const { status, metrics } = req.body;
+        const { status } = req.body;
 
-        // Agar status yuborilgan bo'lsa va PC hozir band bo'lmasa, uni yangilaymiz
-        // (Sessiya vaqtida agent statusni o'zgartirmasligi kerak)
-        if (status && (pc.status === 'free' || pc.status === 'offline')) {
+        // 🔄 FINAL SYNC check for active sessions
+        const activeSession = await Session.findOne({
+            where: { ComputerId: pc.id, status: ['active', 'paused'] }
+        });
+
+        // Agar sessiya bo'lsa - status har doim 'busy' yoki 'paused' bo'ladi
+        let effectiveStatus = pc.status;
+        if (activeSession) {
+            effectiveStatus = activeSession.status === 'paused' ? 'paused' : 'busy';
+            if (pc.status !== effectiveStatus) {
+                pc.status = effectiveStatus;
+            }
+        } else if (status && (pc.status === 'free' || pc.status === 'offline')) {
             pc.status = status;
         }
 
@@ -83,9 +87,8 @@ exports.updateStatus = async (req, res, next) => {
             pcDetails: {
                 id: pc.id,
                 name: pc.name,
-                status: pc.status
-            },
-            commands: []
+                status: effectiveStatus
+            }
         });
     } catch (err) {
         next(err);

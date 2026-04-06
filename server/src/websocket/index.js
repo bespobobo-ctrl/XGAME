@@ -21,13 +21,17 @@ function setupWebSockets(io) {
                 if (computer.status === 'offline') computer.status = 'free';
                 await computer.save();
 
-                // 🔄 STATUS SYNC: Agent ulanishi bilan uning holatini serverdagi holat bilan moslaymiz
-                // Agar PC band (busy) bo'lsa, agentga 'unlock' yuboramiz
-                if (computer.status === 'busy' || computer.status === 'paused') {
-                    console.log(`🔓 Sync: Unlocking ${computer.name} (Status: ${computer.status})`);
+                // 🔄 STATUS SYNC: Sessiya borligini tekshiramiz
+                const { Session } = require('../shared/database');
+                const activeSession = await Session.findOne({
+                    where: { ComputerId: computer.id, status: 'active' }
+                });
+
+                if (activeSession || computer.status === 'busy' || computer.status === 'paused') {
+                    console.log(`🔓 Sync: Unlocking ${computer.name} (Active Session Found)`);
                     socket.emit('unlock');
                 } else {
-                    console.log(`🔒 Sync: Locking ${computer.name} (Status: ${computer.status})`);
+                    console.log(`🔒 Sync: Locking ${computer.name} (No Active Session)`);
                     socket.emit('lock');
                 }
             }

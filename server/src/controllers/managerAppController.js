@@ -43,6 +43,9 @@ class ManagerAppController {
             const clubId = req.user?.ClubId;
             if (!clubId) return res.status(403).json({ error: "Access Denied: Missing Club Association." });
             const actionData = req.body;
+
+            console.log(`📥 [MANAGER-APP] PC-${pcId} action: "${actionData.action}" | Body: ${JSON.stringify(actionData)}`);
+
             const result = await sessionService.executeAction(pcId, clubId, actionData);
 
             // Emit real-time update with a small delay for stability

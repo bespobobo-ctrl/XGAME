@@ -77,7 +77,6 @@ class SessionService {
     }
 
     async _handleStop(pc, transaction, origin, socketId) {
-        console.trace('🛑 [DETEKTIV] _handleStop chaqirildi! Kim chaqirdi?');
         const activeSession = await Session.findOne({
             where: { ComputerId: pc.id, status: [SESSION_STATUS.ACTIVE, SESSION_STATUS.PAUSED] },
             transaction
@@ -86,14 +85,16 @@ class SessionService {
         if (activeSession) {
             const now = new Date();
 
-            // 🛡️ ANTI-FLICKER GUARD: If session started < 5s ago, ignore stop request
+            // 🛡️ ANTI-FLICKER GUARD: 15 soniya ichida sessiyani yopish mumkin emas!
             const ageSeconds = Math.floor((now - new Date(activeSession.startTime)) / 1000);
-            if (ageSeconds < 5) {
-                console.log(`⚠️ Ignored Rapid Stop Request for ${pc.name} (Age: ${ageSeconds}s)`);
+            if (ageSeconds < 15) {
+                console.log(`⚠️ BLOCKED: Stop request for ${pc.name} rejected (Session age: ${ageSeconds}s < 15s minimum)`);
+                // Transaction-ni rollback qilish uchun xato tashlash SHART EMAS
+                // Shunchaki return qilsak, session saqlanib qoladi
                 return;
             }
 
-            console.log(`✅ Closing Session ID: ${activeSession.id}. Origin: ${origin || 'unknown'}, Socket: ${socketId || 'none'}`);
+            console.log(`✅ Closing Session ID: ${activeSession.id}. Age: ${ageSeconds}s. Origin: ${origin || 'unknown'}, Socket: ${socketId || 'none'}`);
             let finalConsumedSeconds = activeSession.consumedSeconds || 0;
 
             if (activeSession.status === SESSION_STATUS.ACTIVE) {

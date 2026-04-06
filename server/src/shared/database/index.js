@@ -80,47 +80,66 @@ async function initializeDatabase() {
             logger.info('✅ Database sinxronizatsiya qilindi (Safe mode)!');
         }
 
-        // 🛠️ DATABASE MIGRATIONS (Always run these check-and-adds)
-        try { await sequelize.query("CREATE TABLE IF NOT EXISTS `Products` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` VARCHAR(255) NOT NULL, `price` INTEGER NOT NULL, `category` VARCHAR(255) DEFAULT 'Boshqa', `stock` INTEGER DEFAULT 0, `image` VARCHAR(255), `ClubId` INTEGER NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL, FOREIGN KEY (`ClubId`) REFERENCES `Clubs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE);"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedAt` DATETIME;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `expectedMinutes` INTEGER;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `RoomId` INTEGER;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `ClubId` INTEGER;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestName` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `guestPhone` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `lastResumeTime` DATETIME;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `consumedSeconds` INTEGER DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `totalCost` INTEGER DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notified10m` BOOLEAN DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notified5m` BOOLEAN DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedStart` BOOLEAN DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `notifiedPenalty` BOOLEAN DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `userResponse` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `prepaidAmount` INTEGER DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardNumber` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Clubs` ADD COLUMN `cardOwner` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `status` TEXT DEFAULT 'approved';"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `SessionId` INTEGER;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Transactions` ADD COLUMN `ClubId` INTEGER;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `agentToken` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `pairingCode` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Computers` ADD COLUMN `lastOnline` DATETIME;"); } catch (e) { }
-
-        // Rooms table migrations
-        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `isLocked` BOOLEAN DEFAULT 0;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `openTime` TEXT DEFAULT '00:00';"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `closeTime` TEXT DEFAULT '23:59';"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `pcSpecs` TEXT;"); } catch (e) { }
-        try { await sequelize.query("ALTER TABLE `Rooms` ADD COLUMN `pcCount` INTEGER DEFAULT 0;"); } catch (e) { }
-
-        const clubCount = await Club.count();
-        logger.info(`ℹ️ Jami ${clubCount} ta klub mavjud.`);
-
     } catch (error) {
         logger.error('❌ Database error:', error);
-        throw error; // Serverni to'xtatish uchun
+        throw error;
+    }
+}
+
+/**
+ * 🛠️ MIGRATION HELPER (Professional approach)
+ * Safely adds columns to existing tables if they don't exist
+ */
+async function runMigrations() {
+    const migrations = [
+        // Sessions
+        "ALTER TABLE `Sessions` ADD COLUMN `notifiedAt` DATETIME",
+        "ALTER TABLE `Sessions` ADD COLUMN `expectedMinutes` INTEGER",
+        "ALTER TABLE `Sessions` ADD COLUMN `RoomId` INTEGER",
+        "ALTER TABLE `Sessions` ADD COLUMN `ClubId` INTEGER",
+        "ALTER TABLE `Sessions` ADD COLUMN `guestName` TEXT",
+        "ALTER TABLE `Sessions` ADD COLUMN `guestPhone` TEXT",
+        "ALTER TABLE `Sessions` ADD COLUMN `lastResumeTime` DATETIME",
+        "ALTER TABLE `Sessions` ADD COLUMN `consumedSeconds` INTEGER DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `totalCost` INTEGER DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `notified10m` BOOLEAN DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `notified5m` BOOLEAN DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `notifiedStart` BOOLEAN DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `notifiedPenalty` BOOLEAN DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `userResponse` TEXT",
+        "ALTER TABLE `Sessions` ADD COLUMN `prepaidAmount` INTEGER DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0",
+
+        // Clubs
+        "ALTER TABLE `Clubs` ADD COLUMN `cardNumber` TEXT",
+        "ALTER TABLE `Clubs` ADD COLUMN `cardOwner` TEXT",
+
+        // Transactions
+        "ALTER TABLE `Transactions` ADD COLUMN `status` TEXT DEFAULT 'approved'",
+        "ALTER TABLE `Transactions` ADD COLUMN `receiptImage` TEXT",
+        "ALTER TABLE `Transactions` ADD COLUMN `SessionId` INTEGER",
+        "ALTER TABLE `Transactions` ADD COLUMN `ClubId` INTEGER",
+
+        // Computers
+        "ALTER TABLE `Computers` ADD COLUMN `agentToken` TEXT",
+        "ALTER TABLE `Computers` ADD COLUMN `pairingCode` TEXT",
+        "ALTER TABLE `Computers` ADD COLUMN `lastOnline` DATETIME",
+
+        // Rooms
+        "ALTER TABLE `Rooms` ADD COLUMN `isLocked` BOOLEAN DEFAULT 0",
+        "ALTER TABLE `Rooms` ADD COLUMN `openTime` TEXT DEFAULT '00:00'",
+        "ALTER TABLE `Rooms` ADD COLUMN `closeTime` TEXT DEFAULT '23:59'",
+        "ALTER TABLE `Rooms` ADD COLUMN `pcSpecs` TEXT",
+        "ALTER TABLE `Rooms` ADD COLUMN `pcCount` INTEGER DEFAULT 0"
+    ];
+
+    for (const sql of migrations) {
+        try {
+            await sequelize.query(sql);
+            logger.info(`✨ Executed Migration Part: ${sql.substring(0, 35)}...`);
+        } catch (e) {
+            // Silently skip if column already exists (common SQLite pattern)
+        }
     }
 }
 
@@ -136,4 +155,5 @@ module.exports = {
     Broadcast,
     Product,
     initializeDatabase,
+    runMigrations,
 };

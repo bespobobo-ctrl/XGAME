@@ -28,6 +28,8 @@ async function startServer() {
 
         // 1. Database
         await initializeDatabase();
+        const { runMigrations } = require('./shared/database/index'); // Yangi Helper
+        await runMigrations();
 
         // 2. Ensure Super Admin exists
         const existingAdmin = await User.findOne({ where: { username: config.SUPER_ADMIN_USER } });

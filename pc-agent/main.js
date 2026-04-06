@@ -20,6 +20,33 @@ let mainWindow = null;
 let locking = true;
 let socket = null;
 let heartbeatTimer = null;
+let lastUnlockTime = 0; // 🛡️ Anti-Flicker Guard (Client-Side)
+const UNLOCK_GUARD_MS = 20000; // 20 soniya ichida qayta qulflashga ruxsat YO'Q!
+
+function canLock() {
+    const elapsed = Date.now() - lastUnlockTime;
+    if (elapsed < UNLOCK_GUARD_MS) {
+        console.log(`🛡️ GUARD: Lock bloklandi! (Ochilganidan ${Math.round(elapsed / 1000)}s o'tdi, ${Math.round((UNLOCK_GUARD_MS - elapsed) / 1000)}s qoldi)`);
+        return false;
+    }
+    return true;
+}
+
+function doUnlock() {
+    if (!locking) return; // Allaqachon ochiq
+    lastUnlockTime = Date.now();
+    locking = false;
+    console.log('🔓 PC OCHILDI (Unlock)');
+    updateWindowState();
+}
+
+function doLock() {
+    if (locking) return; // Allaqachon qulflangan
+    if (!canLock()) return; // Guard faol — qulflamaymiz!
+    locking = true;
+    console.log('🔒 PC QULFLANDI (Lock)');
+    updateWindowState();
+}
 
 function loadConfig() {
     if (fs.existsSync(configPath)) {
@@ -115,16 +142,14 @@ async function sendHeartbeat() {
                 }
             }
 
-            // 2. Sync state
+            // 2. Sync state (Guard bilan himoyalangan)
             const shouldBeOpen = (serverPC.status === 'busy' || serverPC.status === 'paused');
             if (shouldBeOpen && locking) {
-                console.log('🔄 Sync: Ochilmoqda...');
-                locking = false;
-                updateWindowState();
+                console.log('🔄 Heartbeat Sync: Ochilmoqda...');
+                doUnlock();
             } else if (!shouldBeOpen && !locking) {
-                console.log('🔄 Sync: Qulflanmoqda...');
-                locking = true;
-                updateWindowState();
+                console.log('🔄 Heartbeat Sync: Qulflanmoqda...');
+                doLock();
             }
         }
     } catch (e) {
@@ -149,8 +174,8 @@ async function connectSocket() {
         if (mainWindow) mainWindow.webContents.send('status-connected', { id: config.pcId });
     });
 
-    socket.on('lock', () => { locking = true; updateWindowState(); });
-    socket.on('unlock', () => { locking = false; updateWindowState(); });
+    socket.on('lock', () => { console.log('📡 Socket: lock signal received'); doLock(); });
+    socket.on('unlock', () => { console.log('📡 Socket: unlock signal received'); doUnlock(); });
 
     socket.on('disconnect', (reason) => {
         console.log(`❌ Disconnected: ${reason}`);
@@ -159,14 +184,13 @@ async function connectSocket() {
         // RECONNECT GRACE PERIOD: Agar sessiya faol bo'lsa va socket uzilsa, 
         // 5 soniya kutamiz. Darhol qulfga urmaymiz (sapchishni oldini olish).
         if (!locking) {
-            console.log('🛡️ Grace Period: Sessiya ochiq, socket uzilishini 5s kutamiz...');
+            console.log('🛡️ Grace Period: Sessiya ochiq, socket uzilishini 30s kutamiz...');
             setTimeout(() => {
                 if (socket && !socket.connected && !locking) {
-                    console.log('🚨 Shutdown: 5s ichida qayta ulanmadi, qulflaymiz.');
-                    locking = true;
-                    updateWindowState();
+                    console.log('🚨 Shutdown: 30s ichida qayta ulanmadi, qulflaymiz.');
+                    doLock();
                 }
-            }, 5000);
+            }, 30000); // 30 soniya grace period
         }
     });
 }

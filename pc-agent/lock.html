@@ -389,7 +389,13 @@
 
         // IPC Handlers
         ipcRenderer.on('set-pc-details', (event, data) => {
-            document.getElementById('pcNameLabel').innerText = 'PC ' + data.name.toUpperCase();
+            document.getElementById('pcNameLabel').innerText = 'PC ' + (data.name || '---').toUpperCase();
+
+            // 🖼️ FONDAGI RASMNI QABUL QILISH (Base64)
+            if (data.background) {
+                const bgImg = document.getElementById('bgImage');
+                if (bgImg) bgImg.src = data.background;
+            }
 
             const botUrl = `https://t.me/X_Game123_bot/app?startapp=pc_${data.id}`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(botUrl)}&color=000&margin=0`;

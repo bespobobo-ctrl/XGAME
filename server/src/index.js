@@ -53,8 +53,11 @@ async function startServer() {
         const reservationScheduler = require('./scheduler/reservationScheduler');
         reservationScheduler.start(io);
 
+        // 💾 6. Database Backup Service (NEW)
+        const { runBackup } = require('./shared/database/backup');
+        // Skript o'zi intervalga soladi, shunchaki bog'lanish kifoya.
 
-        // 6. Start HTTP Server
+        // 🚀 7. Start HTTP Server
         const PORT = config.PORT || 3001;
         server.listen(PORT, () => {
             console.log(`🔥 Server running at: http://localhost:${PORT}`);

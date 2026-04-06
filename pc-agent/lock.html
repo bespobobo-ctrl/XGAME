@@ -3,160 +3,303 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>GameZone Locked</title>
+    <title>GameZone Premium Lock</title>
     <style>
+        :root {
+            --primary: #7000ff;
+            --secondary: #ff007a;
+            --bg: #050508;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
         body {
-            background: #000;
+            background: var(--bg);
             color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            margin: 0;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            position: relative;
-            overflow: hidden;
-            background-image:
-                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
         }
 
-        .container {
-            text-align: center;
-            z-index: 10;
+        /* Animated Background */
+        .orb {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, var(--primary), transparent 70%);
+            filter: blur(150px);
+            opacity: 0.15;
+            z-index: 0;
+            animation: float 20s infinite alternate;
         }
 
-        .logo-circle {
-            width: 150px;
-            height: 150px;
-            background: linear-gradient(45deg, #7000ff, #ff007a);
-            border-radius: 50%;
-            margin: 0 auto 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 100px rgba(112, 0, 255, 0.4);
-            animation: pulse 3s infinite;
+        .orb-2 {
+            right: -200px;
+            bottom: -200px;
+            background: radial-gradient(circle, var(--secondary), transparent 70%);
+            animation-delay: -10s;
         }
 
-        @keyframes pulse {
+        @keyframes float {
             0% {
-                transform: scale(1);
-                box-shadow: 0 0 60px rgba(112, 0, 255, 0.4);
-            }
-
-            50% {
-                transform: scale(1.05);
-                box-shadow: 0 0 120px rgba(112, 0, 255, 0.6);
+                transform: translate(-10%, -10%) scale(1);
             }
 
             100% {
-                transform: scale(1);
-                box-shadow: 0 0 60px rgba(112, 0, 255, 0.4);
+                transform: translate(10%, 10%) scale(1.1);
             }
         }
 
+        .main-card {
+            position: relative;
+            z-index: 10;
+            background: var(--glass);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 60px;
+            width: 500px;
+            text-align: center;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-box {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 25px;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(112, 0, 255, 0.4);
+        }
+
         h1 {
-            font-size: 80px;
-            font-weight: 950;
+            font-size: 48px;
+            font-weight: 800;
             margin: 0;
-            letter-spacing: -3px;
+            background: linear-gradient(to right, #fff, #999);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        p {
-            font-size: 24px;
+        #pcIdDisplay {
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--primary);
+            margin: 10px 0 30px;
+            font-size: 18px;
+        }
+
+        .qr-wrapper {
+            background: #fff;
+            padding: 15px;
+            border-radius: 25px;
+            display: inline-block;
+            margin-bottom: 30px;
+            box-shadow: 0 0 30px rgba(112, 0, 255, 0.2);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .qr-wrapper:hover {
+            transform: scale(1.05);
+        }
+
+        .qr-wrapper img {
+            display: block;
+            width: 200px;
+            height: 200px;
+        }
+
+        .hint {
             color: #999;
-            font-weight: 700;
-            margin-top: 10px;
-            opacity: 0.8;
+            font-size: 16px;
+            margin-bottom: 40px;
         }
 
-        .footer {
-            position: absolute;
-            bottom: 40px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px 30px;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .btn-manual {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 15px;
             font-size: 14px;
-            font-weight: 950;
-            letter-spacing: 1px;
-            backdrop-filter: blur(10px);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.6;
         }
 
-        .glow {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: #7000ff;
+        .btn-manual:hover {
+            background: var(--border);
+            opacity: 1;
+        }
+
+        /* Login Modal */
+        #loginModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #111;
+            padding: 40px;
+            border-radius: 30px;
+            width: 350px;
+            border: 1px solid var(--border);
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: #1a1a1a;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: #fff;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        #statusTab {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            padding: 8px 20px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            filter: blur(200px);
-            opacity: 0.1;
+            background: #ff3366;
+        }
+
+        .online .dot {
+            background: #00ff7a;
+            box-shadow: 0 0 10px #00ff7a;
         }
     </style>
 </head>
 
 <body>
-    <div class="glow"></div>
-    <div class="container">
-        <div class="logo-circle">
-            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
+    <div class="orb"></div>
+    <div class="orb orb-2"></div>
+
+    <div id="statusTab">
+        <div id="statusDot" class="dot"></div>
+        <span id="statusText">SERVER: OFFLINE</span>
+    </div>
+
+    <div class="main-card">
+        <div class="logo-box">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
             </svg>
         </div>
-        <h1 id="pcLabel">PC QULFLANGAN</h1>
-        <div id="pcIdDisplay"
-            style="color: rgba(255,255,255,0.2); font-size: 14px; font-weight: 950; margin-top: -10px; letter-spacing: 2px;">
-            #---</div>
-        <p>Admin tomonidan o'yin vaqti belgilanishini kuting</p>
+        <h1 id="pcName">PC-01</h1>
+        <div id="pcIdDisplay">#---</div>
 
-        <div id="statusIndicator"
-            style="position: fixed; top: 20px; right: 20px; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255,255,255,0.1);">
-            <div id="statusDot"
-                style="width: 8px; height: 8px; background: #ff3366; border-radius: 50%; box-shadow: 0 0 10px #ff3366;">
-            </div>
-            <span id="statusText">SERVERDAN UZILGAN</span>
+        <div class="qr-wrapper">
+            <img id="qrImage" src="" alt="QR">
         </div>
 
-        <div id="qrContainer"
-            style="margin-top: 30px; background: #fff; padding: 15px; border-radius: 20px; display: inline-block;">
-            <img id="qrImage" src="" alt="QR Code" style="display: block; width: 180px; height: 180px;">
-        </div>
-        <p style="font-size: 14px; color: #7000ff; margin-top: 15px;">MOBIL ILOVA ORQALI SCAN QILING</p>
+        <div class="hint">Telegram orqali scan qiling</div>
+
+        <button class="btn-manual" onclick="showLogin()">LOGIN BILAN KIRISH</button>
     </div>
-    <div class="footer">🕹️ GAMEZONE COMMAND CENTER</div>
+
+    <div id="loginModal">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--primary)">Tizimga kirish</h2>
+            <input type="text" id="username" placeholder="Login">
+            <input type="password" id="password" placeholder="Parol">
+            <button class="btn-submit" id="loginBtn" onclick="attemptLogin()">KIRISH</button>
+            <button class="btn-manual" style="margin-top: 15px; width: 100%" onclick="hideLogin()">YOPISH</button>
+            <div id="loginError" style="color: #ff3366; font-size: 14px; margin-top: 15px; text-align: center;"></div>
+        </div>
+    </div>
 
     <script>
         const { ipcRenderer } = require('electron');
-        ipcRenderer.on('set-pc-details', (event, data) => {
-            document.getElementById('pcLabel').innerText = data.name.toUpperCase() + ' QULFLANGAN';
 
-            // Build the URL for QR code (Link to the bot or mini-app with PC ID)
+        ipcRenderer.on('set-pc-details', (event, data) => {
+            document.getElementById('pcName').innerText = data.name.toUpperCase();
+            document.getElementById('pcIdDisplay').innerText = '#' + data.id;
+
             const botUrl = `https://t.me/X_Game123_bot/app?startapp=pc_${data.id}`;
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(botUrl)}&color=7000ff`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(botUrl)}&color=050508`;
             document.getElementById('qrImage').src = qrUrl;
         });
 
         ipcRenderer.on('status-connected', (event, data) => {
-            document.getElementById('statusDot').style.background = '#00ff7a';
-            document.getElementById('statusDot').style.boxShadow = '0 0 15px #00ff7a';
-            document.getElementById('statusText').innerText = 'STATUS: ONLINE (' + (data?.id || 'NO ID') + ')';
-
-            if (data?.id) {
-                document.getElementById('pcIdDisplay').innerText = '#' + data.id;
-            }
+            document.getElementById('statusTab').classList.add('online');
+            document.getElementById('statusText').innerText = 'SERVER: ONLINE';
         });
 
         ipcRenderer.on('status-disconnected', () => {
-            document.getElementById('statusDot').style.background = '#ff3366';
-            document.getElementById('statusDot').style.boxShadow = '0 0 15px #ff3366';
-            document.getElementById('statusText').innerText = 'STATUS: OFFLINE';
+            document.getElementById('statusTab').classList.remove('online');
+            document.getElementById('statusText').innerText = 'SERVER: OFFLINE';
         });
-    </script>
+
+        function showLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+        function hideLogin() { document.getElementById('loginModal').style.display = 'none'; }
+
+        function attemptLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const err = document.getElementById('loginError');
+
+            if (!u || !p) return;
+
+            btn.disabled = true;
+            btn.innerText = 'TEKSHIRILMOQDA...';
+            err.innerText = '';
+
+            ipcRenderer.invoke('login-attempt', { username: u, password: p }).then(res => {
+                if (!res.success) {
+                    err.innerText = res.error || 'Server xatosi';
+                    btn.disabled = false;
+                    btn.innerText = 'KIRISH';
+                }
+            });
+        }
     </script>
 </body>
 

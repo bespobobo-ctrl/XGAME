@@ -209,6 +209,30 @@ function getMacAddress() {
     return '0-0-0-0-0-0';
 }
 
+ipcMain.handle('login-attempt', async (event, { username, password }) => {
+    try {
+        if (!config.agentToken || !config.serverUrl) return { success: false, error: 'Taqdimotchi topilmadi!' };
+
+        const response = await axios.post(`${config.serverUrl}/api/agent/login`,
+            { username, password },
+            {
+                headers: { 'x-agent-token': config.agentToken },
+                timeout: 10000
+            }
+        );
+
+        if (response.data.success) {
+            doUnlock('manual-login');
+            return { success: true };
+        } else {
+            return { success: false, error: response.data.message };
+        }
+    } catch (e) {
+        console.error('Login Error:', e.message);
+        return { success: false, error: 'Server bilan aloqa uzildi!' };
+    }
+});
+
 ipcMain.handle('pair-pc', async (event, { pairingCode, serverUrl }) => {
     try {
         const cleanUrl = serverUrl.trim().replace(/\/$/, ""); // Oxiridagi / ni olib tashlaymiz

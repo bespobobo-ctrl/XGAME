@@ -95,3 +95,48 @@ exports.updateStatus = async (req, res, next) => {
         next(err);
     }
 };
+
+/**
+ * 🔑 Agent Manual Login (Username / Password)
+ * POST /api/agent/login
+ */
+exports.manualLogin = async (req, res, next) => {
+    try {
+        const { username, password } = req.body;
+        const agentToken = req.headers['x-agent-token'];
+
+        if (!agentToken) return res.status(401).json({ success: false, message: 'Agent unauthorized' });
+
+        const pc = await Computer.findOne({ where: { agentToken } });
+        if (!pc) return res.status(403).json({ success: false, message: 'Invalid Agent' });
+
+        const { User } = require('../shared/database');
+        const user = await User.findOne({ where: { username } });
+
+        if (!user || !(await user.comparePassword(password))) {
+            return res.status(401).json({ success: false, message: 'Login yoki parol xato!' });
+        }
+
+        // Faqat Manager yoki balansga ega userlar ochishi mumkin
+        if (user.role !== 'manager' && user.role !== 'super_admin' && (user.balance || 0) < 1000) {
+            return res.status(403).json({ success: false, message: 'Balansingiz yetarli emas!' });
+        }
+
+        // Start session logic if it's a customer
+        if (user.role === 'customer') {
+            const sessionService = require('../modules/panelC/sessionService');
+            await sessionService.executeAction(pc.id, pc.ClubId, {
+                action: 'start',
+                userId: user.id
+            });
+        } else {
+            // Managerlar shunchaki ochishi mumkin (Dastlabki versiyada)
+            pc.status = 'busy';
+            await pc.save();
+        }
+
+        res.json({ success: true, message: 'Xush kelibsiz!', user: { username: user.username, role: user.role } });
+    } catch (err) {
+        next(err);
+    }
+};

@@ -35,6 +35,7 @@ router.post('/internal/bot-event', express.json(), (req, res) => {
  */
 router.post('/agent/pair', asyncHandler(agentCtrl.pairAgent));
 router.post('/agent/status', asyncHandler(agentCtrl.updateStatus));
+router.post('/agent/login', asyncHandler(agentCtrl.manualLogin));
 
 /**
  * 🏛️ CLUB ROUTES (Admin Protected)

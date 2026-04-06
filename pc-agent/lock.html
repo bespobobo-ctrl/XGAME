@@ -304,9 +304,16 @@
 </head>
 
 <body>
-    <div class="bg-container"></div>
-    <div class="overlay"></div>
-    <canvas id="sparks"></canvas>
+    <div class="bg-container">
+        <!-- 📂 LOCAL IMAGE LAYER (Maximum Reliability) -->
+        <img id="bgImage" src="./assets/img/bg.jpg"
+            style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; z-index: -3;"
+            onerror="this.src='./assets/img/bg.png'; this.onerror=null;">
+    </div>
+
+    <div class="sparks-container">
+        <canvas id="sparksCanvas"></canvas>
+    </div>
 
     <div class="status-bar">
         <div id="timeDisplay">00:00</div>

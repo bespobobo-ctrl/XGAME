@@ -152,8 +152,22 @@ async function connectSocket() {
     socket.on('lock', () => { locking = true; updateWindowState(); });
     socket.on('unlock', () => { locking = false; updateWindowState(); });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
+        console.log(`❌ Disconnected: ${reason}`);
         if (mainWindow) mainWindow.webContents.send('status-disconnected');
+
+        // RECONNECT GRACE PERIOD: Agar sessiya faol bo'lsa va socket uzilsa, 
+        // 5 soniya kutamiz. Darhol qulfga urmaymiz (sapchishni oldini olish).
+        if (!locking) {
+            console.log('🛡️ Grace Period: Sessiya ochiq, socket uzilishini 5s kutamiz...');
+            setTimeout(() => {
+                if (socket && !socket.connected && !locking) {
+                    console.log('🚨 Shutdown: 5s ichida qayta ulanmadi, qulflaymiz.');
+                    locking = true;
+                    updateWindowState();
+                }
+            }, 5000);
+        }
     });
 }
 

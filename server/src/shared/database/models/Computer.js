@@ -39,6 +39,13 @@ const Computer = sequelize.define('Computer', {
         type: DataTypes.INTEGER,
         allowNull: false
     }
+}, {
+    indexes: [
+        {
+            unique: true,
+            fields: ['name', 'ClubId']
+        }
+    ]
 });
 
 module.exports = Computer;

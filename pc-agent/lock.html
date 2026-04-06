@@ -108,15 +108,31 @@
 
         .logo-text {
             font-size: 80px;
-            font-weight: 900;
+            font-weight: 950;
             text-transform: uppercase;
             letter-spacing: -2px;
             line-height: 0.9;
             margin-bottom: 5px;
             background: linear-gradient(to bottom, #fff, #999);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 20px 40px rgba(0, 0, 0, 1);
+            text-shadow: 0 0 30px rgba(125, 0, 255, 0.4);
+            animation: neonPulse 3s infinite alternate;
+        }
+
+        @keyframes neonPulse {
+            0% {
+                text-shadow: 0 0 20px rgba(125, 0, 255, 0.4), 0 0 40px rgba(125, 0, 255, 0.2);
+                transform: scale(1);
+                letter-spacing: -2px;
+            }
+
+            100% {
+                text-shadow: 0 0 50px rgba(125, 0, 255, 0.8), 0 0 80px rgba(255, 0, 122, 0.4);
+                transform: scale(1.02);
+                letter-spacing: 2px;
+            }
         }
 
         .sub-logo {
@@ -125,6 +141,27 @@
             color: var(--gold);
             font-weight: 700;
             opacity: 0.8;
+            animation: flicker 4s infinite;
+        }
+
+        @keyframes flicker {
+
+            0%,
+            100% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+
+            52% {
+                opacity: 0.9;
+            }
+
+            54% {
+                opacity: 0.5;
+            }
         }
 
         /* FORM STYLES */

@@ -44,7 +44,13 @@ class ManagerAppController {
             if (!clubId) return res.status(403).json({ error: "Access Denied: Missing Club Association." });
             const actionData = req.body;
 
-            console.log(`📥 [MANAGER-APP] PC-${pcId} action: "${actionData.action}" | Body: ${JSON.stringify(actionData)}`);
+            console.log(`📥 [MANAGER-APP] PC-${pcId} action: "${actionData.action}" | confirmStop: ${actionData.confirmStop} | Body: ${JSON.stringify(actionData)}`);
+
+            // 🛡️ STOP GUARD: Faqat tasdiqlangan STOP buyrug'lari ruxsat etiladi!
+            if (actionData.action === 'stop' && !actionData.confirmStop) {
+                console.log(`🚫 PHANTOM STOP BLOKLANDI! PC-${pcId} — confirmStop flag yo'q!`);
+                return res.status(400).json({ error: "Stop tasdiqlanmagan. confirmStop: true kerak." });
+            }
 
             const result = await sessionService.executeAction(pcId, clubId, actionData);
 

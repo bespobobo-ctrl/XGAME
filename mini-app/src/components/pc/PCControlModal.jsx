@@ -278,7 +278,7 @@ const PCControlModal = ({
                                 })()}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction(selectedPC.status === 'paused' ? 'resume' : 'pause')} style={{ padding: '20px', borderRadius: '22px', background: '#ffee32', color: '#000', border: 'none', fontWeight: '950', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>{selectedPC.status === 'paused' ? <><Play size={18} fill="#000" /> DAVOM ETISH</> : <><Pause size={18} fill="#000" /> PAUZA</>}</motion.button>
-                                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleAction('stop')} style={{ padding: '20px', borderRadius: '22px', background: 'rgba(255,68,68,0.1)', color: '#ff4444', border: '1px solid rgba(255,68,68,0.3)', fontWeight: '950', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Square size={18} fill="#ff4444" /> TO'XTATISH</motion.button>
+                                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => { if (window.confirm("⚠️ Haqiqatdan ham sessiyani TO'XTATMOQCHIMISIZ?")) handleAction('stop'); }} style={{ padding: '20px', borderRadius: '22px', background: 'rgba(255,68,68,0.1)', color: '#ff4444', border: '1px solid rgba(255,68,68,0.3)', fontWeight: '950', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Square size={18} fill="#ff4444" /> TO'XTATISH</motion.button>
                                 </div>
                             </div>
                         )}

@@ -122,10 +122,12 @@ const ManagerDashboard = ({ onLogout, activeTab, setActiveTab }) => {
             reserveTime: resTime,
             guestName: extraOptions.guestName || resName,
             guestPhone: extraOptions.guestPhone || resPhone,
-            userId: extraOptions.userId || null
+            userId: extraOptions.userId || null,
+            confirmStop: action === 'stop' ? true : undefined // 🛡️ Faqat tasdiqlangan STOP!
         };
 
         try {
+            console.log(`📤 Sending action: ${action}`, body);
             const res = await callAPI(`/api/manager/pc/${selectedPC.id}/action`, {
                 method: 'POST', body: JSON.stringify(body)
             });

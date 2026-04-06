@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// 🔒 SECURITY & STABILITY: Disable GPU acceleration to prevent rendering crashes on gaming PCs
+app.disableHardwareAcceleration();
+
 // Path to the config file (stores pairing info)
 const configPath = path.join(app.getPath('userData'), 'gamezone_config.json');
 
@@ -126,7 +129,7 @@ async function sendHeartbeat() {
             },
             {
                 headers: { 'x-agent-token': config.agentToken },
-                timeout: 5000
+                timeout: 15000
             }
         );
 

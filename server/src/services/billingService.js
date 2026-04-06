@@ -52,6 +52,15 @@ async function runBillingCycle(io) {
                 }
 
                 if (isLimitReached) {
+                    console.log(`⏹️ Billing Stop: ${computer.name} (ID: ${computer.id})`);
+                    if (session.expectedMinutes && (session.consumedSeconds / 60) >= session.expectedMinutes) {
+                        console.log(`🕒 Sabab: Vaqt limiti tugadi (${session.expectedMinutes} min)`);
+                    } else if (user && user.balance <= 0) {
+                        console.log(`💰 Sabab: Balans 0 bo'lib qoldi`);
+                    } else {
+                        console.log(`❓ Sabab: Nomalum limit (Check logic)`);
+                    }
+
                     session.status = 'completed';
                     session.endTime = new Date();
                     computer.status = 'free';

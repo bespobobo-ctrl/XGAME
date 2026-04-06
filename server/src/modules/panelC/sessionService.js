@@ -84,6 +84,15 @@ class SessionService {
 
         if (activeSession) {
             const now = new Date();
+
+            // 🛡️ ANTI-FLICKER GUARD: If session started < 5s ago, ignore stop request
+            const ageSeconds = Math.floor((now - new Date(activeSession.startTime)) / 1000);
+            if (ageSeconds < 5) {
+                console.log(`⚠️ Ignored Rapid Stop Request for ${pc.name} (Age: ${ageSeconds}s)`);
+                return;
+            }
+
+            console.log(`✅ Closing Session ID: ${activeSession.id}`);
             let finalConsumedSeconds = activeSession.consumedSeconds || 0;
 
             if (activeSession.status === SESSION_STATUS.ACTIVE) {

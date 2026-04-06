@@ -51,6 +51,23 @@ async function startServer() {
         const reservationScheduler = require('./scheduler/reservationScheduler');
         reservationScheduler.start(io);
 
+        // 🧪 TEMPORARY TEST ROUTE FOR STRESS TESTING
+        app.post('/api/test/force-action', async (req, res) => {
+            try {
+                const { pcId, action } = req.body;
+                const sessionService = require('./modules/panelC/sessionService');
+                const { Computer } = require('./shared/database');
+
+                const pc = await Computer.findByPk(pcId);
+                if (!pc) return res.status(404).json({ error: "PC Not Found" });
+
+                await sessionService.executeAction(pcId, pc.ClubId, { action });
+                res.json({ success: true, action });
+            } catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+
         // 6. Start HTTP Server
         const PORT = config.PORT || 3001;
         server.listen(PORT, () => {

@@ -1,85 +1,165 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>GameZone Pairing</title>
     <style>
-        body { 
-            background: #000; 
-            color: #fff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; margin: 0; padding: 20px;
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
         }
-        .container { 
-            text-align: center; max-width: 450px; 
-            background: rgba(112, 0, 255, 0.05); 
-            padding: 40px; border-radius: 40px; 
+
+        .container {
+            text-align: center;
+            width: 450px;
+            background: rgba(112, 0, 255, 0.05);
+            padding: 40px;
+            border-radius: 40px;
             border: 1px solid rgba(112, 0, 255, 0.3);
             backdrop-filter: blur(20px);
             box-shadow: 0 0 40px rgba(112, 0, 255, 0.2);
         }
-        h1 { font-size: 32px; font-weight: 950; margin-bottom: 30px; letter-spacing: -1px; background: linear-gradient(90deg, #7000ff, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        p { color: #999; font-size: 14px; margin-bottom: 25px; line-height: 1.5; font-weight: 700; }
-        input { 
-            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); 
-            border: 2px solid rgba(112, 0, 255, 0.5); 
-            padding: 18px; border-radius: 20px; color: #fff; 
-            font-size: 24px; text-align: center; 
-            margin-bottom: 25px; outline: none; 
-            font-weight: 950; letter-spacing: 5px;
+
+        h1 {
+            font-size: 32px;
+            font-weight: 950;
+            margin-bottom: 30px;
+            letter-spacing: -1px;
+            background: linear-gradient(90deg, #7000ff, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 950;
+            color: #7000ff;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+            outline: none;
             transition: all 0.3s;
         }
-        input:focus { border-color: #7000ff; box-shadow: 0 0 15px rgba(112,0,255,0.4); }
-        button { 
-            width: 100%; background: linear-gradient(45deg, #7000ff, #ff007a); 
-            border: none; padding: 20px; border-radius: 20px; 
-            color: #fff; font-size: 16px; font-weight: 950; cursor: pointer; 
+
+        input#pairingCode {
+            font-size: 28px;
+            text-align: center;
+            font-weight: 950;
+            letter-spacing: 5px;
+            border-color: rgba(112, 0, 255, 0.4);
+            background: rgba(112, 0, 255, 0.1);
+        }
+
+        input:focus {
+            border-color: #7000ff;
+            background: rgba(112, 0, 255, 0.15);
+        }
+
+        button {
+            width: 100%;
+            background: linear-gradient(45deg, #7000ff, #ff007a);
+            border: none;
+            padding: 20px;
+            border-radius: 20px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 950;
+            cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 10px 30px rgba(112, 0, 255, 0.3);
+            margin-top: 10px;
         }
-        button:active { transform: scale(0.98); }
-        .error { color: #ff3366; font-size: 11px; margin-top: 15px; font-weight: 950; }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: #ff3366;
+            font-size: 12px;
+            margin-top: 15px;
+            font-weight: 950;
+            min-height: 1.5em;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>BOG'LANISH</h1>
-        <p>Telefondagi Mini-Appdan kodni oling va bu yerga kiriting. Shunda bu kompyuter loyihangizga ulanadi.</p>
+
+        <label>Server URL (Cloudflare)</label>
+        <input type="text" id="serverUrl" placeholder="https://....trycloudflare.com">
+
+        <label>6 xonali ulanish kodi</label>
         <input type="text" id="pairingCode" maxlength="6" placeholder="______">
+
         <button id="pairBtn">ULASH 🚀</button>
         <div id="status" class="error"></div>
     </div>
 
     <script>
         const { ipcRenderer } = require('electron');
+        const urlInput = document.getElementById('serverUrl');
         const codeInput = document.getElementById('pairingCode');
         const pairBtn = document.getElementById('pairBtn');
         const statusDiv = document.getElementById('status');
 
+        ipcRenderer.on('init-url', (e, url) => {
+            urlInput.value = url;
+            console.log('🔗 URL yuklandi:', url);
+        });
+
         pairBtn.addEventListener('click', async () => {
-            const code = codeInput.value;
-            if (code.length < 5) return;
+            const url = urlInput.value.trim();
+            const code = codeInput.value.trim();
+
+            if (!url) { statusDiv.innerText = 'Server URL manzili shart!'; return; }
+            if (code.length < 5) { statusDiv.innerText = 'Ulanish kodini to\'liq kiriting!'; return; }
 
             pairBtn.disabled = true;
             pairBtn.innerText = 'ULANMOQDA...';
             statusDiv.innerText = '';
 
-            const result = await ipcRenderer.invoke('pair-pc', code);
+            const result = await ipcRenderer.invoke('pair-pc', { pairingCode: code, serverUrl: url });
+
             if (!result.success) {
                 statusDiv.innerText = result.error;
                 pairBtn.disabled = false;
                 pairBtn.innerText = 'ULASH 🚀';
             }
-            // If success, main process will handle window redirect
         });
 
-        codeInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') pairBtn.click();
-        });
+        codeInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') pairBtn.click(); });
     </script>
 </body>
+
 </html>

@@ -45,18 +45,19 @@ class ManagerAppController {
             const actionData = req.body;
             const result = await sessionService.executeAction(pcId, clubId, actionData);
 
-            // Emit real-time update
+            // Emit real-time update with a small delay for stability
             const io = req.app.get('io');
             if (io) {
                 const action = actionData.action;
-                if (action === 'start' || action === 'resume') {
-                    io.to(`pc_${pcId}`).emit('unlock');
-                } else if (action === 'stop' || action === 'pause') {
-                    io.to(`pc_${pcId}`).emit('lock');
-                }
-
-                io.to(`club_${clubId}`).emit('room_update');
-                io.emit('pc-status-updated', { clubId, pcId });
+                setTimeout(() => {
+                    if (action === 'start' || action === 'resume') {
+                        io.to(`pc_${pcId}`).emit('unlock');
+                    } else if (action === 'stop' || action === 'pause') {
+                        io.to(`pc_${pcId}`).emit('lock');
+                    }
+                    io.to(`club_${clubId}`).emit('room_update');
+                    io.emit('pc-status-updated', { clubId, pcId });
+                }, 500); // 500ms delay for agent re-connection sync
             }
 
             res.json(result);

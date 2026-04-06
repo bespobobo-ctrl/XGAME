@@ -7,17 +7,17 @@ const os = require('os');
 
 // Path to the config file (stores pairing info)
 const configPath = path.join(app.getPath('userData'), 'gamezone_config.json');
-const SERVER_URL = 'https://father-thank-luck-notes.trycloudflare.com';
 
 let config = {
-    pcName: os.hostname(), // Default to Windows hostname until paired
+    pcName: os.hostname(),
     agentToken: null,
-    pcId: null
+    pcId: null,
+    serverUrl: 'https://father-thank-luck-notes.trycloudflare.com' // Standart manzil
 };
 
 // State
 let mainWindow = null;
-let locking = true; // Default locked
+let locking = true;
 let socket = null;
 let heartbeatTimer = null;
 
@@ -26,9 +26,9 @@ function loadConfig() {
         try {
             const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
             config = { ...config, ...data };
-            console.log('📦 Config loaded:', config);
+            console.log('📦 Config yuklandi:', config);
         } catch (e) {
-            console.error('Config parsing error:', e);
+            console.error('Config o\'qishda xato:', e);
         }
     }
 }
@@ -52,7 +52,7 @@ function createLockWindow() {
         skipTaskbar: true,
         backgroundColor: '#000000',
         webPreferences: {
-            nodeIntegration: true, // Required for ipcRenderer inside HTML
+            nodeIntegration: true,
             contextIsolation: false
         }
     });
@@ -68,115 +68,92 @@ function updateWindowState() {
     if (!mainWindow) return;
 
     if (!config.agentToken) {
-        mainWindow.loadFile('pairing.html');
-        console.log('⚠️ Status: Unpaired. Loading pairing screen.');
+        mainWindow.loadFile('pairing.html').then(() => {
+            mainWindow.webContents.send('init-url', config.serverUrl);
+        });
     } else if (locking) {
         mainWindow.loadFile('lock.html').then(() => {
             mainWindow.webContents.send('set-pc-details', { id: config.pcId, name: config.pcName });
+            if (socket && socket.connected) {
+                mainWindow.webContents.send('status-connected', { id: config.pcId });
+            }
         });
         mainWindow.show();
         mainWindow.setKiosk(true);
         mainWindow.setAlwaysOnTop(true, 'screen-saver');
-        console.log('🔒 Status: Locked. Showing lock screen.');
     } else {
         mainWindow.hide();
         mainWindow.setKiosk(false);
         mainWindow.setAlwaysOnTop(false);
-        console.log('🔓 Status: Unlocked. Hiding window.');
     }
 }
 
 // 💓 Heartbeat & Sync Logic
 async function sendHeartbeat() {
-    if (!config.agentToken) return;
+    if (!config.agentToken || !config.serverUrl) return;
 
     try {
-        const response = await axios.post(`${SERVER_URL}/api/agent/status`,
+        const response = await axios.post(`${config.serverUrl}/api/agent/status`,
             {
-                status: locking ? 'free' : 'busy' // Report current visual state
+                status: locking ? 'free' : 'busy'
             },
             {
-                headers: { 'x-agent-token': config.agentToken }
+                headers: { 'x-agent-token': config.agentToken },
+                timeout: 5000
             }
         );
 
         if (response.data.success && response.data.pcDetails) {
             const serverPC = response.data.pcDetails;
 
-            // 1. Sync name if it changed on server (e.g. "Desktop-XXX" -> "PC-01")
+            // 1. Sync name
             if (serverPC.name && serverPC.name !== config.pcName) {
-                console.log(`🏷️ Name Sync: ${config.pcName} -> ${serverPC.name}`);
                 config.pcName = serverPC.name;
                 saveConfig();
-                // Refresh UI if showing lock screen
                 if (locking && mainWindow) {
                     mainWindow.webContents.send('set-pc-details', { id: config.pcId, name: config.pcName });
                 }
             }
 
-            // 2. Sync state (Unlock if busy/active on server but locked here)
-            // busy or paused means the user should actually be playing
+            // 2. Sync state
             const shouldBeOpen = (serverPC.status === 'busy' || serverPC.status === 'paused');
-
             if (shouldBeOpen && locking) {
-                console.log('🔄 Sync: Unlocking PC based on server status');
+                console.log('🔄 Sync: Ochilmoqda...');
                 locking = false;
                 updateWindowState();
             } else if (!shouldBeOpen && !locking) {
-                console.log('🔄 Sync: Locking PC based on server status (Session ended)');
+                console.log('🔄 Sync: Qulflanmoqda...');
                 locking = true;
                 updateWindowState();
             }
         }
     } catch (e) {
-        console.error('💓 Heartbeat failed:', e.message);
+        console.error('💓 Heartbeat uzildi:', e.message);
     }
 }
 
 async function connectSocket() {
-    if (!config.agentToken) return;
+    if (!config.agentToken || !config.serverUrl) return;
 
-    if (socket) {
-        socket.disconnect();
-    }
+    if (socket) socket.disconnect();
 
-    console.log('🔄 Connecting to Socket.io server...');
-    socket = io(SERVER_URL, {
+    socket = io(config.serverUrl, {
         auth: { token: config.agentToken },
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        reconnectionDelay: 2000,
+        reconnectionDelayMax: 5000
     });
 
     socket.on('connect', () => {
-        console.log(`✅ Socket connected! Registering PC ID: ${config.pcId}`);
-        socket.emit('register-agent', {
-            pcId: config.pcId,
-            pcName: config.pcName,
-            macAddress: getMacAddress(),
-            isLocked: locking
-        });
-
-        if (mainWindow) {
-            mainWindow.webContents.send('status-connected', { id: config.pcId });
-        }
+        socket.emit('register-agent', { pcId: config.pcId });
+        if (mainWindow) mainWindow.webContents.send('status-connected', { id: config.pcId });
     });
 
-    socket.on('lock', () => {
-        console.log('🔒 Command: LOCK received');
-        locking = true;
-        updateWindowState();
-    });
-
-    socket.on('unlock', (data) => {
-        console.log('🔓 Command: UNLOCK received');
-        locking = false;
-        updateWindowState();
-    });
+    socket.on('lock', () => { locking = true; updateWindowState(); });
+    socket.on('unlock', () => { locking = false; updateWindowState(); });
 
     socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected');
-        if (mainWindow) {
-            mainWindow.webContents.send('status-disconnected');
-        }
+        if (mainWindow) mainWindow.webContents.send('status-disconnected');
     });
 }
 
@@ -192,36 +169,33 @@ function getMacAddress() {
     return '0-0-0-0-0-0';
 }
 
-ipcMain.handle('pair-pc', async (event, pairingCode) => {
+ipcMain.handle('pair-pc', async (event, { pairingCode, serverUrl }) => {
     try {
-        console.log(`🔗 Pairing attempt with code: ${pairingCode}`);
-        const response = await axios.post(`${SERVER_URL}/api/agent/pair`, {
+        const cleanUrl = serverUrl.trim().replace(/\/$/, ""); // Oxiridagi / ni olib tashlaymiz
+        const response = await axios.post(`${cleanUrl}/api/agent/pair`, {
             pairingCode: pairingCode.trim(),
             macAddress: getMacAddress(),
-            hostname: os.hostname() // Only for server's reference, server shouldn't overwrite PC-01
-        });
+            hostname: os.hostname()
+        }, { timeout: 10000 });
 
         if (response.data.success) {
             const details = response.data.pcDetails;
             config.agentToken = response.data.agentToken;
             config.pcId = details.id;
-            config.pcName = details.name; // This will be "PC-01" or whatever is in DB
+            config.pcName = details.name;
+            config.serverUrl = cleanUrl;
             saveConfig();
 
-            console.log(`✅ Pairing Success! Agent ID: ${config.pcId}, Name: ${config.pcName}`);
-
-            locking = true; // Start locked
+            locking = true;
             connectSocket();
             updateWindowState();
 
-            // Start heartbeats immediately
             if (!heartbeatTimer) heartbeatTimer = setInterval(sendHeartbeat, 10000);
-
             return { success: true, pcName: config.pcName };
         }
     } catch (error) {
-        console.error('Pairing Error:', error.response?.data || error.message);
-        return { success: false, error: error.response?.data?.message || 'Ulanishda xatolik' };
+        console.error('Pairing Error:', error.message);
+        return { success: false, error: 'Serverga ulanib bo\'lmadi. Manzilni tekshiring.' };
     }
 });
 
@@ -231,36 +205,22 @@ app.whenReady().then(() => {
 
     if (config.agentToken) {
         connectSocket();
-        // Check status every 10 seconds to auto-unlock if session is active
         heartbeatTimer = setInterval(sendHeartbeat, 10000);
-        sendHeartbeat(); // First check
+        sendHeartbeat();
     }
 
-    // emergency shortcuts
-    globalShortcut.register('CommandOrControl+Shift+Esc', () => {
-        // Stop default behavior
-    });
-
-    globalShortcut.register('CommandOrControl+Q', () => {
-        console.log('🔒 Emergency Quit');
-        app.exit(0);
-    });
-
+    // Emergency keys
+    globalShortcut.register('CommandOrControl+Q', () => app.exit(0));
     globalShortcut.register('CommandOrControl+Alt+R', () => {
-        console.log('🔄 Factory Resetting Agent');
-        config = { pcName: os.hostname(), agentToken: null, pcId: null };
+        config = { pcName: os.hostname(), agentToken: null, pcId: null, serverUrl: config.serverUrl };
         saveConfig();
         app.relaunch();
         app.exit(0);
     });
-
     globalShortcut.register('CommandOrControl+Shift+U', () => {
-        console.log('🔓 Local Emergency Unlock');
         locking = false;
         updateWindowState();
     });
 });
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
-});
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

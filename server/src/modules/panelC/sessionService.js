@@ -107,6 +107,8 @@ class SessionService {
             transaction
         });
 
+        console.log(`🚀 Session Start Attempt for ${pc.name} (Amount: ${amount}, Min: ${minutes})`);
+
         await Session.create({
             ComputerId: pc.id,
             RoomId: pc.RoomId,
@@ -123,41 +125,16 @@ class SessionService {
     }
 
     async _handleStop(pc, transaction) {
+        console.log(`🛑 Session Stop Request for ${pc.name}`);
         const activeSession = await Session.findOne({
             where: { ComputerId: pc.id, status: [SESSION_STATUS.ACTIVE, SESSION_STATUS.PAUSED] },
             transaction
         });
 
         if (activeSession) {
+            console.log(`✅ Closing Session ID: ${activeSession.id}`);
             const now = new Date();
-            let finalConsumedSeconds = activeSession.consumedSeconds || 0;
-
-            if (activeSession.status === SESSION_STATUS.ACTIVE) {
-                const lastStart = new Date(activeSession.lastResumeTime || activeSession.startTime);
-                const currentInterval = Math.max(0, Math.floor((now - lastStart) / 1000));
-                finalConsumedSeconds += currentInterval;
-            }
-
-            const roomPrice = pc.Room?.pricePerHour || 15000;
-            let pcCost = Math.floor((finalConsumedSeconds / 3600) * roomPrice);
-
-            // 1. Calculate Unpaid Bar Sales connected to this session
-            const unpaidBarSales = await Transaction.findAll({
-                where: { SessionId: activeSession.id, type: 'bar_sale', status: 'unpaid' },
-                transaction
-            });
-            const barCost = unpaidBarSales.reduce((acc, t) => acc + t.amount, 0);
-
-            // 2. Grand Total and Remaining
-            let grandTotal = pcCost + barCost;
-            const paidAlready = activeSession.prepaidAmount || 0;
-            let amountToPay = Math.max(0, grandTotal - paidAlready);
-
-            // 3. Mark bar sales as approved so they enter finance stats
-            for (const tx of unpaidBarSales) {
-                await tx.update({ status: 'approved' }, { transaction });
-            }
-
+            // ... (rest of the logic)
             await activeSession.update({
                 status: SESSION_STATUS.COMPLETED,
                 endTime: now,

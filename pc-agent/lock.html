@@ -34,17 +34,19 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* 1. ULTRA FALLBACK (Offline Gradient Mesh) */
-            background: radial-gradient(circle at 20% 20%, rgba(125, 0, 255, 0.2), transparent 40%),
-                radial-gradient(circle at 80% 80%, rgba(255, 0, 122, 0.2), transparent 40%),
-                #050508;
+            /* 🎨 MASTER BACKGROUND STACK (From Front to Back) */
+            background-color: #050508;
             background-image:
-                linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-                /* 📂 MAHALLIY RASM */
+                linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)),
+                /* 📂 LOCAL USER IMAGE */
                 url('./assets/img/bg.jpg'),
                 url('./assets/img/bg.png'),
-                /* 🌐 INTERNETLI RASM */
-                url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop');
+                /* 🌐 REMOTE FALLBACK */
+                url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop'),
+                /* ✨ NEON MESH FALLBACK (Visible if everything else fails) */
+                radial-gradient(circle at 10% 10%, rgba(125, 0, 255, 0.6), transparent 50%),
+                radial-gradient(circle at 90% 90%, rgba(255, 0, 122, 0.5), transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.1), transparent 50%);
             background-repeat: no-repeat;
             background-position: center center;
             background-size: cover;

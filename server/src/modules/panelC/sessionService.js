@@ -92,7 +92,7 @@ class SessionService {
                 return;
             }
 
-            console.log(`✅ Closing Session ID: ${activeSession.id}`);
+            console.log(`✅ Closing Session ID: ${activeSession.id}. Origin: ${origin || 'unknown'}, Socket: ${socketId || 'none'}`);
             let finalConsumedSeconds = activeSession.consumedSeconds || 0;
 
             if (activeSession.status === SESSION_STATUS.ACTIVE) {

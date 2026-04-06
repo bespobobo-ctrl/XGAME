@@ -103,8 +103,26 @@ function updateWindowState() {
             mainWindow.webContents.send('init-url', config.serverUrl);
         });
     } else if (locking) {
+        // 🖼️ READ BACKGROUND IMAGE AS BASE64 (The most reliable way)
+        let bgBase64 = '';
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const bgPath = path.join(__dirname, 'assets', 'img', 'bg.jpg');
+            if (fs.existsSync(bgPath)) {
+                const bitmap = fs.readFileSync(bgPath);
+                bgBase64 = `data:image/jpeg;base64,${bitmap.toString('base64')}`;
+            }
+        } catch (e) {
+            console.error('BG load error:', e);
+        }
+
         mainWindow.loadFile('lock.html').then(() => {
-            mainWindow.webContents.send('set-pc-details', { id: config.pcId, name: config.pcName });
+            mainWindow.webContents.send('set-pc-details', {
+                id: config.pcId,
+                name: config.pcName,
+                background: bgBase64 // 🚀 BASE64 UZATILDI
+            });
             if (socket && socket.connected) {
                 mainWindow.webContents.send('status-connected', { id: config.pcId });
             }

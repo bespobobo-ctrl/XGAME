@@ -29,17 +29,23 @@ class ReservationScheduler {
             });
 
             for (const res of pendingReservations) {
-                console.log(`🚀 [AUTO-ACTIVATE] PC: ${res.Computer?.name}. Bron vaqti keldi.`);
-                await res.update({
-                    status: 'active',
-                    lastResumeTime: now,
-                    notifiedAt: now
-                });
-                await Computer.update({ status: 'busy' }, { where: { id: res.ComputerId } });
+                console.log(`🚀 [AUTO-ACTIVATE] PC: ${res.Computer?.name}. Session ID: ${res.id}`);
+                try {
+                    await res.update({
+                        status: 'active',
+                        lastResumeTime: now,
+                        notifiedAt: now
+                    });
+                    await Computer.update({ status: 'busy' }, { where: { id: res.ComputerId } });
 
-                if (io) {
-                    io.to(`pc_${res.ComputerId}`).emit('unlock', { reason: 'booking_auto_start' });
-                    io.to(`club_${res.ClubId}`).emit('room_update');
+                    if (io) {
+                        console.log(`🔑 Sending unlock to pc_${res.ComputerId}`);
+                        io.to(`pc_${res.ComputerId}`).emit('unlock', { reason: 'booking_auto_start' });
+                        io.to(`club_${res.ClubId}`).emit('room_update');
+                        io.emit('pc-status-updated', { clubId: res.ClubId, pcId: res.ComputerId });
+                    }
+                } catch (updateErr) {
+                    console.error(`❌ Activation error for Session #${res.id}:`, updateErr);
                 }
             }
 

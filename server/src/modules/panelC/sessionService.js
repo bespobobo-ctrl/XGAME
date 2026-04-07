@@ -17,8 +17,9 @@ class SessionService {
         try {
             const pc = await Computer.findOne({
                 where: { id: pcId, ClubId: clubId },
-                include: [{ model: Room }]
-            }, { transaction });
+                include: [{ model: Room }],
+                transaction
+            });
 
             if (!pc) throw new Error("Computer not found.");
             const roomPrice = pc.Room?.pricePerHour || 15000;

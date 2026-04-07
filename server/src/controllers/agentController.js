@@ -65,13 +65,22 @@ exports.updateStatus = async (req, res, next) => {
         // 🔄 FINAL SYNC check for active sessions
         const activeSession = await Session.findOne({
             where: { ComputerId: pc.id, status: ['active', 'paused'] },
-            order: [['createdAt', 'DESC']] // Har doim eng so'nggisini o'qiymiz
+            order: [['createdAt', 'DESC']]
         });
 
-        // ⚠️ ENTI-FLICKER SYNC: Agar sessiya bo'lsa, statusni 'busy' qilib qotiramiz
+        // 🛡️ RECENT ACTION GUARD: Agar PC statusi yaqinda (15 soniya ichida) o'zgargan bo'lsa,
+        // Heartbeat uni 'free' ga qaytarib yubormasligi kerak.
+        const now = new Date();
+        const updatedAt = new Date(pc.updatedAt || pc.lastOnline);
+        const isRecentlyUpdated = (now - updatedAt) < 15000;
+
         let effectiveStatus = pc.status;
+
         if (activeSession) {
             effectiveStatus = activeSession.status === 'paused' ? 'paused' : 'busy';
+        } else if (isRecentlyUpdated && (pc.status === 'busy' || pc.status === 'paused')) {
+            // Yaqinda ochilgan bo'lsa va sessiya hali bazaga tushmagan bo'lsa ham 'busy' qoladi
+            effectiveStatus = pc.status;
         } else if (pc.status === 'busy' || pc.status === 'paused') {
             // Manager tomonidan qo'lda ochilgan (Sessiya rekordsiz) — shunday qolsin!
             effectiveStatus = pc.status;
@@ -79,15 +88,15 @@ exports.updateStatus = async (req, res, next) => {
             effectiveStatus = 'free';
         }
 
-        console.log(`🔒 SYNC [PC-${pc.id}]: Database says ${activeSession ? 'ACTIVE' : 'NONE'}, Reporting ${effectiveStatus}`);
+        // console.log(`🔒 SYNC [PC-${pc.id}]: DB=${activeSession ? 'ACTIVE' : 'NONE'}, Current=${pc.status}, Recency=${isRecentlyUpdated}, Reporting=${effectiveStatus}`);
 
         pc.status = effectiveStatus;
-        pc.lastOnline = new Date();
+        pc.lastOnline = now;
         await pc.save();
 
         res.json({
             success: true,
-            serverTime: new Date(),
+            serverTime: now,
             pcDetails: {
                 id: pc.id,
                 name: pc.name,
@@ -98,6 +107,7 @@ exports.updateStatus = async (req, res, next) => {
         next(err);
     }
 };
+
 
 /**
  * 🔑 Agent Manual Login (Username / Password)

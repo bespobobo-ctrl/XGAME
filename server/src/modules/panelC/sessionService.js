@@ -77,7 +77,7 @@ class SessionService {
         await pc.update({ status: PC_STATUS.BUSY }, { transaction });
     }
 
-    async _handleStop(pc, transaction, origin, socketId) {
+    async _handleStop(pc, transaction, origin = 'unknown', socketId = 'none') {
         const activeSession = await Session.findOne({
             where: { ComputerId: pc.id, status: [SESSION_STATUS.ACTIVE, SESSION_STATUS.PAUSED] },
             transaction
@@ -85,16 +85,16 @@ class SessionService {
 
         if (activeSession) {
             const now = new Date();
-
-            const ageSeconds = Math.floor((now - new Date(activeSession.startTime)) / 1000);
+            const sTime = activeSession.startTime ? new Date(activeSession.startTime) : now;
+            const ageSeconds = Math.max(0, Math.floor((now - sTime) / 1000));
 
             // 🛡️ ANTI-FLICKER GUARD: 15 soniya ichida sessiyani yopish mumkin emas!
             if (activeSession.status === SESSION_STATUS.ACTIVE && ageSeconds < 15) {
-                console.log(`⚠️ BLOCKED: Stop request for ${pc.name} rejected (Session age: ${ageSeconds}s < 15s minimum)`);
+                console.log(`⚠️ BLOCKED: Stop request for ${pc.name} rejected (Age: ${ageSeconds}s < 15s)`);
                 throw new Error(`Kuting! Kompyuter endi ochildi. Yopish uchun yana ${15 - ageSeconds} soniya qoldi.`);
             }
 
-            console.log(`✅ Closing Session ID: ${activeSession.id}. Age: ${ageSeconds}s. Origin: ${origin || 'unknown'}, Socket: ${socketId || 'none'}`);
+            console.log(`✅ Closing Session ID: ${activeSession.id}. Age: ${ageSeconds}s. Origin: ${origin}, Socket: ${socketId}`);
             let finalConsumedSeconds = activeSession.consumedSeconds || 0;
 
             if (activeSession.status === SESSION_STATUS.ACTIVE) {

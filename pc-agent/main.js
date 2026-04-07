@@ -5,18 +5,16 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// 🔒 SECURITY: Disable GPU acceleration (Must-have for gaming PCs to prevent crashes)
+// 🔒 SECURITY: Disable GPU acceleration (Must-have for gaming PCs to prevent crashes with games)
 app.disableHardwareAcceleration();
 
 const CONFIG_PATH = path.join(app.getPath('userData'), 'gamezone_config.json');
 
 // Global State
 let mainWindow = null;
-let locking = true;
+let isLocked = true;
 let socket = null;
 let heartbeatTimer = null;
-let lastStateChange = 0;
-const FLICKER_GUARD_MS = 5000; // 5 soniyalik "immunitet"
 
 let config = {
     pcName: os.hostname(),
@@ -31,36 +29,27 @@ function loadConfig() {
         try {
             const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
             config = { ...config, ...data };
-            console.log("📦 [Agent] Config yuklandi:", config);
+            console.log(`📦 [Agent] Config loaded. PC-ID: ${config.pcId}`);
         } catch (e) {
-            console.error("Config yuklashda xato:", e);
+            console.error("❌ Config error:", e);
         }
     }
 }
+
 function saveConfig() {
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
 /**
- * 🛠️ CORE ACTION: Lock/Unlock with Professional Guard
+ * 🛠️ CORE ACTION: Lock/Unlock
  */
-function updatePCStatus(shouldLock, reason = 'Unknown') {
-    const now = Date.now();
+function setPCState(shouldLock, reason = 'Sync') {
+    if (isLocked === shouldLock) return;
 
-    // 🛡️ Flicker Guard: Prevent rapid state switching (e.g. within 5s)
-    if (locking !== shouldLock && (now - lastStateChange < FLICKER_GUARD_MS)) {
-        console.warn(`🛡️ [GUARD] Forcefully ignoring ${shouldLock ? 'LOCK' : 'UNLOCK'} | Reason: ${reason} | Action too rapid!`);
-        return;
-    }
+    isLocked = shouldLock;
+    console.log(`🚀 [ACTION] PC STATE -> ${isLocked ? '🔒 LOCKED' : '🔓 UNLOCKED'} | REASON: ${reason}`);
 
-    // Ignore if same status
-    if (locking === shouldLock) return;
-
-    locking = shouldLock;
-    lastStateChange = now;
-    console.log(`🚀 [STATUS] PC changed to ${locking ? 'LOCKED' : 'UNLOCKED'} | Reason: ${reason} | Time: ${new Date().toLocaleTimeString()}`);
-
-    if (locking) {
+    if (isLocked) {
         showLockScreen();
     } else {
         hideLockScreen();
@@ -70,105 +59,90 @@ function updatePCStatus(shouldLock, reason = 'Unknown') {
 async function showLockScreen() {
     if (!mainWindow) return;
 
-    // Read background image once and send to renderer (Avoids white-flash)
-    let bgBase64 = '';
-    try {
-        const bgPath = path.join(__dirname, 'assets', 'img', 'bg.jpg');
-        if (fs.existsSync(bgPath)) {
-            const bitmap = fs.readFileSync(bgPath);
-            bgBase64 = `data:image/jpeg;base64,${bitmap.toString('base64')}`;
-        }
-    } catch (e) {
-        console.error("BG load error:", e.message);
-    }
-
+    // Clean and simple load
     await mainWindow.loadFile('lock.html');
     mainWindow.webContents.send('set-pc-details', {
         id: config.pcId,
-        name: config.pcName,
-        background: bgBase64
+        name: config.pcName
     });
 
     if (socket?.connected) {
-        mainWindow.webContents.send('status-connected', { id: config.pcId });
+        mainWindow.webContents.send('status-connected');
     }
 
     mainWindow.show();
     mainWindow.setKiosk(true);
     mainWindow.setAlwaysOnTop(true, 'screen-saver');
+    mainWindow.focus();
 }
 
 function hideLockScreen() {
     if (!mainWindow) return;
-    mainWindow.hide();
+
     mainWindow.setKiosk(false);
     mainWindow.setAlwaysOnTop(false);
+    mainWindow.hide();
+    app.focus(); // Give focus back to the desktop/games
 }
 
 /**
- * 💓 HEARTBEAT: The "Reliability" Layer
- * Checks server every 15s to ensure status is consistent
+ * 💓 HEARTBEAT: Ensure sync with server state
  */
-async function sendHeartbeat() {
+async function syncStatus() {
     if (!config.agentToken || !config.serverUrl) return;
 
     try {
-        console.log("💓 Sending Heartbeat...");
         const res = await axios.post(`${config.serverUrl}/api/agent/status`,
-            { status: locking ? 'free' : 'busy' },
+            { status: isLocked ? 'free' : 'busy' },
             { headers: { 'x-agent-token': config.agentToken }, timeout: 10000 }
         );
 
         if (res.data.success && res.data.pcDetails) {
             const serverStatus = res.data.pcDetails.status;
-            const shouldBeOpen = (serverStatus === 'busy' || serverStatus === 'paused');
+            // logic: If busy or paused on server -> Local should be UNLOCKED
+            const shouldBeUnlocked = (serverStatus === 'busy' || serverStatus === 'paused');
 
-            // Sync with Server State
-            if (shouldBeOpen && locking) {
-                updatePCStatus(false, 'heartbeat-sync');
-            } else if (!shouldBeOpen && !locking) {
-                updatePCStatus(true, 'heartbeat-sync');
+            if (shouldBeUnlocked && isLocked) {
+                setPCState(false, 'Heartbeat Sync');
+            } else if (!shouldBeUnlocked && !isLocked) {
+                setPCState(true, 'Heartbeat Sync');
             }
         }
     } catch (e) {
-        console.error("❌ Heartbeat error:", e.message);
+        console.error(`❌ [HEARTBEAT] Sync Error: ${e.message}`);
     }
 }
 
 /**
- * 📡 SOCKET: The "Real-Time" Layer
- * Provides instant lock/unlock capability
+ * 📡 SOCKET: Real-time commands
  */
 function connectSocket() {
     if (!config.agentToken || !config.serverUrl) return;
-
     if (socket) socket.disconnect();
 
     socket = io(config.serverUrl, {
         auth: { token: config.agentToken },
-        transports: ['websocket'],
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000
+        transports: ['websocket']
     });
 
     socket.on('connect', () => {
-        console.log("📡 WebSocket connected successfully!");
+        console.log("📡 [SOCKET] Connected.");
         socket.emit('register-agent', { pcId: config.pcId });
-        if (mainWindow) mainWindow.webContents.send('status-connected', { id: config.pcId });
+        if (mainWindow) mainWindow.webContents.send('status-connected');
+        syncStatus();
     });
 
     socket.on('lock', () => {
-        console.log("📡 Socket Command: LOCK");
-        updatePCStatus(true, 'socket-command');
+        console.log("📡 [SOCKET] Command: LOCK");
+        setPCState(true, 'Socket Command');
     });
 
     socket.on('unlock', () => {
-        console.log("📡 Socket Command: UNLOCK");
-        updatePCStatus(false, 'socket-command');
+        console.log("📡 [SOCKET] Command: UNLOCK");
+        setPCState(false, 'Socket Command');
     });
 
-    socket.on('disconnect', (reason) => {
-        console.warn("🔌 Socket disconnected:", reason);
+    socket.on('disconnect', () => {
         if (mainWindow) mainWindow.webContents.send('status-disconnected');
     });
 }
@@ -183,18 +157,17 @@ ipcMain.handle('login-attempt', async (_, { username, password }) => {
             { headers: { 'x-agent-token': config.agentToken }, timeout: 15000 }
         );
         if (res.data.success) {
-            updatePCStatus(false, 'manual-login');
+            setPCState(false, 'Manual Login');
             return { success: true };
         }
         return { success: false, error: res.data.message };
     } catch (e) {
-        return { success: false, error: "Server bilan bog'lanishda xatolik!" };
+        return { success: false, error: "Server connection error" };
     }
 });
 
 ipcMain.handle('pair-pc', async (_, { pairingCode, serverUrl }) => {
     try {
-        console.log("🔗 Pairing request sent...");
         const cleanUrl = serverUrl.trim().replace(/\/$/, "");
         const res = await axios.post(`${cleanUrl}/api/agent/pair`, {
             pairingCode: pairingCode.trim(),
@@ -212,15 +185,12 @@ ipcMain.handle('pair-pc', async (_, { pairingCode, serverUrl }) => {
                 serverUrl: cleanUrl
             };
             saveConfig();
-
-            // Professional restart after pairing
             app.relaunch();
             app.exit(0);
             return { success: true };
         }
     } catch (e) {
-        console.error("Pairing failed:", e.message);
-        return { success: false, error: "Server topilmadi yoki kod noto'g'ri." };
+        return { success: false, error: e.response?.data?.message || e.message };
     }
 });
 
@@ -239,22 +209,13 @@ function getMacAddress() {
  */
 app.on('ready', () => {
     loadConfig();
-
+    console.log(`🚀 GameZone PC Agent v0.4.0 started...`);
     const { width, height } = screen.getPrimaryDisplay().bounds;
+
     mainWindow = new BrowserWindow({
-        width,
-        height,
-        fullscreen: true,
-        kiosk: true,
-        alwaysOnTop: true,
-        frame: false,
-        skipTaskbar: true,
+        width, height, fullscreen: true, kiosk: true, alwaysOnTop: true, frame: false, skipTaskbar: true,
         backgroundColor: '#000',
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            webSecurity: false
-        }
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
     });
 
     if (!config.agentToken) {
@@ -262,28 +223,46 @@ app.on('ready', () => {
             mainWindow.webContents.send('init-url', config.serverUrl);
         });
     } else {
-        // Active mode
         showLockScreen();
         connectSocket();
-
-        // Setup intervals
-        heartbeatTimer = setInterval(sendHeartbeat, 15000);
-        sendHeartbeat(); // First run
+        heartbeatTimer = setInterval(syncStatus, 15000);
     }
 
-    // Admin Access Keys
-    globalShortcut.register('Control+Shift+Q', () => app.quit());
-    globalShortcut.register('Control+Alt+R', () => {
-        if (fs.existsSync(CONFIG_PATH)) fs.unlinkSync(CONFIG_PATH);
+    // 1. EXIT: Control+Shift+X
+    const exitOk = globalShortcut.register('Control+Shift+X', () => {
+        console.log("👋 [EXIT] Quitting...");
+        app.quit();
+    });
+    if (!exitOk) console.error("❌ Exit shortcut (Ctrl+Shift+X) registration failed!");
+
+    // 2. RESET: Control+Alt+R OR Control+Shift+R
+    const resetAction = () => {
+        console.log("🧹 [RESET] Config deleting... Relaunching!");
+        if (fs.existsSync(CONFIG_PATH)) {
+            try { fs.unlinkSync(CONFIG_PATH); } catch (e) { }
+        }
         app.relaunch();
         app.exit(0);
-    });
-    // Dev only: Control+Shift+U (Local Unlock)
+    };
+
+    const resetOk1 = globalShortcut.register('Control+Alt+R', resetAction);
+    const resetOk2 = globalShortcut.register('Control+Shift+R', resetAction);
+    const resetOk3 = globalShortcut.register('Control+Alt+Shift+R', resetAction);
+
+    if (!resetOk1 && !resetOk2 && !resetOk3) {
+        console.error("❌ Reset shortcuts (R) registration failed!");
+    } else {
+        console.log("✅ Reset shortcuts (Ctrl+Alt+R / Ctrl+Shift+R / Ctrl+Alt+Shift+R) registered.");
+    }
+
+    // 3. FORCE UNLOCK: Control+Shift+U
     globalShortcut.register('Control+Shift+U', () => {
-        updatePCStatus(false, 'admin-shortcut');
+        console.log("🔓 [FORCE] Unlocking...");
+        setPCState(false, 'Admin Shortcut');
     });
 });
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    app.quit();
 });
+

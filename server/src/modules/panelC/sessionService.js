@@ -85,8 +85,10 @@ class SessionService {
         if (activeSession) {
             const now = new Date();
 
+            const ageSeconds = Math.floor((now - new Date(activeSession.startTime)) / 1000);
+
             // 🛡️ ANTI-FLICKER GUARD: 15 soniya ichida sessiyani yopish mumkin emas!
-            if (ageSeconds < 15) {
+            if (activeSession.status === SESSION_STATUS.ACTIVE && ageSeconds < 15) {
                 console.log(`⚠️ BLOCKED: Stop request for ${pc.name} rejected (Session age: ${ageSeconds}s < 15s minimum)`);
                 throw new Error(`Kuting! Kompyuter endi ochildi. Yopish uchun yana ${15 - ageSeconds} soniya qoldi.`);
             }

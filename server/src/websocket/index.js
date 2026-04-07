@@ -33,8 +33,11 @@ function setupWebSockets(io) {
                         await computer.save();
                     }
                     socket.emit('unlock');
+                } else if (computer.status === 'busy' || computer.status === 'paused') {
+                    console.log(`🔓 FINAL SYNC: Keeping Unlocked (Manager Mode - Status: ${computer.status})`);
+                    socket.emit('unlock');
                 } else {
-                    console.log(`🔒 FINAL SYNC: Locking (No Active Session in DB!)`);
+                    console.log(`🔒 FINAL SYNC: Locking (Free for real)`);
                     socket.emit('lock');
                 }
             }

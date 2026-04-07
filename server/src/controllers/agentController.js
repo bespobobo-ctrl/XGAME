@@ -72,6 +72,9 @@ exports.updateStatus = async (req, res, next) => {
         let effectiveStatus = pc.status;
         if (activeSession) {
             effectiveStatus = activeSession.status === 'paused' ? 'paused' : 'busy';
+        } else if (pc.status === 'busy' || pc.status === 'paused') {
+            // Manager tomonidan qo'lda ochilgan (Sessiya rekordsiz) — shunday qolsin!
+            effectiveStatus = pc.status;
         } else {
             effectiveStatus = 'free';
         }

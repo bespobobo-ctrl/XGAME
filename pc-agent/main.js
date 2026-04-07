@@ -5,308 +5,285 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// 🔒 SECURITY & STABILITY: Disable GPU acceleration to prevent rendering crashes on gaming PCs
+// 🔒 SECURITY: Disable GPU acceleration (Must-have for gaming PCs to prevent crashes)
 app.disableHardwareAcceleration();
 
-// Path to the config file (stores pairing info)
-const configPath = path.join(app.getPath('userData'), 'gamezone_config.json');
+const CONFIG_PATH = path.join(app.getPath('userData'), 'gamezone_config.json');
+
+// Global State
+let mainWindow = null;
+let locking = true;
+let socket = null;
+let heartbeatTimer = null;
+let lastStateChange = 0;
+const FLICKER_GUARD_MS = 5000; // 5 soniyalik "immunitet"
 
 let config = {
     pcName: os.hostname(),
     agentToken: null,
     pcId: null,
-    serverUrl: 'https://father-thank-luck-notes.trycloudflare.com' // Standart manzil
+    serverUrl: 'https://father-thank-luck-notes.trycloudflare.com'
 };
 
-// State
-let mainWindow = null;
-let locking = true;
-let socket = null;
-let heartbeatTimer = null;
-let lastUnlockTime = 0; // 🛡️ Anti-Flicker Guard (Client-Side)
-const UNLOCK_GUARD_MS = 2000; // 2 soniya yengil himoya, ortiqcha qotishsiz
-
-function canLock() {
-    const elapsed = Date.now() - lastUnlockTime;
-    if (elapsed < UNLOCK_GUARD_MS) {
-        console.log(`🛡️ GUARD: Lock bloklandi! (Ochilganidan ${Math.round(elapsed / 1000)}s o'tdi, ${Math.round((UNLOCK_GUARD_MS - elapsed) / 1000)}s qoldi)`);
-        return false;
-    }
-    return true;
-}
-
-function doUnlock(reason = 'Unknown') {
-    if (!locking) return; // Allaqachon ochiq
-    lastUnlockTime = Date.now();
-    locking = false;
-    console.log(`🔓 PC OCHILDI (Unlock) | Sabab: ${reason}`);
-    updateWindowState();
-}
-
-function doLock(reason = 'Unknown') {
-    if (locking) return; // Allaqachon qulflangan
-    if (!canLock()) return; // Guard faol — qulflamaymiz!
-    locking = true;
-    console.log(`🔒 PC QULFLANDI (Lock) | Sabab: ${reason}`);
-    updateWindowState();
-}
-
+// 📂 Persistence
 function loadConfig() {
-    if (fs.existsSync(configPath)) {
+    if (fs.existsSync(CONFIG_PATH)) {
         try {
-            const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
             config = { ...config, ...data };
-            console.log('📦 Config yuklandi:', config);
+            console.log("📦 [Agent] Config yuklandi:", config);
         } catch (e) {
-            console.error('Config o\'qishda xato:', e);
+            console.error("Config yuklashda xato:", e);
         }
     }
 }
-
 function saveConfig() {
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
-function createLockWindow() {
-    if (mainWindow) return;
+/**
+ * 🛠️ CORE ACTION: Lock/Unlock with Professional Guard
+ */
+function updatePCStatus(shouldLock, reason = 'Unknown') {
+    const now = Date.now();
 
-    const { width, height } = screen.getPrimaryDisplay().bounds;
+    // 🛡️ Flicker Guard: Prevent rapid state switching (e.g. within 5s)
+    if (locking !== shouldLock && (now - lastStateChange < FLICKER_GUARD_MS)) {
+        console.warn(`🛡️ [GUARD] Forcefully ignoring ${shouldLock ? 'LOCK' : 'UNLOCK'} | Reason: ${reason} | Action too rapid!`);
+        return;
+    }
 
-    mainWindow = new BrowserWindow({
-        width: width,
-        height: height,
-        fullscreen: true,
-        kiosk: true,
-        alwaysOnTop: true,
-        frame: false,
-        skipTaskbar: true,
-        backgroundColor: '#000000',
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            webSecurity: false // 🔓 Allow loading remote assets from file://
-        }
-    });
+    // Ignore if same status
+    if (locking === shouldLock) return;
 
-    mainWindow.on('close', (e) => {
-        if (locking && config.agentToken) e.preventDefault();
-    });
+    locking = shouldLock;
+    lastStateChange = now;
+    console.log(`🚀 [STATUS] PC changed to ${locking ? 'LOCKED' : 'UNLOCKED'} | Reason: ${reason} | Time: ${new Date().toLocaleTimeString()}`);
 
-    updateWindowState();
+    if (locking) {
+        showLockScreen();
+    } else {
+        hideLockScreen();
+    }
 }
 
-function updateWindowState() {
+async function showLockScreen() {
     if (!mainWindow) return;
 
-    if (!config.agentToken) {
-        mainWindow.loadFile('pairing.html').then(() => {
-            mainWindow.webContents.send('init-url', config.serverUrl);
-        });
-    } else if (locking) {
-        // 🖼️ READ BACKGROUND IMAGE AS BASE64 (The most reliable way)
-        let bgBase64 = '';
-        try {
-            const fs = require('fs');
-            const path = require('path');
-            const bgPath = path.join(__dirname, 'assets', 'img', 'bg.jpg');
-            if (fs.existsSync(bgPath)) {
-                const bitmap = fs.readFileSync(bgPath);
-                bgBase64 = `data:image/jpeg;base64,${bitmap.toString('base64')}`;
-            }
-        } catch (e) {
-            console.error('BG load error:', e);
+    // Read background image once and send to renderer (Avoids white-flash)
+    let bgBase64 = '';
+    try {
+        const bgPath = path.join(__dirname, 'assets', 'img', 'bg.jpg');
+        if (fs.existsSync(bgPath)) {
+            const bitmap = fs.readFileSync(bgPath);
+            bgBase64 = `data:image/jpeg;base64,${bitmap.toString('base64')}`;
         }
-
-        mainWindow.loadFile('lock.html').then(() => {
-            mainWindow.webContents.send('set-pc-details', {
-                id: config.pcId,
-                name: config.pcName,
-                background: bgBase64 // 🚀 BASE64 UZATILDI
-            });
-            if (socket && socket.connected) {
-                mainWindow.webContents.send('status-connected', { id: config.pcId });
-            }
-        });
-        mainWindow.show();
-        mainWindow.setKiosk(true);
-        mainWindow.setAlwaysOnTop(true, 'screen-saver');
-    } else {
-        mainWindow.hide();
-        mainWindow.setKiosk(false);
-        mainWindow.setAlwaysOnTop(false);
+    } catch (e) {
+        console.error("BG load error:", e.message);
     }
+
+    await mainWindow.loadFile('lock.html');
+    mainWindow.webContents.send('set-pc-details', {
+        id: config.pcId,
+        name: config.pcName,
+        background: bgBase64
+    });
+
+    if (socket?.connected) {
+        mainWindow.webContents.send('status-connected', { id: config.pcId });
+    }
+
+    mainWindow.show();
+    mainWindow.setKiosk(true);
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
 }
 
-// 💓 Heartbeat & Sync Logic
+function hideLockScreen() {
+    if (!mainWindow) return;
+    mainWindow.hide();
+    mainWindow.setKiosk(false);
+    mainWindow.setAlwaysOnTop(false);
+}
+
+/**
+ * 💓 HEARTBEAT: The "Reliability" Layer
+ * Checks server every 15s to ensure status is consistent
+ */
 async function sendHeartbeat() {
     if (!config.agentToken || !config.serverUrl) return;
 
     try {
-        const response = await axios.post(`${config.serverUrl}/api/agent/status`,
-            {
-                status: locking ? 'free' : 'busy'
-            },
-            {
-                headers: { 'x-agent-token': config.agentToken },
-                timeout: 15000
-            }
+        console.log("💓 Sending Heartbeat...");
+        const res = await axios.post(`${config.serverUrl}/api/agent/status`,
+            { status: locking ? 'free' : 'busy' },
+            { headers: { 'x-agent-token': config.agentToken }, timeout: 10000 }
         );
 
-        if (response.data.success && response.data.pcDetails) {
-            const serverPC = response.data.pcDetails;
+        if (res.data.success && res.data.pcDetails) {
+            const serverStatus = res.data.pcDetails.status;
+            const shouldBeOpen = (serverStatus === 'busy' || serverStatus === 'paused');
 
-            // 1. Sync name
-            if (serverPC.name && serverPC.name !== config.pcName) {
-                config.pcName = serverPC.name;
-                saveConfig();
-                if (locking && mainWindow) {
-                    mainWindow.webContents.send('set-pc-details', { id: config.pcId, name: config.pcName });
-                }
-            }
-
-            // 2. Sync state (Guard bilan himoyalangan)
-            const shouldBeOpen = (serverPC.status === 'busy' || serverPC.status === 'paused');
-            console.log(`💓 API STATUS KELDI: ${serverPC.status}`);
-
+            // Sync with Server State
             if (shouldBeOpen && locking) {
-                console.log('🔄 Heartbeat Sync: Ochilmoqda...');
-                doUnlock('heartbeat');
+                updatePCStatus(false, 'heartbeat-sync');
             } else if (!shouldBeOpen && !locking) {
-                console.log('🔄 Heartbeat Sync: Qulflanmoqda...');
-                doLock('heartbeat');
+                updatePCStatus(true, 'heartbeat-sync');
             }
         }
     } catch (e) {
-        console.error('💓 Heartbeat uzildi:', e.message);
+        console.error("❌ Heartbeat error:", e.message);
     }
 }
 
-async function connectSocket() {
+/**
+ * 📡 SOCKET: The "Real-Time" Layer
+ * Provides instant lock/unlock capability
+ */
+function connectSocket() {
     if (!config.agentToken || !config.serverUrl) return;
 
     if (socket) socket.disconnect();
 
     socket = io(config.serverUrl, {
         auth: { token: config.agentToken },
-        transports: ['websocket'], // Majburiy WebSocket orqali Real-Time, sekin Polling ni olib tashlaymiz
+        transports: ['websocket'],
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 3000
+        reconnectionDelayMax: 5000
     });
 
     socket.on('connect', () => {
+        console.log("📡 WebSocket connected successfully!");
         socket.emit('register-agent', { pcId: config.pcId });
         if (mainWindow) mainWindow.webContents.send('status-connected', { id: config.pcId });
     });
 
-    socket.on('lock', () => { console.log('📡 Socket: lock signal received'); doLock('socket'); });
-    socket.on('unlock', () => { console.log('📡 Socket: unlock signal received'); doUnlock('socket'); });
+    socket.on('lock', () => {
+        console.log("📡 Socket Command: LOCK");
+        updatePCStatus(true, 'socket-command');
+    });
+
+    socket.on('unlock', () => {
+        console.log("📡 Socket Command: UNLOCK");
+        updatePCStatus(false, 'socket-command');
+    });
 
     socket.on('disconnect', (reason) => {
-        console.log(`❌ Disconnected: ${reason}`);
+        console.warn("🔌 Socket disconnected:", reason);
         if (mainWindow) mainWindow.webContents.send('status-disconnected');
-
-        // RECONNECT GRACE PERIOD: Agar sessiya faol bo'lsa va socket uzilsa, 
-        // 5 soniya kutamiz. Darhol qulfga urmaymiz (sapchishni oldini olish).
-        if (!locking) {
-            console.log('🛡️ Grace Period: Sessiya ochiq, socket uzilishini 30s kutamiz...');
-            setTimeout(() => {
-                if (socket && !socket.connected && !locking) {
-                    console.log('🚨 Shutdown: 30s ichida qayta ulanmadi, qulflaymiz.');
-                    doLock('timeout');
-                }
-            }, 30000); // 30 soniya grace period
-        }
     });
 }
 
+/**
+ * 💻 IPC COMMUNICATION
+ */
+ipcMain.handle('login-attempt', async (_, { username, password }) => {
+    try {
+        const res = await axios.post(`${config.serverUrl}/api/agent/login`,
+            { username, password },
+            { headers: { 'x-agent-token': config.agentToken }, timeout: 15000 }
+        );
+        if (res.data.success) {
+            updatePCStatus(false, 'manual-login');
+            return { success: true };
+        }
+        return { success: false, error: res.data.message };
+    } catch (e) {
+        return { success: false, error: "Server bilan bog'lanishda xatolik!" };
+    }
+});
+
+ipcMain.handle('pair-pc', async (_, { pairingCode, serverUrl }) => {
+    try {
+        console.log("🔗 Pairing request sent...");
+        const cleanUrl = serverUrl.trim().replace(/\/$/, "");
+        const res = await axios.post(`${cleanUrl}/api/agent/pair`, {
+            pairingCode: pairingCode.trim(),
+            macAddress: getMacAddress(),
+            hostname: os.hostname()
+        }, { timeout: 15000 });
+
+        if (res.data.success) {
+            const { agentToken, pcDetails } = res.data;
+            config = {
+                ...config,
+                agentToken,
+                pcId: pcDetails.id,
+                pcName: pcDetails.name,
+                serverUrl: cleanUrl
+            };
+            saveConfig();
+
+            // Professional restart after pairing
+            app.relaunch();
+            app.exit(0);
+            return { success: true };
+        }
+    } catch (e) {
+        console.error("Pairing failed:", e.message);
+        return { success: false, error: "Server topilmadi yoki kod noto'g'ri." };
+    }
+});
+
 function getMacAddress() {
-    const networkInterfaces = os.networkInterfaces();
-    for (const key in networkInterfaces) {
-        for (const net of networkInterfaces[key]) {
-            if (!net.internal && net.mac !== '00:00:00:00:00:00') {
-                return net.mac;
-            }
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+            if (!net.internal && net.mac !== '00:00:00:00:00:00') return net.mac;
         }
     }
     return '0-0-0-0-0-0';
 }
 
-ipcMain.handle('login-attempt', async (event, { username, password }) => {
-    try {
-        if (!config.agentToken || !config.serverUrl) return { success: false, error: 'Taqdimotchi topilmadi!' };
-
-        const response = await axios.post(`${config.serverUrl}/api/agent/login`,
-            { username, password },
-            {
-                headers: { 'x-agent-token': config.agentToken },
-                timeout: 10000
-            }
-        );
-
-        if (response.data.success) {
-            doUnlock('manual-login');
-            return { success: true };
-        } else {
-            return { success: false, error: response.data.message };
-        }
-    } catch (e) {
-        console.error('Login Error:', e.message);
-        return { success: false, error: 'Server bilan aloqa uzildi!' };
-    }
-});
-
-ipcMain.handle('pair-pc', async (event, { pairingCode, serverUrl }) => {
-    try {
-        const cleanUrl = serverUrl.trim().replace(/\/$/, ""); // Oxiridagi / ni olib tashlaymiz
-        const response = await axios.post(`${cleanUrl}/api/agent/pair`, {
-            pairingCode: pairingCode.trim(),
-            macAddress: getMacAddress(),
-            hostname: os.hostname()
-        }, { timeout: 10000 });
-
-        if (response.data.success) {
-            const details = response.data.pcDetails;
-            config.agentToken = response.data.agentToken;
-            config.pcId = details.id;
-            config.pcName = details.name;
-            config.serverUrl = cleanUrl;
-            saveConfig();
-
-            locking = true;
-            connectSocket();
-            updateWindowState();
-
-            if (!heartbeatTimer) heartbeatTimer = setInterval(sendHeartbeat, 10000);
-            return { success: true, pcName: config.pcName };
-        }
-    } catch (error) {
-        console.error('Pairing Error:', error.message);
-        return { success: false, error: 'Serverga ulanib bo\'lmadi. Manzilni tekshiring.' };
-    }
-});
-
-app.whenReady().then(() => {
+/**
+ * 🎬 MAIN STARTUP
+ */
+app.on('ready', () => {
     loadConfig();
-    createLockWindow();
 
-    if (config.agentToken) {
+    const { width, height } = screen.getPrimaryDisplay().bounds;
+    mainWindow = new BrowserWindow({
+        width,
+        height,
+        fullscreen: true,
+        kiosk: true,
+        alwaysOnTop: true,
+        frame: false,
+        skipTaskbar: true,
+        backgroundColor: '#000',
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            webSecurity: false
+        }
+    });
+
+    if (!config.agentToken) {
+        mainWindow.loadFile('pairing.html').then(() => {
+            mainWindow.webContents.send('init-url', config.serverUrl);
+        });
+    } else {
+        // Active mode
+        showLockScreen();
         connectSocket();
-        heartbeatTimer = setInterval(sendHeartbeat, 10000);
-        sendHeartbeat();
+
+        // Setup intervals
+        heartbeatTimer = setInterval(sendHeartbeat, 15000);
+        sendHeartbeat(); // First run
     }
 
-    // Emergency keys
-    globalShortcut.register('CommandOrControl+Q', () => app.exit(0));
-    globalShortcut.register('CommandOrControl+Alt+R', () => {
-        config = { pcName: os.hostname(), agentToken: null, pcId: null, serverUrl: config.serverUrl };
-        saveConfig();
+    // Admin Access Keys
+    globalShortcut.register('Control+Shift+Q', () => app.quit());
+    globalShortcut.register('Control+Alt+R', () => {
+        if (fs.existsSync(CONFIG_PATH)) fs.unlinkSync(CONFIG_PATH);
         app.relaunch();
         app.exit(0);
     });
-    globalShortcut.register('CommandOrControl+Shift+U', () => {
-        locking = false;
-        updateWindowState();
+    // Dev only: Control+Shift+U (Local Unlock)
+    globalShortcut.register('Control+Shift+U', () => {
+        updatePCStatus(false, 'admin-shortcut');
     });
 });
 
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+});

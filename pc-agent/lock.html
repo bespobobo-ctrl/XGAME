@@ -22,7 +22,8 @@
             width: 100%;
             height: 100%;
             font-family: 'Outfit', sans-serif;
-            background: #000;
+            background: transparent;
+            /* Qora fonni olib tashlaymiz */
             color: #fff;
             overflow: hidden;
         }
@@ -34,7 +35,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
+            z-index: 0;
+            /* Fonni rasm qatlamiga chiqaramiz */
             background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('assets/img/bg.jpg') center center / cover no-repeat !important;
             animation: zoomBg 30s infinite alternate linear;
         }
@@ -75,7 +77,8 @@
             padding: 0 80px;
             box-sizing: border-box;
             position: relative;
-            z-index: 10;
+            z-index: 2;
+            /* Fon rasmining ustida tursin */
         }
 
         .side-panel {

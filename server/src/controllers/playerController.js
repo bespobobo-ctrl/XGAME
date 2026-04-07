@@ -138,3 +138,42 @@ exports.submitTopUp = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.reservePc = async (req, res, next) => {
+    try {
+        const pcId = req.params.id;
+        const { time, guestName, guestPhone } = req.body;
+        const user = await User.findByPk(req.user.id);
+
+        const result = await sessionService.executeAction(pcId, user.ClubId, {
+            action: 'reserve',
+            userId: user.id,
+            reserveTime: time,
+            guestName: guestName || user.username,
+            guestPhone: guestPhone || user.phone
+        });
+
+        const io = req.app.get('io');
+        if (io) io.to(`club_${user.ClubId}`).emit('room_update');
+
+        res.json({ success: true, message: 'Muvaffaqiyatli bron qilindi!' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+exports.cancelReserve = async (req, res, next) => {
+    try {
+        const pcId = req.params.id;
+        const user = await User.findByPk(req.user.id);
+
+        await sessionService.executeAction(pcId, user.ClubId, { action: 'cancel_reserve' });
+
+        const io = req.app.get('io');
+        if (io) io.to(`club_${user.ClubId}`).emit('room_update');
+
+        res.json({ success: true, message: 'Bron bekor qilindi' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};

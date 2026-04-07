@@ -85,6 +85,7 @@ router.get('/manager/users', auth, authorize('manager'), asyncHandler(managerApp
 router.post('/manager/user/:id/balance', auth, authorize('manager'), asyncHandler(managerAppCtrl.addUserBalance));
 router.get('/manager/user/:id/details', auth, authorize('manager'), asyncHandler(managerAppCtrl.getUserDetails));
 router.post('/manager/reservation/:id/confirm-penalty-warning', auth, authorize('manager'), asyncHandler(managerAppCtrl.confirmPenaltyWarning));
+router.post('/manager/reservation/:id/confirm-presence', auth, authorize('manager'), asyncHandler(managerAppCtrl.confirmPresence));
 
 router.get('/manager/bar/products', auth, authorize('manager'), asyncHandler(managerAppCtrl.getProducts));
 router.post('/manager/bar/products', auth, authorize('manager'), asyncHandler(managerAppCtrl.addProduct));

@@ -95,6 +95,18 @@ const Session = sequelize.define('Session', {
     userResponse: {
         type: DataTypes.STRING, // 'coming', 'cancel'
         allowNull: true
+    },
+    isConfirmed: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    notifiedPresence: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    prepaidAmount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
     }
 });
 

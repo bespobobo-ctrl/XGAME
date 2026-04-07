@@ -168,19 +168,56 @@ class SessionService {
     }
 
     async _handleReserve(pc, time, name, phone, transaction, userId = null) {
+        const roomPrice = pc.Room?.pricePerHour || 15000;
+        let prepaidAmount = 0;
+
+        if (userId) {
+            const user = await User.findByPk(userId, { transaction });
+            if (!user) throw new Error("Foydalanuvchi topilmadi.");
+
+            // 🛒 RULE: 2 Hours credit for booking
+            const requiredBalance = roomPrice * 2;
+            if (user.balance < requiredBalance) {
+                throw new Error(`Bron qilish uchun kamida 2 soatlik mablag' bo'lishi kerak (${requiredBalance} UZS).`);
+            }
+
+            // 💳 DEDUCTION: 1 Hour charge immediately
+            prepaidAmount = roomPrice;
+            user.balance -= prepaidAmount;
+            await user.save({ transaction, hooks: false });
+
+            // Create Transaction Record
+            await Transaction.create({
+                amount: prepaidAmount,
+                type: 'income',
+                status: 'approved',
+                ClubId: pc.ClubId,
+                UserId: userId,
+                description: `Bronuchun 1 soatli to'lov (PC: ${pc.name})`
+            }, { transaction });
+        }
+
         const nowInTashkent = new Date(new Date().getTime() + (5 * 3600000));
         const todayStr = nowInTashkent.toISOString().split('T')[0];
         const isoStr = `${todayStr}T${time}:00+05:00`;
         const reserveDate = new Date(isoStr);
-        if (reserveDate <= new Date()) throw new Error("Time error");
+        if (reserveDate <= new Date()) throw new Error("Vaqt noto'g'ri (o'tib ketgan).");
 
         const session = await Session.create({
-            ComputerId: pc.id, RoomId: pc.RoomId, ClubId: pc.ClubId,
-            status: SESSION_STATUS.RESERVED, startTime: reserveDate,
-            guestName: name, guestPhone: phone, UserId: userId
+            ComputerId: pc.id,
+            RoomId: pc.RoomId,
+            ClubId: pc.ClubId,
+            status: SESSION_STATUS.RESERVED,
+            startTime: reserveDate,
+            guestName: name,
+            guestPhone: phone,
+            UserId: userId,
+            prepaidAmount
         }, { transaction });
 
-        if (pc.status === PC_STATUS.FREE) await pc.update({ status: PC_STATUS.RESERVED }, { transaction });
+        if (pc.status === PC_STATUS.FREE) {
+            await pc.update({ status: PC_STATUS.RESERVED }, { transaction });
+        }
     }
 
     async _handleCancelReserve(pc, transaction) {

@@ -18,53 +18,84 @@ class ReservationScheduler {
     async checkReservations(io) {
         try {
             const now = new Date();
-            const nowInTashkent = new Date(now.getTime() + TASHKENT_OFFSET);
 
-            const reservations = await Session.findAll({
+            // 1️⃣ AUTO-ACTIVATE RESERVED SESSIONS (Bron vaqti kelganda PC ni ochish)
+            const pendingReservations = await Session.findAll({
                 where: {
                     status: 'reserved',
-                    startTime: { [Op.gte]: new Date(now.getTime() - 15 * 60000) } // Catch sessions that started recently too
+                    startTime: { [Op.lte]: now }
                 },
+                include: [{ model: Computer }]
+            });
+
+            for (const res of pendingReservations) {
+                console.log(`🚀 [AUTO-ACTIVATE] PC: ${res.Computer?.name}. Bron vaqti keldi.`);
+                await res.update({
+                    status: 'active',
+                    lastResumeTime: now,
+                    notifiedAt: now
+                });
+                await Computer.update({ status: 'busy' }, { where: { id: res.ComputerId } });
+
+                if (io) {
+                    io.to(`pc_${res.ComputerId}`).emit('unlock', { reason: 'booking_auto_start' });
+                    io.to(`club_${res.ClubId}`).emit('room_update');
+                }
+            }
+
+            // 2️⃣ CHECK ACTIVE SESSIONS (Mijoz kelganini tasdiqlash)
+            const activeReservations = await Session.findAll({
+                where: {
+                    status: 'active',
+                    prepaidAmount: { [Op.gt]: 0 },
+                    isConfirmed: false
+                },
+                include: [{ model: User }, { model: Computer }]
+            });
+
+            for (const res of activeReservations) {
+                const startTime = new Date(res.startTime);
+                const elapsedMin = Math.floor((now - startTime) / 60000);
+
+                // --- 45 DAQIQA: ADMINGA XABAR ---
+                if (elapsedMin >= 45 && elapsedMin < 60 && !res.notifiedPresence) {
+                    notificationService.notifyManager(io, res.ClubId, 'RESERVE_WARNING', {
+                        type: 'presence_confirmation',
+                        sessionId: res.id,
+                        message: `Mijoz (${res.guestName || res.User?.username}) keldimi? (45 daqiqa o'tdi)`,
+                        pc: res.Computer?.name
+                    });
+                    await res.update({ notifiedPresence: true });
+                }
+
+                // --- 60 DAQIQA: AVTO-STOP (TASDIQLANMASA) ---
+                if (elapsedMin >= 60) {
+                    console.log(`⚖️ [AUTO-STOP] Session #${res.id} yopildi (Mijoz kelmadi).`);
+                    const pc = await Computer.findByPk(res.ComputerId);
+                    const sessionService = require('../modules/panelC/sessionService');
+                    await sessionService._handleStop(pc, null, 'no_show_after_1h');
+
+                    if (io) {
+                        io.to(`pc_${res.ComputerId}`).emit('lock');
+                        io.to(`club_${res.ClubId}`).emit('room_update');
+                    }
+                }
+            }
+
+            // 3️⃣ REMINDERS (KELISHIDAN OLDIN)
+            const reminders = await Session.findAll({
+                where: { status: 'reserved', startTime: { [Op.gt]: now } },
                 include: [{ model: User }, { model: Computer, include: [{ model: Room }] }]
             });
 
-            for (const res of reservations) {
+            for (const res of reminders) {
                 const startTime = new Date(res.startTime);
-                const diffMs = startTime - now;
-                const diffMin = Math.floor(diffMs / 60000);
+                const diffMin = Math.floor((startTime - now) / 60000);
 
-                // --- Case 0: 30 Minutes Before (Reminder 0) ---
-                if (diffMin <= 35 && diffMin >= 20 && !res.notifiedAt) {
-                    await this.notify30m(res, io);
-                }
-
-                // --- Case 1: 10 Minutes Before (Reminder 1 - BUTTONS) ---
-                if (diffMin <= 15 && diffMin >= 8 && !res.notified10m) {
-                    await this.notify10m(res, io);
-                }
-
-                // --- Case 2: 5 Minutes Before (Reminder 2 + Manager Alert) ---
-                if (diffMin <= 7 && diffMin >= 2 && !res.notified5m) {
-                    await this.notify5m(res, io);
-                }
-
-                // --- Case 3: Start Time (Final Warning Request) ---
-                if (diffMin <= 1 && diffMin >= -10 && !res.notifiedStart) {
-                    await this.notifyStart(res, io);
-                }
-
-                // --- Case 4: AUTO FINAL WARNING (DB-based, setTimeout o'rniga) ---
-                // notifiedStart=true, lekin notifiedPenalty=false va 1 daqiqa o'tgan
-                if (res.notifiedStart && !res.notifiedPenalty) {
-                    await this.checkAutoFinalWarning(res);
-                }
-
-                // --- Case 5: AUTO PENALTY (DB-based, setTimeout o'rniga) ---
-                // notifiedPenalty=true va 10 daqiqa o'tgan — auto-cancel
-                if (res.notifiedPenalty && !res.penaltyApplied) {
-                    await this.checkAutoPenalty(res);
-                }
+                if (diffMin <= 35 && diffMin >= 25 && !res.notifiedAt) await this.notify30m(res, io);
+                if (diffMin <= 15 && diffMin >= 10 && !res.notified10m) await this.notify10m(res, io);
             }
+
         } catch (error) {
             console.error("Scheduler error:", error);
         }
@@ -73,114 +104,17 @@ class ReservationScheduler {
     async notify30m(res, io) {
         if (!res.User?.telegramId || res.User.telegramId === '0') return;
         const timeString = new Date(res.startTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
-        const text = `🔔 <b>ESLATMA (30 DAQIQA):</b>\n\nHurmatli ${res.User.username}, soat <b>${timeString}</b> dagi bron qilingan vaqtingizga 30 daqiqa qoldi. Iltimos, o'z vaqtida kelishingizni so'raymiz! ✨`;
+        const text = `🔔 <b>ESLATMA:</b>\n\nHurmatli ${res.User.username}, bron qilingan vaqtingizga 30 daqiqa qoldi (${timeString}). Kelishingizni kutib qolamiz! ✨`;
         await notificationService.sendTelegramToUser(res.User.telegramId, text);
         await res.update({ notifiedAt: new Date() });
     }
 
     async notify10m(res, io) {
         if (!res.User?.telegramId || res.User.telegramId === '0') return;
-
-        const markup = {
-            inline_keyboard: [[{ text: "🚀 BORYABMAN", callback_data: `coming_${res.id}` }]]
-        };
-
         const timeString = new Date(res.startTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
-        const roomName = res.Computer?.Room?.name || 'Umumiy zal';
-
-        const text = `🔔 <b>HURMATLI ${res.User.username.toUpperCase()}!</b>\n\nSizni soat <b>${timeString}</b> da <b>GAMEZONE</b> klubimizda (XONA: ${roomName}, PC: ${res.Computer?.name || '?'}) kutib qolamiz. Ko'rishguncha xursandmiz! ✨`;
-
-        await notificationService.sendTelegramToUser(res.User.telegramId, text, markup);
+        const text = `🔔 <b>ESLATMA:</b>\n\nHurmatli ${res.User.username}, o'yin boshlanishiga 10 daqiqa qoldi (${timeString}). Iltimos, kechikmang! 🚀`;
+        await notificationService.sendTelegramToUser(res.User.telegramId, text);
         await res.update({ notified10m: true });
-    }
-
-    async notify5m(res, io) {
-        const timeString = new Date(res.startTime).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
-
-        // User reminder
-        if (res.User?.telegramId && res.User.telegramId !== '0') {
-            const markup = {
-                inline_keyboard: [[{ text: "🏃 YO'LDAMAN", callback_data: `coming_${res.id}` }]]
-            };
-            const text = `⚠️ <b>ESLATMA (5 DAQIQA QOLDI):</b>\n\nHurmatli ${res.User.username}, soat <b>${timeString}</b> dagi broningizga oz qoldi. Iltimos, o'z vaqtida kelishingizni so'raymiz.`;
-            await notificationService.sendTelegramToUser(res.User.telegramId, text, markup);
-        }
-
-        // Manager alert
-        notificationService.notifyManager(io, res.ClubId, 'RESERVE_WARNING', {
-            type: 'call_user',
-            message: `Bron qilingan mijoz (${res.User?.username || res.guestName}) raqamiga qo'ng'iroq qilishingizni so'raymiz! 📞`,
-            phone: res.User?.phone || res.guestPhone,
-            pc: res.Computer?.name
-        });
-
-        await res.update({ notified5m: true });
-    }
-
-    async notifyStart(res, io) {
-        // Broadcast to manager for final warning permission
-        notificationService.notifyManager(io, res.ClubId, 'RESERVE_WARNING', {
-            type: 'final_warning_request',
-            sessionId: res.id,
-            message: `Bron vaqti keldi (PC: ${res.Computer?.name}). Mijoz kelmadimi? Oxirgi ogohlantirishni yuboramizmi? ⚠️`,
-            user: res.User?.username || res.guestName
-        });
-
-        // notifiedStart vaqtini saqlaymiz — keyingi check'larda DB orqali tekshiriladi
-        // setTimeout EMAS — server restart bo'lsa ham ishlaydi!
-        await res.update({ notifiedStart: true, notifiedAt: new Date() });
-    }
-
-    /**
-     * DB-BASED auto penalty warning (setTimeout o'rniga)
-     * checkReservations() interval'da chaqiriladi, notifiedStart=true, notifiedPenalty=false
-     * va notifiedAt + 1 daqiqa o'tgan bo'lsa avtomatik ishlaydi
-     */
-    async checkAutoFinalWarning(res) {
-        // notifiedAt dan 1 daqiqa o'tganmi?
-        if (!res.notifiedAt) return;
-        const elapsed = Date.now() - new Date(res.notifiedAt).getTime();
-        if (elapsed < 60000) return; // 1 daqiqa kutamiz
-
-        await this.sendFinalPenaltyWarning(res);
-    }
-
-    async sendFinalPenaltyWarning(res) {
-        const user = res.User;
-        if (!user?.telegramId || user.telegramId === '0') {
-            // User ma'lumotlari yo'q — qayta yuklash
-            const freshRes = await Session.findByPk(res.id, { include: [User] });
-            if (!freshRes) return;
-            res = freshRes;
-        }
-
-        if (!res.User?.telegramId || res.User.telegramId === '0') return;
-
-        const markup = {
-            inline_keyboard: [
-                [{ text: "🏃 BORYABMAN", callback_data: `coming_${res.id}` }],
-                [{ text: "❌ BEKOR QILISH", callback_data: `cancel_penalty_${res.id}` }]
-            ]
-        };
-
-        const text = `🚨 <b>DIQQAT - OXIRGI OGOHLANTIRISH:</b>\n\nHurmatli mijoz, agar 10 daqiqada kelmasangiz, shartnomamizga ko'ra bron uchun to'lagan mablag'ingiz shtraf (penalty) sifatida olib qolinadi va bron bekor qilinadi.`;
-
-        await notificationService.sendTelegramToUser(res.User.telegramId, text, markup);
-        await res.update({ notifiedPenalty: true, notifiedAt: new Date() });
-    }
-
-    /**
-     * DB-BASED auto penalty execution (setTimeout o'rniga)
-     * notifiedPenalty=true va notifiedAt + 10 daqiqa o'tgan bo'lsa ishlaydi
-     */
-    async checkAutoPenalty(res) {
-        if (!res.notifiedAt) return;
-        const elapsed = Date.now() - new Date(res.notifiedAt).getTime();
-        if (elapsed < 600000) return; // 10 daqiqa kutamiz
-
-        if (res.penaltyApplied) return;
-        await notificationService.processPenalty(res.id);
-        console.log(`⚖️ Auto-penalty applied for Session #${res.id}`);
     }
 }
 

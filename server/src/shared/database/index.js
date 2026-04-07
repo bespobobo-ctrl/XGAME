@@ -109,6 +109,8 @@ async function runMigrations() {
         "ALTER TABLE `Sessions` ADD COLUMN `userResponse` TEXT",
         "ALTER TABLE `Sessions` ADD COLUMN `prepaidAmount` INTEGER DEFAULT 0",
         "ALTER TABLE `Sessions` ADD COLUMN `penaltyApplied` BOOLEAN DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `isConfirmed` BOOLEAN DEFAULT 0",
+        "ALTER TABLE `Sessions` ADD COLUMN `notifiedPresence` BOOLEAN DEFAULT 0",
 
         // Clubs
         "ALTER TABLE `Clubs` ADD COLUMN `cardNumber` TEXT",

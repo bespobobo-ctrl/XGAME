@@ -37,17 +37,16 @@
             z-index: -2;
             background-color: #0c001a;
             background-image:
-                radial-gradient(circle at 15% 15%, rgba(125, 0, 255, 0.8), transparent 45%),
-                radial-gradient(circle at 85% 85%, rgba(255, 0, 122, 0.7), transparent 45%),
-                radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.2), transparent 45%),
-                /* SIZNING RASMINGIZ */
+                linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                /* Qorong'ulash effekt */
                 url('./assets/img/bg.jpg'),
-                url('./assets/img/bg.png'),
-                url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop');
+                /* SIZNING RASMINGIZ */
+                radial-gradient(circle at 15% 15%, rgba(125, 0, 255, 0.4), transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(255, 0, 122, 0.3), transparent 45%);
             background-repeat: no-repeat;
             background-position: center center;
             background-size: cover;
-            animation: zoomBg 20s infinite alternate;
+            animation: zoomBg 30s infinite alternate linear;
         }
 
         @keyframes zoomBg {

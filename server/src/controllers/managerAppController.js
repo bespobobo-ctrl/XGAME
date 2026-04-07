@@ -107,12 +107,21 @@ class ManagerAppController {
                 ClubId: clubId
             });
 
-            // Kompyuterlarni yaratish
-            const pcCount = parseInt(computers) || 0;
-            if (pcCount > 0) {
+            // Kompyuterlarni yaratish (Unique Name Fix)
+            const pcCountToAdd = parseInt(computers) || 0;
+            if (pcCountToAdd > 0) {
+                // Ushbu klubdagi jami mavjud kompyuterlar sonini olamiz
+                const pcCountTotal = await Computer.count({ where: { ClubId: clubId } });
+
                 const pcs = [];
-                for (let i = 1; i <= pcCount; i++) {
-                    pcs.push({ name: `PC-${i}`, RoomId: room.id, ClubId: clubId, status: 'free' });
+                for (let i = 1; i <= pcCountToAdd; i++) {
+                    const pcIdNumber = pcCountTotal + i;
+                    pcs.push({
+                        name: `PC-${pcIdNumber}`,
+                        RoomId: room.id,
+                        ClubId: clubId,
+                        status: 'free'
+                    });
                 }
                 await Computer.bulkCreate(pcs);
             }
